@@ -1,0 +1,25 @@
+# Data
+D:\SRC\ServerTools\LogManager\LMClient\bin\Release\net10.0\Log 과
+D:\SRC\ServerTools\LogManager\LMClient\bin\Release\net10.0\Log\1 와
+D:\SRC\ServerTools\LogManager\LMClient\bin\Release\net10.0\Log\2 에
+
+[2026/10/31 18:05:38.758] [INFO_] 로그인 성공 [SNO][ 100]
+[2026/10/31 18:05:38.758] [ERROR] 로그인 실패 ( SNO )(100 )
+[2026/10/31 18:05:38.758] [INFO_] 룸 조인 성공,SNO,100
+[2026/10/31 18:05:38.758] [ERROR] 룸 조인 실패,SNO,100,
+[2026/10/31 18:05:38.758] [INFO_] 로비 조인 성공,SNO100
+[2026/10/31 18:05:38.758] [ERROR] 로비 조인 실패,SNO-100,
+[2026/10/31 18:05:38.758] [NOTI_] 센터 서버 오픈 192.168.11.9:5000
+[2026/10/31 18:05:38.758] [NOTI_] 길드 서버 오픈 192.168.11.9
+
+위와 같이 여러 케이스를 100개 정도 만들어서 3개월 3천만건 테스트 데이터 생성( 이번에는 SNO와 TNO 등이 좀 많이 겹치게 1-1000까지만 사용 )하고 해당 데이터들로, 
+라인 테스트를 위해 장문도 많이 넣어주고, 
+알람 테스트를 위해 LMServer.json에 있는 aAlarm 들도 넣어줘
+
+D:\SRC\ServerTools\LogManager\LMServer\bin\Release\net10.0\File에도 Index와 Origin 구성
+
+
+#Test
+D:\SRC\ServerTools\LogManager\LMServer\bin\Release\net10.0 에 LMServer.exe 실행 파일로
+D:\SRC\ServerTools\LogManager\LMServer\bin\Release\net10.0\File 다 비우고 클라 50대에 초당 1000 로그씩으로 600초 테스트
+(라인 테스트를 위해 숫자나 특수기호 등 장문도 많이 넣어주고 알람 테스트를 위해 LMServer.json에 있는 aAlarm 들도 넣어줘)

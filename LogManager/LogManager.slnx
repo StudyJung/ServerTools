@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="LMServer/LMServer.csproj" />
+  <Project Path="LMClient/LMClient.csproj" />
+</Solution>
