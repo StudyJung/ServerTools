@@ -1151,7 +1151,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		<section class="panel" id="FilterPanel">
 		<div class="filter">
 		<span class="pickwrap" title="Machine"><span class="pickkey">M</span><span id="MachinePick"><button type="button" id="MachineBox" title="대상 머신(전체, 체크)" aria-haspopup="true" aria-expanded="false">전체</button><div id="MachineMenu" hidden><label class="all"><input type="checkbox" id="MachineAll" checked><span>전체</span></label><div id="MachineList"></div></div></span></span>
-		<label class="queryonly" title="Duration(최근 기간)"><span class="pickkey">D</span><select id="QueryRange"><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="120">2시간</option><option value="240">4시간</option><option value="480">8시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="43200">30일</option><option value="86400">60일</option><option value="129600">90일</option></select></label>
+		<label class="queryonly" title="Duration(최근 기간)"><span class="pickkey">D</span><select id="QueryRange"><option value="" hidden>선택</option><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="120">2시간</option><option value="240">4시간</option><option value="480">8시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="43200">30일</option><option value="86400">60일</option><option value="129600">90일</option></select></label>
 		<label title="Start(날짜, 시, 분)">S <input type="date" id="StartDate" value="__YESTERDAY__"><select id="StartHour" class="hour"></select><select id="StartMinute" class="hour"></select></label>
 		<label title="End(날짜, 시, 분, 미포함)">E <input type="date" id="EndDate" value="__TODAY__"><select id="EndHour" class="hour"></select><select id="EndMinute" class="hour"></select></label>
 		<div class="searchbox">
@@ -1389,7 +1389,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		const kEndHour		        = document.getElementById("EndHour");		// 종료 시 (00~24, 기본 24 = 그날 23시 파일까지)
 		const kStartMinute	        = document.getElementById("StartMinute");	// 시작 분 (00~59, 서치·쿼리)
 		const kEndMinute	        = document.getElementById("EndMinute");		// 종료 분 (00~59, 서치·쿼리)
-		const kQueryRange	        = document.getElementById("QueryRange");	// D: 쿼리 최근 기간 (분)
+		const kQueryRange	        = document.getElementById("QueryRange");	// D: 쿼리 최근 기간 (분, 첫 칸 선택: D 해제)
 		const kQuerySaveDialog	    = document.getElementById("QuerySaveDialog");	// 쿼리·알람 추가·수정 창 (알람: class alarm → 알람 칸)
 		const kQuerySaveKey	        = document.getElementById("QuerySaveKey");		// 쿼리 추가·수정 제목
 		const kQuerySaveQuery	    = document.getElementById("QuerySaveQuery");	// 쿼리 추가·수정 쿼리 (줄바꿈: 빈칸으로 저장)
@@ -1664,7 +1664,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		{
 		    if (kQueryButton.classList.contains("cur"))	// 쿼리 모드: S·E 직접 고침 → D 해제
 		    {
-		        kQueryRange.selectedIndex = -1;
+		        kQueryRange.selectedIndex = 0;
 
 		        return;
 		    }
@@ -2161,7 +2161,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 
 		function GetPeriodPick()	// 지금 명령 창 기간 [S 날짜·시·분, E 날짜·시·분] (쿼리 D 최근 기간: 지금 기준으로 다시 계산)
 		{
-		    if (kQueryButton.classList.contains("cur") && kQueryRange.selectedIndex >= 0)
+		    if (kQueryButton.classList.contains("cur") && kQueryRange.selectedIndex > 0)
 		    {
 		        HTQuery.SetRecent();
 		    }
@@ -2173,7 +2173,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		{
 		    [kStart.value, kStartHour.value, kStartMinute.value, kEnd.value, kEndHour.value, kEndMinute.value] = arrPick;
 
-		    kQueryRange.selectedIndex = -1;
+		    kQueryRange.selectedIndex = 0;
 		}
 
 		function RestoreState(kParam)	// Ctrl·Alt+클릭 새 창 첫 화면 복원 (머신 → 탭 → 입력칸 → 연 창 기간·단계·결과 → 결과 그대로 (없음: 쿼리 다시, 서치 다시 검색 안 함 (실서버 부하)) → 누른 버튼·포커스)
@@ -2240,7 +2240,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 
 		    if (kParam.get("bMove") === "1")	// Shift 옮겨 실행: 다른 탭도 같은 기간 (돌아가도 이 기간)
 		    {
-		        HTQuery.kOtherRange = { sStart: kStart.value, sStartHour: kStartHour.value, sStartMinute: kStartMinute.value, sEnd: kEnd.value, sEndHour: kEndHour.value, sEndMinute: kEndMinute.value, nRange: -1 };
+		        HTQuery.kOtherRange = { sStart: kStart.value, sStartHour: kStartHour.value, sStartMinute: kStartMinute.value, sEnd: kEnd.value, sEndHour: kEndHour.value, sEndMinute: kEndMinute.value, nRange: 0 };
 		    }
 
 		    ShowStatus();
@@ -4849,7 +4849,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 
 		        const sKey = kQueryKey.value.trim() || "*";	// 쿼리 (없음: * 전체 로그, 쿼리칸은 비운 그대로)
 
-		        if (kQueryRange.selectedIndex >= 0)	// D 최근 기간: 지금까지로 다시
+		        if (kQueryRange.selectedIndex > 0)	// D 최근 기간: 지금까지로 다시
 		        {
 		            HTQuery.SetRecent();
 		        }
@@ -5098,10 +5098,12 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		    {
 		        kQueryRange.value = String(nMinute);
 
-		        if (kQueryRange.selectedIndex >= 0)
+		        if (kQueryRange.selectedIndex > 0)
 		        {
 		            return;
 		        }
+
+		        kQueryRange.selectedIndex = 0;	// D 에 없음: 선택 (D 해제)
 
 		        const kTo = new Date();	// 지금 (분 단위)
 
@@ -5113,7 +5115,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 
 		    static SetRecent()	// D 최근 기간 → S·E (지금 (분 단위) - D ~ 지금)
 		    {
-		        if (kQueryRange.selectedIndex < 0)	// D 해제 (S·E 직접): 기본 60분
+		        if (kQueryRange.selectedIndex <= 0)	// D 해제 (S·E 직접): 기본 60분
 		        {
 		            kQueryRange.value = "60";
 		        }
@@ -5946,10 +5948,10 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		        HTQuery.bSecondBar	= bSecond;
 
 		        const nMax		= arrBar.reduce((nValue, kItem) => Math.max(nValue, kItem.nCount), 1);					// 가장 큰 건수 (최소 1)
-		        const nWant		= nMax * 1.5;																			// 바라는 y축 최대 (가장 큰 막대가 높이 2/3 정도)
+		        const nWant		= nMax * 1.5;																			// 눈금 간격 기준 (가장 큰 건수 1.5배)
 		        const nUnit		= 10 ** Math.floor(Math.log10(nWant / 4));												// 눈금 단위 자릿수
 		        const nStep		= Math.max(1, [1, 2, 5, 10].map(nItem => nItem * nUnit).find(nItem => nItem >= nWant / 4));	// 눈금 간격 (1·2·5 × 10^n)
-		        const nTop		= Math.ceil(nWant / nStep) * nStep;														// y축 최대 (예: 2건 → 3)
+		        const nTop		= (Math.floor(nMax / nStep) + 1) * nStep;												// y축 최대: 가장 큰 막대 바로 위 눈금 한 줄 (예: 2건 → 3, 6건 → 10)
 		        const bFive		= bDay && arrBar.length > 50;	// x축 날짜 라벨 5일에 한 번 (50일 넘음: 첫 날·1·5·10·15·20·25일만)
 		        let sLabelMonth	= "";	// 앞 라벨의 월 (날짜별: 월 바뀐 라벨만 월/일)
 		        const sGap		= arrBar.length > 150 ? "0" : (arrBar.length > 60 ? "1px" : "");	// 막대 사이 (막대 많음: 줄여서 창 너비 안에)
@@ -6052,7 +6054,7 @@ class HTWeb : IHostedService	// 웹 서버 (Kestrel + Minimal API, 로그인 쿠
 		            HTQuery.SetPicker(kStart, kStartHour, kStartMinute, kFrom);
 		            HTQuery.SetPicker(kEnd, kEndHour, kEndMinute, kTo);
 
-		            kQueryRange.selectedIndex = -1;
+		            kQueryRange.selectedIndex = 0;
 
 		            HTQuery.Query(HTQuery.sQueryKey, kFrom, kTo, true);
 		        });
