@@ -16,7 +16,7 @@
 | Source/Source.md | 명세 (마크다운: 구조·저장 형식·API·UI/UX 가이드, Server.cs 머리에서 옮김) |
 | Source/{클래스}.cs | 클래스별 소스 (코드 구성 참고, 내장 HTML·JS: Web 공통 + 탭별 *HTML 함수) |
 | ../Common/*.cs | 클라와 같이 쓰는 공통 클래스 → [Common.md](../Common/Common.md) |
-| Server.csproj | Web SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시 (프레임워크 종속: .NET·ASP.NET Core 런타임 설치 필요 → 보안 패치: 런타임만 올림, exe 다시 빌드 안 함), web.config 변환 안 함 (참조 Server.html·wwwroot: 폴더에 없음) |
+| Server.csproj | Web SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시, web.config 변환 안 함 (참조 Server.html·wwwroot: 폴더에 없음) |
 | Json/Server.json | 설정 (bLog·bWeb 등 최상위, 예전 Base 묶음: 읽을 때 풀어 씀, 모든 설정 json: Json 폴더, 예전 위치 Server 폴더에만 있음: 그 파일 + 경고) |
 | Json/Query.json / Search.json / Alarm.json / Field.json | 따로 관리 설정 (웹에서 고침: 저장 쿼리 aQuery·저장 서치 aSearch·알람 aAlarm·필드 aField, 빌드·게시 출력 복사 안 함) |
 | Json/Manager.json | 운영 탭 존 (Manager:sZone → ServerList 선택·운영 탭 켜짐: 존 색만 (제목 색 포함 페이지 전체, 제목 글자 그대로), 없음: sZone)·XLO 모니터 요청 제한 (Manager:nTimeout ms, 기본 30000)·비밀번호 (Manager:sCode `****`, 없음: 비밀번호 폼 → AuthKey·접속자 안 나옴)·서버 목록 (Manager:ServerList:{존} [{sName, sIP, nPort}], 웹에서 안 고침, 빌드·게시 출력 복사 안 함) |
@@ -24,7 +24,7 @@
 | web.config | IIS HttpPlatformHandler 설정 |
 | On.bat / Off.bat | 콘솔 실행·종료 (포트 800) |
 | Properties/launchSettings.json | VS 디버그 프로필 (localhost 62170·62171, Development) |
-| Tool/ | 설치 파일: aspnetcore-runtime 10.0.13 (.NET 런타임 따로 필요: Hosting Bundle 하나면 둘 다), httpPlatformHandler_amd64.msi (IIS 실행) (분석 제외) |
+| Tool/ | 설치 파일: aspnetcore-runtime·dotnet-runtime 10.0.13, httpPlatformHandler_amd64.msi (분석 제외) |
 | bin/, obj/ | 게시 출력 (bin\Release\net10.0\Server.exe)·빌드 중간 출력 |
 | (실행 시) Data/, Dump/, Log/ | Origin·Index·Alarm·Count·Server.txt (반영 탭 설정 버전) / 덤프 zip / 시간별 로그 (줄 레벨 앞: [sTitle_] 태그, 반영 로그: 레벨 뒤 [v.버전] 표시) |
 
