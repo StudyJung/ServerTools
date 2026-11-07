@@ -1,0 +1,69 @@
+{
+  "sTitle": "HMX",
+  "sZone": "Dev",
+
+  "bLog": true,
+
+  "sIP": "127.0.0.1",
+  "nPort": 801,
+
+  "nLogRead": 1000,
+  "nLogSend": 1000,
+
+  "aLogType": [
+    "NOTI",
+    "ERROR",
+    "FATAL"
+  ],
+
+  "aLogFolder": [
+    "C:\\NHNServices"
+  ],
+
+  "aBlockQuery": [
+    "C:\\NHNServices\\HMXServer\\Data",
+    "C:\\NHNServices\\HMXClient\\Data",
+    "XLobby",
+    "XRoom"
+  ],
+  "aBlockSearch": [
+    "C:\\NHNServices\\HMXServer\\Data",
+    "C:\\NHNServices\\HMXClient\\Data"
+  ],
+  "aBlockFile": [
+    "C:\\NHNServices\\HMXServer\\Data",
+    "C:\\NHNServices\\HMXClient\\Data"
+  ],
+  "aBlockDump": [
+    "C:\\NHNServices\\HMXServer\\Data",
+    "C:\\NHNServices\\HMXClient\\Data"
+  ],
+
+  "aDeleteFolder": [
+    {
+      "sPath": "C:\\NHNServices",
+      "nDay": 90,
+      "nHour": 4
+    },
+    {
+      "sPath": "C:\\NHNServices\\HMXServer\\Data",
+      "nDay": 360,
+      "nHour": 5
+    }
+  ],
+
+  "Redis": {
+    "sHost": "더미",
+    "nPort": 0,
+    "nDB": 0,
+    "sUser": "default",
+    "sCode": "",
+    "sPrefix": "HMX:Process:",
+    "sError": "HMX:Error:"
+  },
+
+  "Git": {
+    "sUrl": "https://github.com/huns.git",
+    "sCode": ""
+  }
+}
