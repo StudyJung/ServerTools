@@ -4400,7 +4400,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		}
 
 		const FOLD_KEY		= "HMX.Fold";	// 칸 접기 localStorage 키 ({ 표 id: [칸 번호] }, 표마다)
-		const kFoldText		= document.createElement("canvas").getContext("2d");	// 접은 칸 너비 재기 (숨은 창도 됨)
+		const FOLD_WIDTH_PX	= 20;			// 접은 칸 너비 (px, 모든 칸 고정)
 		const hmapFold		= LoadFold();	// 접은 칸 (표 id → 칸 번호 목록)
 
 		function LoadFold()	// 저장된 접은 칸 (없음·오류: 빈)
@@ -4427,25 +4427,16 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    return nIndex !== GetRestColumn(kTable) && nIndex < kTable.tHead.rows[0].cells.length - 1;
 		}
 
-		function GetFoldWidth(kHead)	// 접은 칸 글자 너비: 제목 첫 글자 (예: File → F)
-		{
-		    const kStyle = getComputedStyle(kHead);
-
-		    kFoldText.font = `${kStyle.fontStyle} ${kStyle.fontWeight} ${kStyle.fontSize} ${kStyle.fontFamily}`;
-
-		    return Math.ceil(kFoldText.measureText((kHead.firstChild?.textContent ?? "").trim().charAt(0)).width);
-		}
-
-		function ApplyFold(kTable)	// 접은 칸 그림: 칸 글자 제목 첫 글자 너비만 (CSS, colspan 칸 제외), 고정 너비 표: col 너비도
+		function ApplyFold(kTable)	// 접은 칸 그림: FOLD_WIDTH_PX 고정 (CSS, colspan 칸 제외), 고정 너비 표: col 너비도
 		{
 		    const arrHead	= [...kTable.tHead.rows[0].cells];
 		    const arrCol	= kTable.querySelectorAll("col");
 		    const arrFold	= (Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : []).filter(nIndex => Number.isInteger(nIndex) && nIndex >= 0 && IsFoldColumn(kTable, nIndex));
 		    const bFixed	= kTable.classList.contains("fixed");
 
-		    document.getElementById(kTable.id + "Fold").textContent = arrFold.map(nIndex => `#${kTable.id} tr>:nth-child(${nIndex + 1}):not([colspan]){max-width:${GetFoldWidth(arrHead[nIndex])}px;padding-right:0;overflow:hidden;text-overflow:clip;white-space:nowrap}`).join("");
+		    document.getElementById(kTable.id + "Fold").textContent = arrFold.map(nIndex => `#${kTable.id} tr>:nth-child(${nIndex + 1}):not([colspan]){box-sizing:border-box;width:${FOLD_WIDTH_PX}px;min-width:${FOLD_WIDTH_PX}px;max-width:${FOLD_WIDTH_PX}px;padding-right:0;overflow:hidden;text-overflow:clip;white-space:nowrap}`).join("");
 
-		    arrHead.forEach((kHead, nIndex) =>
+		    arrHead.forEach((_, nIndex) =>
 		    {
 		        const kCol = arrCol[nIndex];
 
@@ -4454,10 +4445,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            return;
 		        }
 
-		        if (arrFold.includes(nIndex))	// 접음: 지금 너비 보관 → 제목 첫 글자 너비
+		        if (arrFold.includes(nIndex))	// 접음: 지금 너비 보관 → 고정 너비
 		        {
 		            kCol.dataset.unfold	??= kCol.style.width;
-		            kCol.style.width	= GetColumnMin(kHead) + "px";
+		            kCol.style.width	= FOLD_WIDTH_PX + "px";
 		        }
 		        else if (kCol.dataset.unfold != null)	// 펼침: 접기 전 너비
 		        {
@@ -4498,7 +4489,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    ApplyFold(kTable);
 		}
 
-		function InitColumnFold(kTable)	// 표 칸 접기 (모든 표 공통): 칸 이름 클릭 → 제목 첫 글자 너비 ↔ 다시 클릭: 기본 크기, 표마다 저장
+		function InitColumnFold(kTable)	// 표 칸 접기 (모든 표 공통): 칸 이름 클릭 → 좌우 FOLD_WIDTH_PX 고정 ↔ 다시 클릭: 기본 크기, 표마다 저장
 		{
 		    const kStyle = document.createElement("style");	// 이 표 접은 칸 CSS
 
