@@ -2032,8 +2032,6 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    for (const kCol of kTable.querySelectorAll("col"))
 		    {
 		        kCol.style.width = "";
-
-		        delete kCol.dataset.unfold;	// 접기 전 너비 (자동: CSS 로 접힘 유지)
 		    }
 
 		    SetFixed(kTable, false);
@@ -4400,6 +4398,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		const FOLD_KEY		= "HMX.Fold";	// 칸 접기 localStorage 키 ({ 표 id: [칸 번호] }, 표마다)
 		const FOLD_WIDTH_PX	= 20;			// 접은 칸 너비 (px, 모든 칸 고정)
+		const FOLD_NEAR_PX	= 2;			// 최소 폭 판정 여유 (px, 경계 드래그 최소 1글자 ≒ 접은 폭)
 		const hmapFold		= LoadFold();	// 접은 칸 (표 id → 칸 번호 목록)
 
 		function LoadFold()	// 저장된 접은 칸 (없음·오류: 빈)
@@ -4426,43 +4425,51 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    return nIndex !== GetRestColumn(kTable) && nIndex < kTable.tHead.rows[0].cells.length - 1;
 		}
 
+		function GetNaturalWidth(kTable, nIndex)	// 칸 기본 너비: 칸 글자 최대 너비 (자동 너비와 같음, 고정 너비 표에서 칸마다 글자 폭 잼, colspan 줄 제외)
+		{
+		    let nWidth = 0;
+
+		    for (const kRow of kTable.rows)
+		    {
+		        const kCell = kRow.cells[nIndex];
+
+		        if (kCell != null && kCell.colSpan === 1)
+		        {
+		            nWidth = Math.max(nWidth, kCell.scrollWidth);
+		        }
+		    }
+
+		    return Math.ceil(nWidth) + 1;	// + 칸 경계선
+		}
+
 		function ApplyFold(kTable)	// 접은 칸 그림: FOLD_WIDTH_PX 고정 (CSS, colspan 칸 제외), 고정 너비 표: col 너비도
 		{
-		    const arrHead	= [...kTable.tHead.rows[0].cells];
 		    const arrCol	= kTable.querySelectorAll("col");
 		    const arrFold	= (Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : []).filter(nIndex => Number.isInteger(nIndex) && nIndex >= 0 && IsFoldColumn(kTable, nIndex));
 		    const bFixed	= kTable.classList.contains("fixed");
 
 		    document.getElementById(kTable.id + "Fold").textContent = arrFold.map(nIndex => `#${kTable.id} tr>:nth-child(${nIndex + 1}):not([colspan]){box-sizing:border-box;width:${FOLD_WIDTH_PX}px;min-width:${FOLD_WIDTH_PX}px;max-width:${FOLD_WIDTH_PX}px;padding-right:0;overflow:hidden;text-overflow:clip;white-space:nowrap}`).join("");
 
-		    arrHead.forEach((_, nIndex) =>
+		    if (!bFixed)	// 자동 너비: CSS 만
 		    {
-		        const kCol = arrCol[nIndex];
+		        return;
+		    }
 
-		        if (!bFixed || kCol == null)	// 자동 너비: CSS 만
+		    for (const nIndex of arrFold)	// 고정 너비 표: 접은 칸 col 너비도 (펼침 너비: ToggleFold)
+		    {
+		        if (arrCol[nIndex] != null)
 		        {
-		            return;
+		            arrCol[nIndex].style.width = FOLD_WIDTH_PX + "px";
 		        }
-
-		        if (arrFold.includes(nIndex))	// 접음: 지금 너비 보관 → 고정 너비
-		        {
-		            kCol.dataset.unfold	??= kCol.style.width;
-		            kCol.style.width	= FOLD_WIDTH_PX + "px";
-		        }
-		        else if (kCol.dataset.unfold != null)	// 펼침: 접기 전 너비
-		        {
-		            kCol.style.width = kCol.dataset.unfold;
-
-		            delete kCol.dataset.unfold;
-		        }
-		    });
+		    }
 		}
 
-		function ToggleFold(kTable, nIndex)	// 칸 접기 ↔ 기본 크기 (표마다 저장)
+		function ToggleFold(kTable, nIndex)	// 칸 접기 ↔ 기본 크기 (표마다 저장): 접힌 칸·경계 드래그로 최소 폭 된 칸 → 기본 크기 (글자 최대 너비), 그 밖 → 접음
 		{
 		    const arrFold	= Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : [];
-		    const bFold		= !arrFold.includes(nIndex);
+		    const kHead		= kTable.tHead.rows[0].cells[nIndex];
 		    const kCol		= kTable.querySelectorAll("col")[nIndex];
+		    const bFold		= !arrFold.includes(nIndex) && kHead.getBoundingClientRect().width > Math.max(FOLD_WIDTH_PX, GetColumnMin(kHead)) + FOLD_NEAR_PX;	// 접음 (이미 최소 폭: 펼침)
 
 		    hmapFold[kTable.id] = bFold ? [...arrFold, nIndex] : arrFold.filter(nItem => nItem !== nIndex);
 
@@ -4480,12 +4487,12 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        console.error(kError);
 		    }
 
-		    if (!bFold && kTable.classList.contains("fixed") && kCol != null && kCol.dataset.unfold == null)	// 고정 너비 뒤 접힌 칸 펼침: 기본 너비 모름 → 표 자동 너비
-		    {
-		        ResetColumn(kTable);
-		    }
-
 		    ApplyFold(kTable);
+
+		    if (!bFold && kTable.classList.contains("fixed") && kCol != null)	// 고정 너비 표 펼침: 그 칸만 기본 너비 (다른 칸 드래그 너비 유지)
+		    {
+		        kCol.style.width = GetNaturalWidth(kTable, nIndex) + "px";
+		    }
 		}
 
 		function InitColumnFold(kTable)	// 표 칸 접기 (모든 표 공통): 칸 이름 클릭 → 좌우 FOLD_WIDTH_PX 고정 ↔ 다시 클릭: 기본 크기, 표마다 저장
