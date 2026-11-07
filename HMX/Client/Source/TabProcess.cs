@@ -1,6 +1,6 @@
-using StackExchange.Redis;	// Redis 키·값 (이 파일·Redis·HProcess 만, 전역 using 안 함 → 이름 겹침 방지)
+using StackExchange.Redis;	// Redis 키·값 (이 파일·Redis·Process 만, 전역 using 안 함 → 이름 겹침 방지)
 
-static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 항목 → Ready (Git 동기화) → Start (그룹 순서: On 실행·Off 종료·Down 다운로드) → 바뀐 값 Redis 저장 (OLD HMXClient 이식, API: HProcess, 짝: 서버 반영 탭)
+static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 항목 → Ready (Git 동기화) → Start (그룹 순서: On 실행·Off 종료·Down 다운로드) → 바뀐 값 Redis 저장 (OLD HMXClient 이식, API: Process, 짝: 서버 반영 탭)
 {
 	private const int	m_nTickMs		= 1000;	// 주기 처리 간격 (ms)
 	private const int	m_nReadyMax		= 8;	// Git 동기화 동시 최대 (1개 끝: 다음 1개)
@@ -195,7 +195,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 
 		if (sOnOff == "On")
 		{
-			int nPID = HProcess.Check(arrValue, ProcessValue.ToInt(sPID));
+			int nPID = Process.Check(arrValue, ProcessValue.ToInt(sPID));
 
 			if (nPID < 0)
 			{
@@ -232,7 +232,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 				return true;
 			}
 
-			nPID = HProcess.Init(sField, arrValue);	// On·False: 실행
+			nPID = Process.Init(sField, arrValue);	// On·False: 실행
 
 			if (nPID < 0)
 			{
@@ -254,7 +254,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 			return false;
 		}
 
-		int nFini = HProcess.Fini(sField, arrValue);	// Off·False: 종료
+		int nFini = Process.Fini(sField, arrValue);	// Off·False: 종료
 
 		if (nFini < 0)
 		{

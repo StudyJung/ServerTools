@@ -20,7 +20,7 @@
 #:include TabFile.cs
 #:include Redis.cs
 #:include TabOperation.cs
-#:include HProcess.cs
+#:include Process.cs
 #:include TabProcess.cs
 #:include TabQuery.cs
 #:include Alarm.cs
@@ -35,7 +35,7 @@
       예) dotnet run --file Source\Server.cs                -> http://localhost:포트 (외부 접속 불가)
       예) dotnet run --file Source\Server.cs 9000 0.0.0.0   -> 모든 인터페이스 9000 포트 (방화벽 허용 필요)
    ## 디버깅: HMX.slnx (Visual Studio 2026) F5
-   ## 구성: Server.cs (Main: 진입점·공통·기능 연결) + #:include → 공통 ../../Common (Global 전역 함수·Config 설정·Log 로그·AES 복호화·Count 받은 진행·Define 상수·데이터 정의, Client 와 같이 씀, 프로젝트별 값: Main) → Timer(타이머) → Auth(로그인) → Web(웹 서버·기본 페이지) → API(공통 API·클라 요청 응답) → TCPServer(Client TCP 수신) → TabSearch(서치 탭·SearchNode 검색어 규칙)·TabDump(덤프 탭)·TabFile(파일 탭)·TabOperation(운영 탭: 게임 서버 점검·패치·동접, Redis)·TabProcess(반영 탭: 게임 서버 프로세스 시작·정지·다운, API HProcess, Redis)·TabQuery(쿼리 탭: 적재·색인·쿼리) (탭 API + 페이지 스크립트 SearchHTML·DumpHTML·FileHTML·ManagerHTML·ProcessHTML·QueryHTML) → Alarm·Stat·Send·AlarmLog(알람)
+   ## 구성: Server.cs (Main: 진입점·공통·기능 연결) + #:include → 공통 ../../Common (Global 전역 함수·Config 설정·Log 로그·AES 복호화·Count 받은 진행·Define 상수·데이터 정의, Client 와 같이 씀, 프로젝트별 값: Main) → Timer(타이머) → Auth(로그인) → Web(웹 서버·기본 페이지) → API(공통 API·클라 요청 응답) → TCPServer(Client TCP 수신) → TabSearch(서치 탭·SearchNode 검색어 규칙)·TabDump(덤프 탭)·TabFile(파일 탭)·TabOperation(운영 탭: 게임 서버 점검·패치·동접, Redis)·TabProcess(반영 탭: 게임 서버 프로세스 시작·정지·다운, API Process, Redis)·TabQuery(쿼리 탭: 적재·색인·쿼리) (탭 API + 페이지 스크립트 SearchHTML·DumpHTML·FileHTML·ManagerHTML·ProcessHTML·QueryHTML) → Alarm·Stat·Send·AlarmLog(알람)
    ## 기본 페이지: Web.IndexHtml() (공통 앞 + 탭 스크립트 SearchHTML·DumpHTML·FileHTML·ManagerHTML·ProcessHTML·QueryHTML + 공통 뒤)
    ## 정적 파일: 기준 폴더 wwwroot (있으면 자동 서비스, index.html 기본 문서)
    ## 데이터 폴더: 기준 폴더 하위 Data (Index·Origin·Alarm·Count·프로젝트명.txt 실행 설정 버전, 예전 File: 시작 때 Data 로 이름 변경, 둘 다 있음: 그대로 + 경고)
@@ -106,7 +106,7 @@
       ### 알람 기록 (AlarmLog): /api/alarm/history → {sError, arrHistory: [{sDone, nID, sKey, sChannel, sResult, sError, nTry, sTitle, sText}]} (전체 최신 순) → 쿼리 기록 버튼 (알람 버튼 왼쪽) 창: 날짜·제목·채널·결과 (스크롤), 제목 클릭: 내용 창 (링크 안 보임, 내용 클릭: 그 알람 기간·쿼리 실행)
    ## 운영 (TabOperation, ServerManager 이식): /api/manager/server (전체 점검 → 목록·패치 시각)·/version (POST 버전 임시)·/monitor (XLO 모니터 이동)·/cds (1대 CDS)·/patch (POST 패치 시각, Redis)·/ccu (최고 동접·최근 X일 기록, Redis)·/redis (PING)
       ### 동접 기록: X분 정각마다 전체 점검 → 운영 로비 접속자 게임별 합 → Redis daily_날짜 해시·max_conn (서버 목록·Redis 있을 때만)
-   ## 실행 (TabProcess·HProcess, HMXServer 이식, 요청·응답 형식 같음): /api/process (목록: 공통 Redis 서버 목록 키 (Redis:sProcess + 존) 이름순 "필드|값" 줄, Redis 설정 없음: 오류)·?action=check (TestOn 표시)·version (설정 버전)·set (값 저장: 등록·수정 version 검증·+1, On·Off·Down: 값 앞 상태,False)·rename (이름 일괄 변경)·del (삭제, 삭제 전 값 로그)·errlog (Redis 에러 리스트 (Redis:sError + 존) X개씩)·log (서버 로그 [HMX_]·로그인 줄 커서 조회)·actlog (시작·정지·다운 클릭 기록)
+   ## 실행 (TabProcess·Process, HMXServer 이식, 요청·응답 형식 같음): /api/process (목록: 공통 Redis 서버 목록 키 (Redis:sProcess + 존) 이름순 "필드|값" 줄, Redis 설정 없음: 오류)·?action=check (TestOn 표시)·version (설정 버전)·set (값 저장: 등록·수정 version 검증·+1, On·Off·Down: 값 앞 상태,False)·rename (이름 일괄 변경)·del (삭제, 삭제 전 값 로그)·errlog (Redis 에러 리스트 (Redis:sError + 존) X개씩)·log (서버 로그 [HMX_]·로그인 줄 커서 조회)·actlog (시작·정지·다운 클릭 기록)
       ### 서버 목록 키: Redis:sProcess + 존 + ":" + 대분류,중분류,이름 (예: HMX:Process:Dev:111_DEV,1_Center,Common) · 값: 상태,적용,PID,커밋,머신,다운폴더,깃헙폴더,Sync,Mode,실행파일+인자들 (상태 On·Off·Down, 적용 False: 머신별 HMXClient 처리 대기 → 처리 뒤 True, PID 음수: 실패)
       ### 설정 버전: 기준 폴더 하위 Data\프로젝트명.txt (예: Data\Server.txt, 등록·수정·삭제·이름 변경 성공: +1, 요청 버전 다름: stale 응답 → 화면 새로 고침 안내, 버전 검증~증가: 직렬화)
       ### 반영 로그: 공통 Log 파일에 레벨 뒤 [v.버전] 표시 (예: [시각] [HMX_][INFO_] [v.4] 수정: …, 등록·수정·이름·삭제·액션·클릭·버전 불일치·오류, 끝: 아이디@IP), 로그 조회: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만, Redis 오류: X초 지연 후 오류 응답
@@ -511,7 +511,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			kInfo.ArgumentList.Add(sArg);
 		}
 
-		using Process kProcess = Process.Start(kInfo)!;
+		using System.Diagnostics.Process kProcess = System.Diagnostics.Process.Start(kInfo)!;
 
 		kProcess.WaitForExit();
 
@@ -884,9 +884,9 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			return kException.Message;
 		}
 
-		string sRunning = string.Join("·", Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Where(kProcess => kProcess.Id != Environment.ProcessId).Select(kProcess => kProcess.Id));	// 이미 실행 중인 같은 이름 프로세스
+		string sRunning = string.Join("·", System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName).Where(kProcess => kProcess.Id != Environment.ProcessId).Select(kProcess => kProcess.Id));	// 이미 실행 중인 같은 이름 프로세스
 
-		return $"웹 포트 사용 중 ({kException.Message}{(sRunning == "" ? ", 다른 프로그램이 사용 중" : $", 이미 실행 중인 {Process.GetCurrentProcess().ProcessName} PID {sRunning}")})";
+		return $"웹 포트 사용 중 ({kException.Message}{(sRunning == "" ? ", 다른 프로그램이 사용 중" : $", 이미 실행 중인 {System.Diagnostics.Process.GetCurrentProcess().ProcessName} PID {sRunning}")})";
 	}
 
 	static void Execute()

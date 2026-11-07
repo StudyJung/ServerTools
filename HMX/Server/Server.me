@@ -44,7 +44,7 @@
 | TabOperation.cs | TabOperation·OperationServer·OperationCCU·OperationMonitor·OperationRedis | 운영 탭 (ServerManager 이식): XLO 모니터 점검·서버 버전·패치 시각·X분 정각 동접 기록 API + ManagerHTML (페이지 JS Operation) |
 | Redis.cs | Redis | Redis 연결 (서버 전용, StackExchange.Redis, 최초 사용 시 1회 연결·자동 재연결) |
 | TabProcess.cs | TabProcess | 반영 탭 (HMXServer 이식): 라우트 + ProcessHTML (페이지 JS Process) |
-| HProcess.cs | HProcess·ProcessVersion·ProcessLog | 반영 API /api/process (목록·등록·수정·삭제·이름 변경·시작·정지·다운 지시·작업 로그·에러), 설정 버전 Data\Server.txt, 반영 로그 ([v.버전] 표시) 기록·조회 |
+| Process.cs | Process·ProcessVersion·ProcessLog | 반영 API /api/process (목록·등록·수정·삭제·이름 변경·시작·정지·다운 지시·작업 로그·에러), 설정 버전 Data\Server.txt, 반영 로그 ([v.버전] 표시) 기록·조회 |
 | TabQuery.cs | TabQuery·QueryResult·IngestWorker·IndexBuffer·PostingPool 등 | 쿼리 탭: 적재·역색인·쿼리·통계·저장 쿼리·알람·필드 설정 API + QueryHTML (페이지 JS Query) |
 | Alarm.cs | Alarm·AlarmMatcher·AlarmNode·AlarmCount·AlarmHit·AlarmJob | 알람 매칭 스냅샷·조건 트리 |
 | Stat.cs / Send.cs / AlarmLog.cs | Stat / Send / AlarmLog | 매분 판정 / 발송 (메일·훅) / 알람 로그 |

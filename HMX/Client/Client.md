@@ -36,7 +36,7 @@
 | TabDump.cs | TabDump | 덤프 탭: `*.dmp` 감시 (WatchLoop·FlushLoop)·목록·조각 읽기·삭제 |
 | TabFile.cs | TabFile | 파일 탭: 폴더 보기·파일 조각 읽기 |
 | Redis.cs | Redis | Redis 연결 (최초 사용 시 1회·자동 재연결, 서버 Redis 와 같은 모양): 존 키 앞 (GetZonePrefix: 설정 값 + 존 + `:`)·목록 키 앞 (sPrefix)·에러 리스트 키 (sError) |
-| HProcess.cs | HProcess·ProcessValue·ProcessLog·ProcessGit | 실행 API (OLD HMXProcess·HMXValue·HMXLog·HMXGit): Win32 실행·확인·종료 (Ctrl+C·강제), 값 파트·그룹, 실행 로그·Redis 에러 리스트, Git sparse 클론·shallow 갱신 |
+| Process.cs | Process·ProcessValue·ProcessLog·ProcessGit | 실행 API (OLD HMXProcess·HMXValue·HMXLog·HMXGit): Win32 실행·확인·종료 (Ctrl+C·강제), 값 파트·그룹, 실행 로그·Redis 에러 리스트, Git sparse 클론·shallow 갱신 |
 | TabProcess.cs | TabProcess | 반영 탭 (OLD HMXClient BackgroundService): 1초 주기 Tick → LoadList → Ready → Start → RedisUpdate |
 | Clean.cs | Clean·CleanItem | 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 매일 nHour 시 정각 (CleanLoop) sPath 하위 yyyyMMdd 폴더 중 오늘 - nDay 일 이전 통째 삭제, 겹친 하위 항목 경로: 그 항목 규칙 |
 

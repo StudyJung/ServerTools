@@ -18,7 +18,7 @@
 #:include TabDump.cs
 #:include TabFile.cs
 #:include Redis.cs
-#:include HProcess.cs
+#:include Process.cs
 #:include TabProcess.cs
 #:include Clean.cs
 
@@ -26,7 +26,7 @@
 // 실행: dotnet run --file Source\Client.cs (Client 폴더에서, 상위 폴더 Client.csproj 와 따로: --file 필수)
 // 인자: -install (서비스 HMXClient 등록·시작, 관리자 권한, 게시된 Client.exe 로 실행) | -start·-stop (서비스 시작·정지, X초 대기, 관리자 권한) | -uninstall (서비스 정지·제거, 관리자 권한) | 그 외·없음 (클라 실행: 콘솔 Ctrl+C 종료, 서비스로 실행되면 SCM 연동)
 // 디버깅: HMX.slnx (Visual Studio 2026) F5
-// 구성: Client.cs (Main: 진입점·서비스 등록·공통·기능 연결) + #:include → 공통 ../../Common (Global 전역 함수·Config 설정·Log 로그·AES 복호화·Count 받은 진행·Define 상수·데이터 정의, Server 와 같이 씀, 프로젝트별 값: Main) → Timer(타이머) → TCPClient(Server TCP 접속) → Tab(탭 공통: 경로·블록 읽기) → TabQuery(쿼리 탭: 로그 감시)·TabSearch(서치 탭·SearchNode)·TabDump(덤프 탭)·TabFile(파일 탭) → Redis(Redis 연결) → HProcess(실행 API: 실행·확인·종료, ProcessValue 값 파트·ProcessLog 실행 로그·ProcessGit Git 동기화) → TabProcess(반영 탭: 주기 처리) → Clean(날짜 폴더 자동 삭제: aDeleteFolder)
+// 구성: Client.cs (Main: 진입점·서비스 등록·공통·기능 연결) + #:include → 공통 ../../Common (Global 전역 함수·Config 설정·Log 로그·AES 복호화·Count 받은 진행·Define 상수·데이터 정의, Server 와 같이 씀, 프로젝트별 값: Main) → Timer(타이머) → TCPClient(Server TCP 접속) → Tab(탭 공통: 경로·블록 읽기) → TabQuery(쿼리 탭: 로그 감시)·TabSearch(서치 탭·SearchNode)·TabDump(덤프 탭)·TabFile(파일 탭) → Redis(Redis 연결) → Process(실행 API: 실행·확인·종료, ProcessValue 값 파트·ProcessLog 실행 로그·ProcessGit Git 동기화) → TabProcess(반영 탭: 주기 처리) → Clean(날짜 폴더 자동 삭제: aDeleteFolder)
 // 설정 파일: 기준 폴더 하위 Json\Client.json (서비스: exe 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고), Config.GetString("sIP")·GetInt("nPort") 등 (키 없음: 기본값)
 //   bLog : 로그 파일 기록 (false·없음: 콘솔만)
 //   sIP   : Server 아이피 (호스트명 가능)
@@ -63,7 +63,7 @@
 //     sPrefix : 목록 키 앞 (기본 HMX:Process:, 서버 Redis:sProcess 와 같게), sError : 에러 리스트 키 앞 (기본 HMX:Error:, 서버 Redis:sError 와 같게)
 //     실제 키: 값 + 존 + ":" (예: 목록 HMX:Process:Dev:대분류,중분류,이름, 에러 리스트 HMX:Error:Dev:, 존 없음: 값만)
 //   Git : sUrl 배포 저장소 (기본 HMX_ALPHA), sCode (→ sPass, 저장소 토큰: https://토큰@... 접속, 없음: git 자격 증명, 로그: ****)
-// 실행 기능 (TabProcess, OLD HMXClient 이식, 짝: 서버 반영 탭 HProcess): X초마다 Redis 목록 키 (sPrefix + 존 + ":")* 중 값 머신 파트 = 이 머신 (GetMachine, 대소문자 무시) 항목 → Ready (Git 동기화, 최대 X개 동시) → Start (그룹 순서, 그룹 안 동시: On 실행·Off 종료·Down 다운로드) → 바뀐 값 Redis 저장
+// 실행 기능 (TabProcess, OLD HMXClient 이식, 짝: 서버 반영 탭 Process): X초마다 Redis 목록 키 (sPrefix + 존 + ":")* 중 값 머신 파트 = 이 머신 (GetMachine, 대소문자 무시) 항목 → Ready (Git 동기화, 최대 X개 동시) → Start (그룹 순서, 그룹 안 동시: On 실행·Off 종료·Down 다운로드) → 바뀐 값 Redis 저장
 //   값: 상태(On|Off|Down),적용(True|False),PID,커밋,머신,폴더,깃헙(sparse-checkout 경로),Sync(1: 시작 시 Git 갱신, 0: 생략),Mode(0: 독립 실행·강제 종료, 1: 새 콘솔·Ctrl+C 종료),실행파일+인자 (실행 위치: 폴더\깃헙)
 //   그룹: 필드 (키에서 목록 키 앞 뺀 이름) 첫번째+두번째 파트 (예: "999, 0_HMX, 0_Common" → "999, 0_HMX"), 앞 그룹이 전부 끝나야 다음 그룹
 //   Git: .git 없음 → sparse 클론 (blob 필터·depth 1), 있음 → shallow 갱신 (fetch depth 1 + reset --hard, 명령·클론 시간 제한, 남은 lock 제거)
@@ -391,7 +391,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 			kInfo.ArgumentList.Add(sArg);
 		}
 
-		using Process kProcess = Process.Start(kInfo)!;
+		using System.Diagnostics.Process kProcess = System.Diagnostics.Process.Start(kInfo)!;
 
 		kProcess.WaitForExit();
 
@@ -407,7 +407,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 	{
 		try
 		{
-			using Process kProcess = Process.GetCurrentProcess();
+			using System.Diagnostics.Process kProcess = System.Diagnostics.Process.GetCurrentProcess();
 
 			kProcess.PriorityClass = ProcessPriorityClass.BelowNormal;	// 게임 서버보다 낮은 CPU 우선순위 (검색 부하 양보)
 		}

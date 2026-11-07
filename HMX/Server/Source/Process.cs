@@ -1,6 +1,6 @@
 using StackExchange.Redis;	// Redis 명령 (이 파일·Redis·TabOperation 만, 전역 using 안 함 → ClientInfo 등 이름 겹침 방지)
 
-class HProcess	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이식, 요청·응답 형식 같음): 서버 목록 (공통 Redis 의 Redis:sProcess + 존 키, 예: HMX:Process:Dev:) 조회·등록·수정·삭제·이름 변경, On·Off·Down 지시 → 머신별 HMXClient 처리, 작업 로그·에러 (로그인: 공통 Auth)
+class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이식, 요청·응답 형식 같음): 서버 목록 (공통 Redis 의 Redis:sProcess + 존 키, 예: HMX:Process:Dev:) 조회·등록·수정·삭제·이름 변경, On·Off·Down 지시 → 머신별 HMXClient 처리, 작업 로그·에러 (로그인: 공통 Auth)
 {
 	private const string	TEXT_PLAIN	= "text/plain; charset=utf-8";	// 텍스트 응답 형식
 	private const string	DEFAULT_PROCESS	= "HMX:Process:";				// 서버 목록 키 접두사 기본값 (Redis:sProcess 없음)
@@ -10,7 +10,7 @@ class HProcess	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 	private readonly SemaphoreSlim	m_lockEdit;	// 버전 검증~증가 직렬화 (동시 등록·수정·삭제: 한쪽만 성공, 나머지 버전 불일치)
 
-	public HProcess()
+	public Process()
 	{
 		m_lockEdit = new SemaphoreSlim(1, 1);
 

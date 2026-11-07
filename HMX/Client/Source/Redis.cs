@@ -1,4 +1,4 @@
-using StackExchange.Redis;	// Redis 클라이언트 (이 파일·HProcess·TabProcess 만, 전역 using 안 함 → 이름 겹침 방지)
+using StackExchange.Redis;	// Redis 클라이언트 (이 파일·Process·TabProcess 만, 전역 using 안 함 → 이름 겹침 방지)
 
 static class Redis	// Redis 연결: 설정 Redis 항목 (sHost, nPort, nDB, sUser, sCode → sPass, sPrefix 목록 키 앞, sError 에러 리스트 키 앞, 실제 키: 설정 값 + 존 + ":"), 최초 사용 시 1회 연결 후 재사용·자동 재연결 (OLD HMXRedis 이식, 서버 Redis 와 같은 모양)
 {

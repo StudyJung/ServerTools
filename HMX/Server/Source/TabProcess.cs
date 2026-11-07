@@ -1,10 +1,10 @@
-class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다운 지시 (Redis 서버 목록 → 머신별 HMXClient 가 Git 갱신·실행·종료)·등록·편집·삭제·이름 변경·작업 로그·에러 (HMXServer 이식, API: HProcess, 페이지 쪽: ProcessHTML)
+class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다운 지시 (Redis 서버 목록 → 머신별 HMXClient 가 Git 갱신·실행·종료)·등록·편집·삭제·이름 변경·작업 로그·에러 (HMXServer 이식, API: Process, 페이지 쪽: ProcessHTML)
 {
-	private readonly HProcess m_kProcess;	// 반영 API
+	private readonly Process m_kProcess;	// 반영 API
 
 	public TabProcess()
 	{
-		m_kProcess = new HProcess();
+		m_kProcess = new Process();
 	}
 
 	public void MapRoute(WebApplication WebApp)	// 라우트 등록 (반영 탭)

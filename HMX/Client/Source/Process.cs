@@ -1,6 +1,6 @@
 using StackExchange.Redis;	// Redis 명령 (이 파일·Redis·TabProcess 만, 전역 using 안 함 → 이름 겹침 방지)
 
-static class HProcess	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확인·실행·종료 (Win32 API, OLD HMXProcess 이식, 주기 처리: TabProcess)
+static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확인·실행·종료 (Win32 API, OLD HMXProcess 이식, 주기 처리: TabProcess)
 {
 	private const uint	PROCESS_QUERY_LIMITED_INFORMATION	= 0x00001000;	// 실행 파일 경로 조회 권한
 	private const uint	DETACHED_PROCESS					= 0x00000008;	// 콘솔 없이 독립 실행 (클라 종료와 무관)
@@ -86,11 +86,11 @@ static class HProcess	// 실행 API: 폴더\깃헙\실행파일 실행 여부 �
 			return nPID;
 		}
 
-		Process[] arrProcess;	// 실행파일명이 같은 프로세스
+		System.Diagnostics.Process[] arrProcess;	// 실행파일명이 같은 프로세스
 
 		try
 		{
-			arrProcess = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(GetExeName(arrValue[ProcessValue.EXECUTE])));
+			arrProcess = System.Diagnostics.Process.GetProcessesByName(Path.GetFileNameWithoutExtension(GetExeName(arrValue[ProcessValue.EXECUTE])));
 		}
 		catch (Exception kException)	// 프로세스 목록 조회 실패
 		{
@@ -101,7 +101,7 @@ static class HProcess	// 실행 API: 폴더\깃헙\실행파일 실행 여부 �
 
 		int nFound = 0;	// 전체 경로가 같은 첫 프로세스
 
-		foreach (Process kProcess in arrProcess)
+		foreach (System.Diagnostics.Process kProcess in arrProcess)
 		{
 			if (nFound == 0 && string.Equals(GetImagePath(kProcess.Id), sFullPath, StringComparison.OrdinalIgnoreCase))
 			{
@@ -180,7 +180,7 @@ static class HProcess	// 실행 API: 폴더\깃헙\실행파일 실행 여부 �
 		{
 			try
 			{
-				using Process kProcess = Process.GetProcessById(nPID);
+				using System.Diagnostics.Process kProcess = System.Diagnostics.Process.GetProcessById(nPID);
 
 				kProcess.Kill();
 				kProcess.WaitForExit(m_nKillWaitMs);	// 완전 종료까지 대기
@@ -194,11 +194,11 @@ static class HProcess	// 실행 API: 폴더\깃헙\실행파일 실행 여부 �
 		}
 		else	// Graceful: Ctrl+C → 모듈 정리 후 종료
 		{
-			Process? kProcess = null;	// 종료 완료 대기용
+			System.Diagnostics.Process? kProcess = null;	// 종료 완료 대기용
 
 			try
 			{
-				kProcess = Process.GetProcessById(nPID);
+				kProcess = System.Diagnostics.Process.GetProcessById(nPID);
 			}
 			catch (Exception)	// 그 사이 종료됨
 			{
@@ -521,11 +521,11 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 
 		kInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";	// git 이 인증 입력 대기로 멈추지 않게
 
-		Process? kProcess;
+		System.Diagnostics.Process? kProcess;
 
 		try
 		{
-			kProcess = Process.Start(kInfo);
+			kProcess = System.Diagnostics.Process.Start(kInfo);
 		}
 		catch (Exception kException)	// 실행 실패
 		{
