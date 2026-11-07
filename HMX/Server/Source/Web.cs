@@ -8,11 +8,18 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 	private static int		m_nLinkWait;	// IIS 실행·sUrl 없음: 첫 요청 포트 기다림 (1, Interlocked)
 	private WebApplication?	m_kWebApp;		// 웹 앱
 
+	public static bool	m_bHttps;	// HTTPS 운영 (설정 bHttps + IIS 실행): 로그인 쿠키 Secure·HSTS 헤더·알람 링크 https
+
+	private const string	m_sHsts	= "max-age=31536000";	// HSTS 유지 (초, 1년: 브라우저가 이 주소를 https 로만)
+
 	public Web(int nPort, string sHost)
 	{
-		m_sUrl				= $"http://{sHost}:{nPort}";
+		bool	bIIS	= Environment.GetEnvironmentVariable("HTTP_PLATFORM_PORT") != null;	// IIS 실행 (HttpPlatformHandler)
+
+		m_bHttps			= Config.GetBool("bHttps") && bIIS;	// IIS 만 (콘솔·서비스: Kestrel http 그대로)
+		m_sUrl				= $"http://{sHost}:{nPort}";			// Kestrel: http (IIS: https 받아 http 로 넘김)
 		m_sLinkUrl			= Config.GetString("sUrl") != "" ? Config.GetString("sUrl").TrimEnd('/') : GetLinkUrl(sHost, nPort);
-		m_nLinkWait			= Config.GetString("sUrl") == "" && Environment.GetEnvironmentVariable("HTTP_PLATFORM_PORT") != null ? 1 : 0;	// IIS 실행 (HttpPlatformHandler): 바인딩 포트 = IIS 내부 포트 → 첫 요청 포트 (IIS 사이트 포트) 로 링크, exe 실행: 바인딩 포트 그대로
+		m_nLinkWait			= Config.GetString("sUrl") == "" && bIIS ? 1 : 0;	// IIS 실행 (HttpPlatformHandler): 바인딩 포트 = IIS 내부 포트 → 첫 요청 포트 (IIS 사이트 포트) 로 링크, exe 실행: 바인딩 포트 그대로
 	}
 
 	public async Task StartAsync(CancellationToken kToken)	// 앱 생성 → 미들웨어 → 라우트 → 시작 (비차단)
@@ -36,6 +43,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		WebApp.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor });	// IIS 실행: X-Forwarded-For → 실제 IP (신뢰 프록시: 루프백만 → 헤더 위조 무시)
 
+		UseHsts(WebApp);
 		UseLinkPort(WebApp);
 		UseRequestLog(WebApp);
 
@@ -100,12 +108,29 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 			if (Volatile.Read(ref m_nLinkWait) == 1 && Interlocked.Exchange(ref m_nLinkWait, 0) == 1)	// 첫 요청만
 			{
-				int	nPort	= kContext.Request.Host.Port ?? 80;	// Host 포트 없음: 기본 X
+				int		nDefault	= m_bHttps ? 443 : 80;						// 기본 포트 (https: 443)
+				int		nPort		= kContext.Request.Host.Port ?? nDefault;	// Host 포트 없음: 기본 포트
+				string	sHost		= new Uri(m_sLinkUrl).Host;					// 호스트 (내부 IP) 그대로
 
-				m_sLinkUrl = $"{m_sLinkUrl[..m_sLinkUrl.LastIndexOf(':')]}:{nPort}";	// 호스트 (내부 IP) 그대로, 포트만
+				m_sLinkUrl = $"{(m_bHttps ? "https" : "http")}://{sHost}{(nPort == nDefault ? "" : ":" + nPort)}";	// 포트만 (기본 포트: 생략)
 
 				Log.Write(INFO_, $"알람 링크: {m_sLinkUrl} (IIS 사이트 포트, 첫 요청)");
 			}
+
+			await funcNext(kContext);
+		});
+	}
+
+	private static void UseHsts(WebApplication WebApp)	// HTTPS 운영: 모든 응답 HSTS 헤더 (IIS 가 https → http 로 넘김: UseHsts 의 https 검사 대신 늘)
+	{
+		if (!m_bHttps)
+		{
+			return;
+		}
+
+		WebApp.Use(async (HttpContext kContext, RequestDelegate funcNext) =>
+		{
+			kContext.Response.Headers.StrictTransportSecurity = m_sHsts;
 
 			await funcNext(kContext);
 		});
@@ -172,7 +197,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		bool	bAny		= sHost.ToLowerInvariant() is "localhost" or "127.0.0.1" or "::1" or "[::1]" or "0.0.0.0" or "*" or "+" or "::" or "[::]";	// 루프백·모든 주소
 		string	sLinkHost	= bAny ? GetNicIp(false) : sHost;	// 내부에서 열 주소 (IP 바인딩: 그 IP)
 
-		return $"http://{(sLinkHost != "" ? sLinkHost : sHost)}:{nPort}";
+		return $"{(m_bHttps ? "https" : "http")}://{(sLinkHost != "" ? sLinkHost : sHost)}:{nPort}";
 	}
 
 	private static bool IsPublicIp(IPAddress kIp)	// 공인 IPv4 (사설 10·172.16~31·192.168, 공유 100.64~127, 루프백 127, 자동 사설 169.254, 0·멀티캐스트·예약 224~ 제외)

@@ -12,15 +12,21 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	public const string	API_QUERY		= "쿼리";			// 계정 aAPI 쿼리 권한 (외부 API /api/external/query/키/토큰, 메일 링크 로그인)
 	public const string	API_SEARCH		= "서치";			// 계정 aAPI 서치 권한 (외부 API /api/external/search/키/토큰)
 
-	private const int	m_nAuthDay			= 365;	// 인증 유지 (일, 절반 지나 접속 시 연장)
-	private const int	m_nAccountIDMax		= 50;	// 계정 아이디 최대 글자
-	private const int	m_nAccountPassMax	= 100;	// 계정 비밀번호 최대 글자
-	private const int	m_nAccountMailMax	= 254;	// 계정 메일 최대 글자
-	private const int	m_nAccountPhoneMax	= 20;	// 계정 전화 번호 최대 글자
+	private const int		m_nAuthDay			= 365;		// 인증 유지 (일, 절반 지나 접속 시 연장)
+	private const int		m_nAccountIDMax		= 50;		// 계정 아이디 최대 글자
+	private const int		m_nAccountPassMax	= 100;		// 계정 비밀번호 최대 글자
+	private const int		m_nAccountMailMax	= 254;		// 계정 메일 최대 글자
+	private const int		m_nAccountPhoneMax	= 20;		// 계정 전화 번호 최대 글자
+	private const int		m_nLoginFailMax		= 3;		// 같은 IP 연속 로그인 실패 (닿음: 그동안 시도한 계정 비밀번호 랜덤, 관리 계정 제외)
+	private const int		m_nLoginFailIPMax	= 10000;	// 실패 기억 IP 최대 (넘음: 비움)
+	private const string	m_sRandomPassChar	= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*-_=+";	// 랜덤 비밀번호 글자
 
 	private static readonly object	m_kAccountLock	= new object();	// 계정 추가·수정·삭제 1건씩 (설정 파일 쓰기)
 	private static bool				m_bAuth;						// 로그인 사용 (설정 bAuth, 시작 때)
 	private static readonly object	m_kUnlockLock	= new object();	// 마스터 키 입력 1건씩 (설정 다시 로딩)
+
+	private static readonly object	m_kFailLock	= new object();	// 로그인 실패 기억 1건씩
+	private static readonly Dictionary<string, (int nCount, HashSet<string> setID)>	m_hmapFail	= new Dictionary<string, (int nCount, HashSet<string> setID)>(StringComparer.Ordinal);	// IP → 연속 실패 수·시도한 아이디 (성공: 지움)
 
 	private const int	m_nKeyLength	= 20;	// 계정 키 sKey 글자 수 (외부 API 경로 키, 페이지 ACCOUNT_KEY_LENGTH 와 같음)
 
@@ -59,6 +65,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			kOption.Cookie.HttpOnly		= true;
 			kOption.Cookie.IsEssential	= true;
 			kOption.Cookie.SameSite		= SameSiteMode.Lax;		// 다른 사이트 링크 GET: 전송 (메신저 링크 재로그인 방지), POST: 미전송 (CSRF 완화)
+			kOption.Cookie.SecurePolicy	= Web.m_bHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;	// HTTPS 운영: https 로만 보냄 (IIS 가 http 로 넘겨 요청 기준 안 됨)
 		});
 	}
 
@@ -462,6 +469,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			string	sError	= GetMasterError();	// 줄 번호 (로그만, 응답: LOGIN_ERROR)
 
 			Log.Write(WARN_, sError);
+			CountFail(sAddr, sID);
 
 			await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
 
@@ -473,6 +481,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		if (kAccount == null || kAccount.arrMenu.Length == 0)	// 계정 없음·불일치·접근 메뉴 없음 (비밀번호 로그 미기록)
 		{
 			Log.Write(WARN_, $"로그인 실패: {sID}{(kAccount == null ? "" : " 접근 메뉴 없음")} ({sAddr})");
+			CountFail(sAddr, sID);
 
 			await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
 
@@ -483,9 +492,100 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 		await kContext.SignInAsync(new ClaimsPrincipal(kIdentity));	// 세션 쿠키 (브라우저 종료 시 삭제)
 
+		lock (m_kFailLock)	// 성공: 연속 실패 지움
+		{
+			m_hmapFail.Remove(sAddr);
+		}
+
 		Log.Write(INFO_, $"로그인 성공: {sID} ({sAddr})");
 
 		return Results.Json(new { success = true });
+	}
+
+	private static void CountFail(string sAddr, string sID)	// 로그인 실패 셈 (웹 로그인만, 외부 API 토큰: 아님): 같은 IP 연속 m_nLoginFailMax 번 → 그동안 시도한 계정 비밀번호 랜덤 (마스터 키 전: 셈만)
+	{
+		string[]	arrID;	// 비밀번호 바꿀 아이디
+
+		lock (m_kFailLock)
+		{
+			if (m_hmapFail.Count >= m_nLoginFailIPMax && !m_hmapFail.ContainsKey(sAddr))	// 많은 IP: 비움 (메모리)
+			{
+				m_hmapFail.Clear();
+			}
+
+			if (!m_hmapFail.TryGetValue(sAddr, out (int nCount, HashSet<string> setID) kFail))
+			{
+				kFail = (0, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+			}
+
+			kFail.nCount++;
+
+			if (sID != "")
+			{
+				kFail.setID.Add(sID);
+			}
+
+			if (kFail.nCount < m_nLoginFailMax || GetMasterKey() == "")	// 아직·마스터 키 전 (암호화 못 함): 셈만
+			{
+				m_hmapFail[sAddr] = kFail;
+
+				return;
+			}
+
+			m_hmapFail.Remove(sAddr);	// 처리 뒤 다시 셈
+
+			arrID = kFail.setID.ToArray();
+		}
+
+		RandomPass(sAddr, arrID);
+	}
+
+	private static void RandomPass(string sAddr, string[] arrID)	// 연속 실패 계정 비밀번호 랜덤 (aAccount 만, 관리 계정·없는 아이디: 뺌, 최대 글자, 기존 쿠키·외부 API 토큰: 무효 → 관리 계정이 수정 창에서 새로)
+	{
+		string			sMainID		= Config.GetString("sID");	// 관리 계정 (제외)
+		List<string>	listDone	= new List<string>();		// 바꾼 아이디
+		string			sError		= "";
+
+		lock (m_kAccountLock)
+		{
+			List<IConfigurationSection>	listSection	= Config.GetChildren("aAccount").ToList();
+			JsonArray					kArray		= new JsonArray(listSection.Select(ToNode).ToArray());
+
+			foreach (string sID in arrID)
+			{
+				int	nIndex	= FindSection(listSection, sID);
+
+				if (nIndex < 0 || string.Equals(sID, sMainID, StringComparison.OrdinalIgnoreCase))	// 없는 아이디·관리 계정
+				{
+					continue;
+				}
+
+				string	sCode	= AES.Encrypt(RandomNumberGenerator.GetString(m_sRandomPassChar, m_nAccountPassMax));	// 랜덤 비밀번호 (최대 글자, 아무도 모름)
+
+				kArray[nIndex]!["sCode"]	= sCode;
+				kArray[nIndex]!["sToken"]	= GetToken(listSection[nIndex]["sRand"] ?? "", sCode);	// 외부 API 토큰도 바뀜
+
+				listDone.Add(listSection[nIndex]["sID"] ?? sID);
+			}
+
+			if (listDone.Count > 0)
+			{
+				sError = SetAccounts(kArray);
+			}
+		}
+
+		if (listDone.Count == 0)
+		{
+			Log.Write(WARN_, $"로그인 연속 실패 {m_nLoginFailMax}번: {sAddr} (바꿀 계정 없음: 관리 계정·없는 아이디)");
+		}
+		else if (sError != "")
+		{
+			Log.Write(ERROR, $"로그인 연속 실패 {m_nLoginFailMax}번: {sAddr} → 비밀번호 랜덤 저장 실패: {sError}");
+		}
+		else
+		{
+			Log.Write(WARN_, $"로그인 연속 실패 {m_nLoginFailMax}번: {sAddr} → 비밀번호 랜덤 (관리 계정이 새로 정함): {string.Join("·", listDone)}");
+		}
 	}
 
 	private static bool Unlock(string sID, string sPass, string sKey)	// 마스터 키 입력 (서버 오픈 뒤 첫 접속 1회): 계정 (관리 계정·aAccount) 아이디 일치 + 그 계정 sCode 를 입력 키로 복호화 = 입력 비밀번호 → 마스터 키 메모리 + 설정 다시 로딩 (모든 sCode → sPass 메모리)
