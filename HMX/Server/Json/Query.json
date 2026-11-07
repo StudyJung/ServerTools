@@ -1,0 +1,14 @@
+{
+  "aQuery": [
+    {
+      "sKey": "INFO",
+      "sQuery": "INFO",
+      "nMinute": 10
+    },
+    {
+      "sKey": "ERROR",
+      "sQuery": "ERROR",
+      "nMinute": 10
+    }
+  ]
+}
