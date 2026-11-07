@@ -7,12 +7,13 @@
 		<Features>$(Features);FileBasedProgram</Features>						<!-- Client.cs 의 #!, #: 지시문 허용 (단일 파일 실행과 소스 공유) -->
 		<RunWorkingDirectory>$(MSBuildProjectDirectory)</RunWorkingDirectory>	<!-- 실행 폴더 = Client 폴더 (Json\Client.json 인식) -->
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>							<!-- 윈도우 x64 고정: runtimes 폴더 미생성 (윈도우용 dll 바로 사용), 단일 exe 게시 조건 -->
-		<SelfContained>false</SelfContained>									<!-- 프레임워크 종속 고정 (RuntimeIdentifier 지정 시 게시가 self-contained 로 바뀌어 런타임 전체가 exe 폴더에 복사되는 것 방지) -->
+		<SelfContained>true</SelfContained>									<!-- 런타임 포함: .NET 설치 없이 Client.exe 만으로 실행 (게임 서버 머신 런타임 설치 불필요) -->
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>	<!-- 출력 경로에 win-x64 하위 폴더 안 만듦 -->
-		<GenerateDependencyFile>false</GenerateDependencyFile>					<!-- Client.deps.json 미생성 (exe 폴더의 dll 직접 탐색) -->
 		<OutputPath>obj\$(Configuration)\out\</OutputPath>						<!-- 빌드 중간 출력: dll·runtimeconfig.json 등 단일 exe 재료 (F5 디버깅 실행 위치) -->
 		<PublishDir>bin\$(Configuration)\$(TargetFramework)\</PublishDir>		<!-- exe 폴더 = 게시 출력: Client.exe 단일 파일만 새로 생성 (그 외 파일은 직접 관리: 빌드·리빌드·clean·게시 시 복사·삭제 안 함) -->
-		<PublishSingleFile>true</PublishSingleFile>								<!-- 게시: dll·runtimeconfig.json 을 Client.exe 하나로 합침 -->
+		<PublishSingleFile>true</PublishSingleFile>								<!-- 게시: dll·런타임·runtimeconfig.json 을 Client.exe 하나로 합침 -->
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>	<!-- 런타임 네이티브 dll 도 exe 안에 (exe 옆 파일 없음) -->
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>	<!-- exe 안 묶음 압축 (크기 줄임) -->
 		<CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>	<!-- 게시: pdb 미복사 (빌드 중간 출력은 디버깅용 pdb 유지) -->
 		<ServerGarbageCollection>false</ServerGarbageCollection>				<!-- 워크스테이션 GC: 코어 수만큼 힙을 잡지 않음 (장시간 실행 메모리 절약, Client.cs 의 #:property 와 같음) -->
 	</PropertyGroup>
