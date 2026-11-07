@@ -14,7 +14,20 @@
     <File Path="AI/README.md" />
   </Folder>
   <Folder Name="/HMX/">
+    <File Path="HMX/.gitignore" />
+    <File Path="HMX/HMX.md" />
+    <File Path="HMX/HMX.slnx" />
+    <File Path="HMX/HMX.txt" />
     <Project Path="HMX/Client/Client.csproj" />
     <Project Path="HMX/Server/Server.csproj" />
+  </Folder>
+  <Folder Name="/HMX/Common/">
+    <File Path="HMX/Common/AES.cs" />
+    <File Path="HMX/Common/Common.md" />
+    <File Path="HMX/Common/Config.cs" />
+    <File Path="HMX/Common/Count.cs" />
+    <File Path="HMX/Common/Define.cs" />
+    <File Path="HMX/Common/Global.cs" />
+    <File Path="HMX/Common/Log.cs" />
   </Folder>
 </Solution>

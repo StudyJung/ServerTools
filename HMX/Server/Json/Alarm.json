@@ -8,10 +8,8 @@
       "nCount": 100,
       "nDelay": 0,
       "aMail": [
-        "studyjung77@gmail.com"
       ],
       "aSMS": [
-        "01039500301"
       ],
       "sHook": "",
       "bEnable": true
@@ -24,10 +22,8 @@
       "nCount": 10,
       "nDelay": 0,
       "aMail": [
-        "studyjung77@gmail.com"
       ],
       "aSMS": [
-        "01039500301"
       ],
       "sHook": "",
       "bEnable": true

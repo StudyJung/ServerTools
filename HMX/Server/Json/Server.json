@@ -5,17 +5,17 @@
 
   "bLog": true,
   "bWeb": true,
-  "bAuth": false,
+  "bAuth": true,
   "bTest": false,
 
-  "sID": "nhn",
-  "sCode": "",
+  "sID": "Huns",
+  "sCode": "dNKiFt7UwcaY5wp3KRbj5w==",
 
   "nPort": 801,
 
   "Redis": {
-    "sHost": "더미",
-    "nPort": 0,
+    "sHost": "127.0.0.1",
+    "nPort": 7777,
     "nDB": 0,
     "sUser": "default",
     "sManager": "HMX:Manager:",
