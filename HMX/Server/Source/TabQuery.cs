@@ -4074,6 +4074,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static arrRule		= [];		// 필드 정의 { sKey, sRegex, sValue } (sValue 있음: 고정값)
 		    static sEditRule	= "";		// 필드 추가·수정 창에서 수정할 필드 이름 ("": 추가)
 		    static RULE_KEY_MAX		= 32;	// 필드 이름 최대 글자 (서버와 같음)
+		    static DETAIL_BASE	= ["Type", "Machine", "Folder"];	// 펼친 줄 1줄 기본 필드 순서 (뒤에 File)
 		    static EDIT_KEY_SHOW	= 40;	// 설정 창 줄 제목 표시 글자 (넘음: 앞 X자 + ..., 전체: 툴팁)
 		    static RULE_VALUE_MAX	= 260;	// 필드 고정값 최대 글자 (서버와 같음)
 		    static RULE_REGEX_MAX	= 500;	// 필드 정규식 최대 글자 (서버와 같음)
@@ -6486,35 +6487,41 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        const kLine		= Query.arrLine[nIndex];
 		        const kDetail	= document.createElement("tr");	// 펼친 줄
 		        const kCell		= kDetail.insertCell();
-		        const kField	= document.createElement("div");	// 필드 한 줄 (Machine·Folder·File·Type·추가 필드, 값 없음 뺌)
 		        const kText		= document.createElement("div");	// 원문 그대로 전체 (시간·Type 포함, 줄바꿈)
 		        const sFolder	= kLine.sFolder ?? "";
 		        const sFile		= sFolder !== "" && kLine.sPath.toLowerCase().startsWith(sFolder.toLowerCase() + "\\") ? kLine.sPath.slice(sFolder.length + 1) : kLine.sPath;	// Folder 아래 경로 (Folder 밖: 전체 경로)
-		        const arrItem	= (kLine.arrField ?? []).filter(kItem => kItem.sValue !== "");	// 값 있는 필드
-		        const nFolder	= arrItem.findIndex(kItem => kItem.sName === "Folder");		// File 넣을 자리 (Folder 뒤, 없음: Machine 뒤)
+		        const arrItem	= (kLine.arrField ?? []).filter(kItem => kItem.sValue !== "");	// 값 있는 필드 (기본 필드 → 확장 필드 순)
+		        const arrBase	= [...Query.DETAIL_BASE.map(sName => arrItem.find(kItem => kItem.sName === sName) ?? { sName, sValue: "" }), { sName: "File", sValue: sFile }].filter(kItem => kItem.sValue !== "");	// 1줄: 기본 필드
+		        const arrExtra	= arrItem.filter(kItem => !Query.DETAIL_BASE.includes(kItem.sName));	// 2줄: 확장 필드 (받은 순서)
 
-		        arrItem.splice(nFolder >= 0 ? nFolder + 1 : Math.min(1, arrItem.length), 0, { sName: "File", sValue: sFile });
+		        const funcFieldLine = (arrField) =>	// 필드 한 줄: 이름: 값 (· 구분: CSS, 넘침: 항목 단위 줄바꿈)
+		        {
+		            const kField = document.createElement("div");
+
+		            kField.className = "querymeta queryfield";
+
+		            kField.append(...arrField.map(kItem =>
+		            {
+		                const kSpan = Object.assign(document.createElement("span"), { textContent: `${kItem.sName}: ${kItem.sValue}` });
+
+		                if (kItem.sName !== "File")	// 쿼리 필드 (File 은 필드 아님): Ctrl·Alt+클릭 → 쿼리칸에 필드:값
+		                {
+		                    kSpan.dataset.field = kItem.sName;
+		                    kSpan.dataset.value = kItem.sValue;
+		                }
+
+		                return kSpan;
+		            }));
+
+		            return kField;
+		        };
 
 		        kDetail.className	= "detail";
 		        kCell.colSpan		= kRow.cells.length;	// 펼친 줄: 표 칸 전체
-		        kField.className	= "querymeta queryfield";	// 항목 (이름: 값) 단위로 줄바꿈
-
-		        kField.append(...arrItem.map(kItem =>	// 이름: 값 (· 구분: CSS)
-		        {
-		            const kSpan = Object.assign(document.createElement("span"), { textContent: `${kItem.sName}: ${kItem.sValue}` });
-
-		            if (kItem.sName !== "File")	// 쿼리 필드 (File 은 필드 아님): Ctrl·Alt+클릭 → 쿼리칸에 필드:값
-		            {
-		                kSpan.dataset.field = kItem.sName;
-		                kSpan.dataset.value = kItem.sValue;
-		            }
-
-		            return kSpan;
-		        }));
 		        kText.className		= "querytext";
 		        Query.AppendMark(kText, kLine.sOrigin ?? kLine.sText);	// 원문 그대로 (시간·Type 포함, 쿼리 단어 강조)
 
-		        kCell.append(kField, kText);
+		        kCell.append(...[arrBase, arrExtra].filter(arrField => arrField.length > 0).map(funcFieldLine), kText);	// 기본 필드 → 확장 필드 → 원문
 		        kRow.after(kDetail);
 		        kRow.classList.add("open");
 		    }

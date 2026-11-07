@@ -3427,10 +3427,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    AddCell(kRow, GetFolderText(sFolder), "nowrap").title = sFolder;
 		}
 
-		function AddFileNameCell(kRow, sMachine, sPath, nLine = 0, sKey = "")	// 결과 줄 File 칸 (서치·쿼리 공통, 파일명만 (확장자 없음), Shift+클릭: 다운, Ctrl·Alt+클릭: 파일 보기, nLine 0: 마지막 줄부터, sKey: 강조 검색어)
+		function AddFileNameCell(kRow, sMachine, sPath, nLine = 0, sKey = "")	// 결과 줄 File 칸 (서치·쿼리 공통, 파일명 전체, Shift+클릭: 다운, Ctrl·Alt+클릭: 파일 보기, nLine 0: 마지막 줄부터, sKey: 강조 검색어)
 		{
-		    const sName	= sPath.slice(sPath.lastIndexOf("\\") + 1).replace(/\.[^.]*$/, "");	// 파일명 (확장자 뗌)
-		    const kCell	= AddCell(kRow, sName, "nowrap filename");
+		    const kCell = AddCell(kRow, sPath.slice(sPath.lastIndexOf("\\") + 1), "nowrap filename");	// 파일명 (확장자 포함)
 
 		    kCell.title				= sPath;
 		    kCell.dataset.machine	= sMachine;
