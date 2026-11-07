@@ -3,7 +3,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 	private const int	m_nSearchMax		= 1000000;	// 검색 결과 최대 건수 (서버 nMax 상한)
 	public const int	m_nSearchDefault	= 1000;	// 검색 결과 최대 건수 기본값 (nMax 없음, 서버와 같음)
 	public const int	m_nSearchLimitSec	= 60;		// 검색 최대 시간 기본 (초, 서버 nLimit 없음, 초과 시 그때까지 결과만)
-	private const int	m_nSearchLimitMax	= 3600;		// 검색 최대 시간 상한 (초, 서버 nLimit)
+	private const int	m_nSearchLimitMax	= 600;		// 검색 최대 시간 상한 (초, 서버 nLimit)
 	private const int	m_nSearchConcurrent	= 2;		// 동시 검색 (서버 동시 서치 수와 같음, 게임 서버 부하 제한)
 	private const int	m_nSearchTextMax	= 1000;		// 검색 결과 줄 최대 글자 (초과: "…")
 	private const long	m_nSearchTextTotal	= 300000000;	// 검색 결과 글자 수 합 최대 (초과: 그때까지 결과만, 브라우저 문자열 한도·서버 m_nLineMax 안쪽)

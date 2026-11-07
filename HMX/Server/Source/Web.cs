@@ -372,7 +372,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		.qdown{flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--fgColor-accent);font-size:0;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z'/%3E%3Cpath d='M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06l1.97 1.969Z'/%3E%3C/svg%3E")}.qdown::before{content:""}.qdown:hover:not(:disabled){background:var(--control-transparent-bgColor-hover)}
 		#ResultTable col:not(:last-child),#DumpTable col:not(:nth-last-child(2)){width:1px}#DumpTable tr>:last-child{position:sticky;right:0;background:var(--bgColor-default);box-shadow:inset 1px 0 0 var(--borderColor-default)}#DumpTable tbody tr:hover>:last-child{background:var(--bgColor-muted)}#DumpTable th:last-child{z-index:2;background:var(--bgColor-muted);box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable th,#DumpTable th{white-space:nowrap}#DumpBody tr{cursor:default}td.act{white-space:nowrap}td.act button{height:20px;padding:0 8px;font-size:0.75rem}td.act button+button{margin-left:4px}
 		dialog{top:30%;bottom:auto;margin:0 auto;transform:translateY(-30%);padding:16px;border:0;border-radius:var(--borderRadius-large);background:var(--overlay-bgColor);color:var(--fgColor-default);box-shadow:var(--shadow-floating-small)}dialog::backdrop{background:var(--overlay-backdrop-bgColor)}
-		.setting{display:grid;grid-template-columns:auto 110px auto;align-items:center;gap:8px 12px;margin:16px 0}.setting select{width:100%;min-width:0}.hint{color:var(--fgColor-muted)}#SettingDialog .toolright{justify-content:flex-end}#SettingDialog.query .srow,#SettingDialog:not(.query) .qrow{display:none}#QuerySettingDialog{width:600px}#QuerySettingDialog[open]{display:flex;flex-direction:column}#QueryEditScroll{flex:0 1 600px;min-height:0;max-height:none}#QuerySettingDialog .toolright{justify-content:flex-end}#AlarmHistoryDialog{width:600px}#AlarmHistoryDialog[open]{display:flex;flex-direction:column}#AlarmHistoryScroll{flex:0 1 600px;min-height:0;max-height:none}#AlarmHistoryTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle;white-space:nowrap}#AlarmHistoryTable td.key{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#AlarmHistoryTable td.key:hover{text-decoration:underline}#AlarmHistoryTable td.fail{color:var(--fgColor-danger)}#AlarmHistoryTable td.empty{color:var(--fgColor-muted);text-align:center}#AlarmHistoryDialog .toolright,#AlarmHistoryViewDialog .toolright{justify-content:flex-end}#AlarmHistoryViewDialog{width:600px}#AlarmHistoryViewInfo{margin:4px 0 0}#AlarmHistoryViewBody.link{cursor:pointer}#AlarmHistoryViewBody hr{margin:4px 0;border:0;border-top:1px solid var(--borderColor-default)}#AlarmHistoryViewBody{max-height:60vh;overflow:auto;margin:12px 0 16px;padding:8px;border:1px solid var(--borderColor-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}#DownDialog{min-width:320px;max-width:600px}#AccountDialog{width:600px}#AccountEditDialog{width:480px}#DownDialog .toolright,#AccountDialog .toolright,#AccountEditDialog .toolright{justify-content:flex-end}#AccountTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle}#AccountTable td:first-child{white-space:nowrap}#AccountTable td.menu{width:100%;color:var(--fgColor-muted)}#AccountTable td.act{width:1px;color:var(--fgColor-muted)}#AccountEditDialog .setting{grid-template-columns:max-content minmax(0,1fr)}#AccountEditDialog .setting input:not([type="checkbox"]){width:100%}#AccountEditMenu,#AccountEditApi{display:flex;flex-wrap:wrap;gap:4px 12px;line-height:28px}#AccountEditMenu label,#AccountEditApi label{display:inline-flex;align-items:center;gap:4px}#AccountEditMenu input,#AccountEditApi input{margin:0}#AccountEditDialog.delete .editrow{display:none}#AccountEditDialog:not(.edit) .keyrow{display:none}#AccountEditDialog .keybox{display:flex;align-items:center;justify-content:space-between;gap:8px;line-height:28px}#AccountEditKey,#AccountEditToken{font-family:var(--fontStack-monospace);word-break:break-all;line-height:28px}#AccountEditKey.pending{color:var(--fgColor-accent);font-weight:600}#AccountEditDialog .adminbox{display:flex;align-items:center;gap:8px}#AccountEditDialog .adminbox input{flex:1;min-width:0}#DownName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DownPath{margin:0 0 16px;word-break:break-all}#DeleteDialog{min-width:320px;max-width:600px}#DeleteDialog .toolright{justify-content:flex-end}#DeleteText{margin:12px 0 16px;color:var(--fgColor-default);word-break:break-all}#DeleteName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DeleteName:empty{display:none}#DeleteName:not(:empty)+#DeleteText{margin-top:0}#HelpDialog{box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px)}#HelpScroll{overflow-y:auto;margin-bottom:12px}#HelpTable{width:100%;margin-bottom:0;border-collapse:collapse;font-size:0.875rem}#HelpTable tbody th{position:static}#HelpTable td:first-child{font-weight:600;white-space:nowrap}#HelpTable tr.group th{text-align:left}#HelpTabs{margin-bottom:8px}#HelpTabs button.cur,#HelpTabs button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#HelpTable[data-help="common"] tr:not([data-help="common"]),#HelpTable[data-help="rule"] tr:not([data-help="rule"]),#HelpTable[data-help="query"] tr:not([data-help="query"]),#HelpTable[data-help="search"] tr:not([data-help="search"]),#HelpTable[data-help="manager"] tr:not([data-help="manager"]),#HelpTable[data-help="process"] tr:not([data-help="process"]){display:none}#HelpTable tr.sep td{border-top:2px solid var(--borderColor-default)}#HelpDialog .toolright{justify-content:flex-end}
+		.setting{display:grid;grid-template-columns:auto 110px auto;align-items:center;gap:8px 12px;margin:16px 0}.setting select{width:100%;min-width:0}.hint{color:var(--fgColor-muted)}#SettingDialog .toolright{justify-content:flex-end}#SettingDialog.query .srow,#SettingDialog:not(.query) .qrow{display:none}#QuerySettingDialog{width:600px}#QuerySettingDialog[open]{display:flex;flex-direction:column}#QueryEditScroll{flex:0 1 600px;min-height:0;max-height:none}#QuerySettingDialog .toolright{justify-content:flex-end}#AlarmHistoryDialog{width:600px}#AlarmHistoryDialog[open]{display:flex;flex-direction:column}#AlarmHistoryScroll{flex:0 1 600px;min-height:0;max-height:none}#AlarmHistoryTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle;white-space:nowrap}#AlarmHistoryTable td.key{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#AlarmHistoryTable td.key:hover{text-decoration:underline}#AlarmHistoryTable td.fail{color:var(--fgColor-danger)}#AlarmHistoryTable td.empty{color:var(--fgColor-muted);text-align:center}#AlarmHistoryDialog .toolright,#AlarmHistoryViewDialog .toolright{justify-content:flex-end}#AlarmHistoryViewDialog{width:600px}#AlarmHistoryViewInfo{margin:4px 0 0}#AlarmHistoryViewBody.link{cursor:pointer}#AlarmHistoryViewBody hr{margin:4px 0;border:0;border-top:1px solid var(--borderColor-default)}#AlarmHistoryViewBody{max-height:60vh;overflow:auto;margin:12px 0 16px;padding:8px;border:1px solid var(--borderColor-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}#DownDialog{min-width:320px;max-width:600px}#AccountDialog{width:300px}#AccountEditDialog{width:480px}#DownDialog .toolright,#AccountDialog .toolright,#AccountEditDialog .toolright{justify-content:flex-end}#AccountTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle}#AccountDialog .savedlist{max-height:70vh}#AccountPager{margin-bottom:12px}#AccountTable td:first-child{width:100%}#AccountTable .menu{color:var(--fgColor-muted);font-size:0.75rem;line-height:1.4}#AccountTable td.act{width:1px;color:var(--fgColor-muted);white-space:nowrap}#AccountEditDialog .setting{grid-template-columns:max-content minmax(0,1fr)}#AccountEditDialog .setting input:not([type="checkbox"]){width:100%}#AccountEditMenu,#AccountEditApi{display:flex;flex-wrap:wrap;gap:4px 12px;line-height:28px}#AccountEditMenu label,#AccountEditApi label{display:inline-flex;align-items:center;gap:4px}#AccountEditMenu input,#AccountEditApi input{margin:0}#AccountEditDialog.delete .editrow{display:none}#AccountEditDialog:not(.edit) .keyrow{display:none}#AccountEditDialog .keybox{display:flex;align-items:center;justify-content:space-between;gap:8px;line-height:28px}#AccountEditKey,#AccountEditToken{font-family:var(--fontStack-monospace);word-break:break-all;line-height:28px}#AccountEditKey.pending{color:var(--fgColor-accent);font-weight:600}#AccountEditDialog .adminbox{display:flex;align-items:center;gap:8px}#AccountEditDialog .adminbox input{flex:1;min-width:0}#DownName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DownPath{margin:0 0 16px;word-break:break-all}#DeleteDialog{min-width:320px;max-width:600px}#DeleteDialog .toolright{justify-content:flex-end}#DeleteText{margin:12px 0 16px;color:var(--fgColor-default);word-break:break-all}#DeleteName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DeleteName:empty{display:none}#DeleteName:not(:empty)+#DeleteText{margin-top:0}#HelpDialog{box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px)}#HelpScroll{overflow-y:auto;margin-bottom:12px}#HelpTable{width:100%;margin-bottom:0;border-collapse:collapse;font-size:0.875rem}#HelpTable tbody th{position:static}#HelpTable td:first-child{font-weight:600;white-space:nowrap}#HelpTable tr.group th{text-align:left}#HelpTabs{margin-bottom:8px}#HelpTabs button.cur,#HelpTabs button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#HelpTable[data-help="common"] tr:not([data-help="common"]),#HelpTable[data-help="rule"] tr:not([data-help="rule"]),#HelpTable[data-help="query"] tr:not([data-help="query"]),#HelpTable[data-help="search"] tr:not([data-help="search"]),#HelpTable[data-help="manager"] tr:not([data-help="manager"]),#HelpTable[data-help="process"] tr:not([data-help="process"]){display:none}#HelpTable tr.sep td{border-top:2px solid var(--borderColor-default)}#HelpDialog .toolright{justify-content:flex-end}
 		tbody tr{cursor:pointer}tbody tr:hover{background:var(--bgColor-muted)}tbody tr.sel{background:var(--bgColor-accent-muted)}mark{background:var(--highlight-neutral-bgColor);color:inherit;padding:0}
 		[hidden]{display:none!important}.resulthead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.toolright{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-left:auto}.pager{display:flex;flex-wrap:wrap;align-items:center;gap:4px}.pager button{min-width:28px;padding:0 8px;border-color:transparent;background:transparent;box-shadow:none;color:var(--fgColor-default);font-weight:400}.pager button:hover:not(:disabled){border-color:var(--borderColor-default);background:transparent}
 		.pager button.cur,.pager button.cur:hover:not(:disabled){border-color:transparent;background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}
@@ -738,6 +738,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="title">계정</div>
 		<p id="AccountText" hidden></p>
 		<div class="savedlist"><table id="AccountTable"><tbody id="AccountList"></tbody></table></div>
+		<div class="pager" id="AccountPager" hidden></div>
 		<div class="toolright">
 		<button type="button" id="AccountAdd" title="계정 추가 (관리 계정, 관리 비밀번호)" hidden>추가</button>
 		<button type="button" id="AccountClose" autofocus>닫기</button>
@@ -1206,7 +1207,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const RESULT_DEFAULT	    = 10000;	// 전체 최대 건수 기본값 (모든 머신 합)
 		const LIMIT_KEY		        = "HMX.Limit";	// 설정 localStorage 키 (서치·쿼리)
 		const LIMIT_SEC_DEFAULT	    = 60;		// 서치·쿼리 제한 시간 기본값 (초, 서버 m_nSearchLimitSec·m_nQueryLimitSec 와 같음)
-		const LIMIT_SEC_MAX	        = 3600;		// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
+		const LIMIT_SEC_MAX	        = 600;		// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
 		let nMachineMax		        = MACHINE_DEFAULT;	// 머신당 최대 건수 (설정)
 		let nResultMax		        = RESULT_DEFAULT;	// 전체 최대 건수 (설정, 넘음: 이후 머신 검색 안 함)
 		let nSearchLimitSec	        = LIMIT_SEC_DEFAULT;	// 서치 제한 시간 (설정, 초, /api/search nLimit → 클라 마감)
@@ -2898,7 +2899,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		let sAccountLogin	= "";		// 지금 로그인 아이디 (목록 강조)
 		let arrAccountTab	= [];		// 계정 메뉴 고를 탭 (모든 탭)
 		let arrAccountApi	= [];		// 계정 외부 API 고를 권한 (aAPI: 쿼리·서치·로그)
-		let arrAccountList	= [];		// 계정 목록 { sID, aMenu, bMain }
+		let arrAccountList	= [];		// 계정 목록 { sID, aMenu, aAPI, bMain } (정렬 뒤 전체, 줄 dataset.index = 이 위치)
+		const ACCOUNT_PAGE	= 20;		// 계정 팝업 한 페이지 계정 수
+		let nAccountPage	= 0;		// 계정 팝업 지금 페이지 (0부터, 열 때 0)
 		let kAccountEdit	= null;		// 수정·삭제할 계정 (추가: null)
 		let sAccountNewKey	= "";		// 수정 창 새 키 (적용 전, 없음: "")
 		const ACCOUNT_KEY_LENGTH	= 20;		// 계정 키 글자 수 (서버 Auth.m_nKeyLength 와 같음)
@@ -2914,6 +2917,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kText.hidden		= true;
 		    kAdd.hidden			= true;
 		    bAccountAdmin		= false;
+		    nAccountPage		= 0;
 
 		    ShowAccountList([]);
 
@@ -2938,24 +2942,52 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		}
 
-		function ShowAccountList(arrAccount)	// 계정 목록 그리기 (관리 계정 맨 위 + 아이디 오름차순, 아이디 | 메뉴 (설정 aMenu 없음: 전체) | 수정·삭제 (관리 계정 로그인만), 관리 계정 줄: "관리", 지금 로그인: 강조)
+		function ShowAccountList(arrAccount, nPage = nAccountPage)	// 계정 목록 그리기 (관리 계정 맨 위 + 아이디 오름차순, ACCOUNT_PAGE 개씩 페이지 (번호 버튼, 1쪽: 숨김), 1칸 3줄: 아이디 / 메뉴 (설정 aMenu 없음: 전체) / 외부 (aAPI, 없음: 없음) | 수정·삭제 (관리 계정 로그인만), 관리 계정 줄: "관리", 지금 로그인: 강조)
 		{
 		    arrAccountList = [...arrAccount].sort((kLeft, kRight) => Number(kRight.bMain) - Number(kLeft.bMain) || kLeft.sID.localeCompare(kRight.sID, undefined, { numeric: true }));	// 관리 계정 먼저, 그다음 오름차순
 		    arrAccount = arrAccountList;
 
-		    const arrRow = arrAccount.map((kAccount, nIndex) =>
+		    const nPageCount	= Math.max(1, Math.ceil(arrAccount.length / ACCOUNT_PAGE));	// 전체 페이지 수
+		    const kPager		= document.getElementById("AccountPager");
+
+		    nAccountPage = Math.min(Math.max(0, nPage), nPageCount - 1);	// 범위 밖 (삭제로 줄어듦): 끝 페이지
+
+		    kPager.replaceChildren(...Array.from({ length: nPageCount }, (_, nIndex) =>
 		    {
+		        const kButton = document.createElement("button");
+
+		        kButton.type		= "button";
+		        kButton.textContent	= String(nIndex + 1);
+		        kButton.className	= nIndex === nAccountPage ? "cur" : "";
+		        kButton.title		= `${nIndex * ACCOUNT_PAGE + 1} ~ ${Math.min(arrAccount.length, (nIndex + 1) * ACCOUNT_PAGE)}`;
+
+		        kButton.addEventListener("click", () => ShowAccountList(arrAccountList, nIndex));
+
+		        return kButton;
+		    }));
+
+		    kPager.hidden = nPageCount <= 1;
+
+		    const nFrom		= nAccountPage * ACCOUNT_PAGE;	// 이 페이지 첫 계정 위치
+		    const arrRow	= arrAccount.slice(nFrom, nFrom + ACCOUNT_PAGE).map((kAccount, nOffset) =>
+		    {
+		        const nIndex = nFrom + nOffset;	// 전체 목록 위치
 		        const kRow	= document.createElement("tr");
-		        const kID	= kRow.insertCell();	// 아이디
-		        const kMenu	= kRow.insertCell();	// 메뉴
-		        const kAct	= kRow.insertCell();	// 수정·삭제
+		        const kID	= kRow.insertCell();				// 1줄 아이디, 2줄 메뉴, 3줄 외부
+		        const kAct	= kRow.insertCell();				// 수정·삭제
+		        const kMenu	= document.createElement("div");	// 메뉴 (탭, 없음: 전체)
+		        const kApi	= document.createElement("div");	// 외부 API 권한 (없음: 없음)
 
 		        kRow.dataset.index	= String(nIndex);	// 목록 위치
 		        kRow.className		= kAccount.sID === sAccountLogin ? "sel" : "";
 		        kID.textContent		= kAccount.sID;
 		        kMenu.className		= "menu";
-		        kMenu.textContent	= kAccount.aMenu.length === 0 ? "전체" : kAccount.aMenu.join(" · ");
+		        kMenu.textContent	= `메뉴 ${kAccount.aMenu.length === 0 ? "전체" : kAccount.aMenu.join(" · ")}`;
+		        kApi.className		= "menu";
+		        kApi.textContent	= `외부 ${kAccount.aAPI.length === 0 ? "없음" : kAccount.aAPI.join(" · ")}`;
 		        kAct.className		= "act";
+
+		        kID.append(kMenu, kApi);
 
 		        if (kAccount.bMain)	// 관리 계정: 설정 파일에서만
 		        {
@@ -3881,10 +3913,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		document.getElementById("SettingSave").addEventListener("click", SaveSetting);
 		document.getElementById("SettingCancel").addEventListener("click", () => kSettingDialog.close());
 		document.getElementById("QuerySettingCancel").addEventListener("click", () => kQuerySettingDialog.close());
-		document.getElementById("MachineMaxHint").textContent	= `개 (1 ~ ${MACHINE_LIMIT.toLocaleString()}, 기본 ${MACHINE_DEFAULT.toLocaleString()})`;
-		document.getElementById("ResultMaxHint").textContent	= `개 (1 ~ ${RESULT_LIMIT.toLocaleString()}, 기본 ${RESULT_DEFAULT.toLocaleString()})`;
-		document.getElementById("SearchLimitHint").textContent	= `초 (1 ~ ${LIMIT_SEC_MAX.toLocaleString()}, 기본 ${LIMIT_SEC_DEFAULT}, 넘으면 그때까지 결과만)`;
-		document.getElementById("QueryLimitHint").textContent	= `초 (1 ~ ${LIMIT_SEC_MAX.toLocaleString()}, 기본 ${LIMIT_SEC_DEFAULT}, 넘으면 오류)`;
+		document.getElementById("MachineMaxHint").textContent	= `개 (1 ~ ${MACHINE_LIMIT.toLocaleString()})`;
+		document.getElementById("ResultMaxHint").textContent	= `개 (1 ~ ${RESULT_LIMIT.toLocaleString()})`;
+		document.getElementById("SearchLimitHint").textContent	= `초 (1 ~ ${LIMIT_SEC_MAX.toLocaleString()})`;
+		document.getElementById("QueryLimitHint").textContent	= `초 (1 ~ ${LIMIT_SEC_MAX.toLocaleString()})`;
 		kMachineMaxInput.max	= MACHINE_LIMIT;
 		kResultMaxInput.max		= RESULT_LIMIT;
 		kSearchLimitInput.max	= LIMIT_SEC_MAX;

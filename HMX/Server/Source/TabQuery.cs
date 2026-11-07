@@ -11,7 +11,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	private const int						m_nCacheMax			= 16;				// 쿼리 결과 보관 수 (여러 사용자·창, 넘으면 가장 오래된 것부터 뺌)
 	private const long						m_nCacheHitMax		= 8000000;			// 쿼리 결과 보관분 맞는 줄 (줄당 8바이트) 합 최대 (넘음: 오래된 것부터 뺌 → 큰 쿼리 여러 개 메모리 점유 방지)
 	private const int						m_nQueryLimitSec	= 60;				// 쿼리 제한 시간 기본 (초, 요청 nLimit 없음, 페이지 설정 기본과 같음)
-	private const int						m_nQueryLimitMax	= 3600;				// 쿼리 제한 시간 최대 (초)
+	private const int						m_nQueryLimitMax	= 600;				// 쿼리 제한 시간 최대 (초)
 	private const int						m_nQueryConcurrent	= 2;				// 동시 쿼리 (전체, 통계·렌즈 포함, 세션마다 1건)
 	private static readonly int				m_nQueryParallel	= Math.Max(1, Environment.ProcessorCount / 2);	// 시간 폴더 병렬 수 (코어 절반: 적재·수신 여유)
 	private static readonly Gate			m_kGate				= new Gate(m_nQueryConcurrent);	// 쿼리·통계·렌즈 자리 (세션 1건 → 전체)
