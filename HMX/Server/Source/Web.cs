@@ -43,6 +43,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		WebApp.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor });	// IIS 실행: X-Forwarded-For → 실제 IP (신뢰 프록시: 루프백만 → 헤더 위조 무시)
 
+		UseIPList(WebApp);
 		UseHsts(WebApp);
 		UseLinkPort(WebApp);
 		UseRequestLog(WebApp);
@@ -115,6 +116,30 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 				m_sLinkUrl = $"{(m_bHttps ? "https" : "http")}://{sHost}{(nPort == nDefault ? "" : ":" + nPort)}";	// 포트만 (기본 포트: 생략)
 
 				Log.Write(INFO_, $"알람 링크: {m_sLinkUrl} (IIS 사이트 포트, 첫 요청)");
+			}
+
+			await funcNext(kContext);
+		});
+	}
+
+	private static void UseIPList(WebApplication WebApp)	// 접속 IP 막기 (모든 웹 요청 맨 앞, IPList: IP.json 블랙·화이트리스트) → 막음: 403 (로그: 같은 IP 1분에 1번, 외부 API 토큰 ****)
+	{
+		IPList.Check();	// 시작 로그: 목록 수
+
+		WebApp.Use(async (HttpContext kContext, RequestDelegate funcNext) =>
+		{
+			string	sAddr	= GetAddr(kContext);
+
+			if (!IPList.IsAllow(sAddr))
+			{
+				IPList.LogBlock(sAddr, Auth.GetLogPath(kContext));
+
+				kContext.Response.StatusCode	= StatusCodes.Status403Forbidden;
+				kContext.Response.ContentType	= "text/plain; charset=utf-8";
+
+				await kContext.Response.WriteAsync("Access Denied");
+
+				return;
 			}
 
 			await funcNext(kContext);

@@ -20,6 +20,7 @@
 #:include TCPServer.cs
 #:include Gate.cs
 #:include SavedList.cs
+#:include IPList.cs
 #:include TabSearch.cs
 #:include TabDump.cs
 #:include TabFile.cs
