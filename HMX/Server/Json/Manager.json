@@ -1,0 +1,10 @@
+{
+  "Manager": {
+    "nTimeout": 30000,
+    "sCode": "",
+    "ServerList": {
+      "Dev": [
+      ]
+    }
+  }
+}
