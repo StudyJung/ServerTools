@@ -246,7 +246,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 				sTitle		= sTitle,
 				sText		= sText,
 				sLink		= sLink,
-				sApiLink	= Web.GetApiQueryLink(kAlarm.sQuery, kStart, kEnd, sPath),	// 메일: 받는 계정 키/토큰, 훅: 관리 계정 키/토큰 외부 API 쿼리 주소 (키 없음: "" → sLink)
+				sApiLink	= Web.GetApiQueryLink(kAlarm.sQuery, kStart, kEnd, sPath),	// 메일: 받는 계정 키/토큰 외부 API 쿼리 주소 (키 없음: "" → sLink), 훅: 없음 (링크 안 보냄)
 			};
 		}
 	}
@@ -274,7 +274,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 			nCount		= kAlarm.nCount,
 			sText		= GetMailText(kAlarm.sQuery, kStart, kEnd, kAlarm.nCount, sLine, sField),
 			sLink		= sLink,
-			sApiLink	= Web.GetApiQueryLink(kAlarm.sQuery, kStart, kEnd, kChannel.sPath),	// 메일: 받는 계정 키/토큰, 훅: 관리 계정 키/토큰 외부 API 쿼리 주소 (키 없음: "" → sLink)
+			sApiLink	= Web.GetApiQueryLink(kAlarm.sQuery, kStart, kEnd, kChannel.sPath),	// 메일: 받는 계정 키/토큰 외부 API 쿼리 주소 (키 없음: "" → sLink), 훅: 없음 (링크 안 보냄)
 		});
 	}
 
@@ -344,7 +344,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 		if (kAlarm.sHook != "")
 		{
-			listChannel.Add(("Hook", new[] { kAlarm.sHook }, Auth.GetMainPath()));
+			listChannel.Add(("Hook", new[] { kAlarm.sHook }, ""));	// 훅: 링크 없음 (키·토큰 안 만듦)
 		}
 
 		return listChannel.ToArray();

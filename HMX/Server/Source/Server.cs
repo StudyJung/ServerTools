@@ -21,6 +21,7 @@
 #:include Gate.cs
 #:include SavedList.cs
 #:include IPList.cs
+#:include ConfigCheck.cs
 #:include TabSearch.cs
 #:include TabDump.cs
 #:include TabFile.cs
@@ -235,9 +236,11 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 		SetMasterKey("");	// 마스터 키 비움: 로그인 사용 → 서버 오픈 뒤 첫 접속 1회 입력 (그 전: sCode 복호화·Redis 연결·메일 인증 안 함)
 
-		if (!Config.Load())	// 설정 파일 로딩 (형식 오류: 종료)
+		List<string>	listConfigError	= new List<string>();	// Json 폴더 설정 오류 (파일·필드·이유)
+
+		if (!ConfigCheck.CheckSyntax(listConfigError) || !Config.Load())	// 맨 앞: Json 폴더 모든 json 형식 → 설정 로딩 (오류: 로그 → 종료)
 		{
-			return 1;
+			return ConfigCheck.Fail(listConfigError);
 		}
 
 		if (!Config.GetBool("bWeb") || !Config.GetBool("bAuth"))	// 로그인 안 씀: 입력할 곳 없음 → 마스터 키 = 솔루션명
@@ -248,6 +251,11 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			{
 				return 1;
 			}
+		}
+
+		if (!ConfigCheck.CheckValue(listConfigError))	// 모든 json 값 (로딩 뒤: 계정·탭 서로 참조, 오류: 파일·필드·이유 로그 → 종료)
+		{
+			return ConfigCheck.Fail(listConfigError);
 		}
 
 		string	sArg	= args.Length > 0 ? args[0].ToLowerInvariant() : "";	// 1번 인자: 서비스 명령 (-install·-uninstall·-start·-stop, 그 외: 포트)

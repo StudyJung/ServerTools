@@ -57,7 +57,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 	public static readonly (string sKey, string sFile)[]	m_arrConfigSplit	= Array.Empty<(string, string)>();	// 따로 관리 설정 (없음, 공통 Config)
 
 	private const int	m_nViewWaitSec		= 10;	// 보기 동시 처리 초과 시 대기 (초, 초과: 거절)
-	private const int	m_nViewConcurrent	= 2;	// 보기 동시 처리 수
+	private const int	m_nViewConcurrent	= 16;	// 보기 동시 처리 안전 상한 (서버: 세션마다 1건씩 동시 → 사용자 수보다 넉넉히, 넘음: 대기 후 거절)
 
 	private const string	m_sServiceName			= "HMXClient";	// 서비스 이름 (표시 이름 같음, -install·-uninstall·-start·-stop)
 	private const string	m_sServiceDescription	= "로그 감시·바이너리 배포 및 온오프 관리";	// 서비스 설명
@@ -375,7 +375,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 			await TabQuery.m_kLogReady.Task.WaitAsync(kStop);
 
-			Log.Write(INFO_, $"서치 시작: 서치 대상 폴더 {TabSearch.m_arrLogFolder.Length}개 (날짜 폴더 *_yyyyMMdd_HH.log, 기본 {TabSearch.m_nSearchDefault:N0}건·최대 {TabSearch.m_nSearchLimitSec}초)");
+			Log.Write(INFO_, $"서치 시작: 서치 대상 폴더 {TabSearch.m_arrLogFolder.Length}개 (날짜 폴더 *_yyyyMMdd_HH.log, 기본 {TabSearch.m_nSearchDefault:N0}건·기본 {TabSearch.m_nSearchLimitSec}초)");
 
 			listLoop.Add(TabDump.WatchLoop(kStop));	// 덤프 (준비 끝: m_kDumpReady)
 

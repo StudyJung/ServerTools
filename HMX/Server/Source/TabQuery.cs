@@ -11,12 +11,12 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	private const int	m_nCacheSec			= 60;		// 쿼리 결과 보관 (초, 같은 쿼리·기간 페이지 넘김은 다시 계산 안 함)
 	private const int	m_nCacheMax			= 16;		// 쿼리 결과 보관 수 (여러 사용자·창, 넘으면 가장 오래된 것부터 뺌)
 	private const long	m_nCacheHitMax		= 8000000;	// 쿼리 결과 보관분 맞는 줄 (줄당 8바이트) 합 최대 (넘음: 오래된 것부터 뺌 → 큰 쿼리 여러 개 메모리 점유 방지)
-	private const int	m_nQueryLimitSec	= 60;		// 쿼리 제한 시간 기본 (초, 요청 nLimit 없음, 페이지 설정 기본과 같음)
-	private const int	m_nQueryLimitMax	= 600;		// 쿼리 제한 시간 최대 (초)
-	private const int	m_nQueryConcurrent	= 2;		// 동시 쿼리 (전체, 통계·렌즈 포함, 세션마다 1건)
+	private const int	m_nQueryLimitSec	= 30;		// 쿼리 제한 시간 기본 (초, 요청 nLimit 없음, 페이지 설정 기본과 같음)
+	private const int	m_nQueryLimitMax	= 100;		// 쿼리 제한 시간 최대 (초)
+	private const int	m_nQueryConcurrent	= 0;		// 동시 쿼리 전체 제한 (0: 없음 → 세션마다 1건씩 동시, 통계·렌즈 포함)
 
 	private static readonly int		m_nQueryParallel	= Math.Max(1, Environment.ProcessorCount / 2);	// 시간 폴더 병렬 수 (코어 절반: 적재·수신 여유)
-	private static readonly Gate	m_kGate				= new Gate(m_nQueryConcurrent);					// 쿼리·통계·렌즈 자리 (세션 1건 → 전체)
+	private static readonly Gate	m_kGate				= new Gate(m_nQueryConcurrent);					// 쿼리·통계·렌즈 자리 (세션마다 1건)
 
 	private const int	m_nQueryDayMax		= 1096;			// 쿼리·통계 기간 최대 (일, 3년, 시간 수만큼 배열·폴더 확인 → 잘못된 요청 하나의 서버 점유 방지, 페이지 QUERY_DAY_MAX 와 같음)
 	private const int	m_nHitKeepHour		= 2;			// 기간 X시간 이하: 맞는 줄 결과에 보관 (분별 건수·페이지 다시 안 읽음, 긴 기간: 페이지 때 그 시간만 다시 읽음)
@@ -396,6 +396,12 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		string[]	arrMachine	= m_hmapMachine.Values.Order(StringComparer.OrdinalIgnoreCase).ToArray();	// 색인된 머신 (대소문자 무시 중복 뺌)
 
 		return Results.Json(new { arrMachine });
+	}
+
+	public static void CheckConfig(IConfiguration kFile, List<string> listError)	// 시작 검사 (ConfigCheck): 파일의 aField·aAlarm 값 (읽기와 같은 검사: CheckFieldRule·CheckAlarm)
+	{
+		LoadFieldRule(kFile.GetSection("aField").GetChildren(), listError);
+		LoadAlarm(kFile.GetSection("aAlarm").GetChildren(), listError);
 	}
 
 	private static FieldRule[] LoadFieldRule(IEnumerable<IConfigurationSection>? listSection = null, List<string>? listWarn = null)	// 설정 aField → 줄 추가 필드 정의 (키: 형식·m_nFieldKeyMax 자 이하·기본 필드·중복 (대소문자 무시) 아님·최대 m_nLineFieldMax 개, sValue 있음: m_nFieldValueMax 자 이하 (정규식 안 씀), 없음: 정규식 m_nFieldRegexMax 자 이하·형식 맞음, 오류: 오류 글 후 뺌, listSection 없음: 메모리 설정 (시작: 정의 출력), listWarn: 오류 글 모음 (없음: 바로 출력))
@@ -4118,6 +4124,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static	arrAlarmHistory		= [];								// 알람 기록 창 줄 (최신 순, 제목 클릭: 내용)
 		    static	sAlarmHistoryLink	= "";								// 알람 기록 내용 창 쿼리 링크 (내용 클릭: 그 기간·쿼리, 없음: "")
 		    static	kStatAbort			= null;								// 통계 요청 중단 (중단 버튼·다음 통계, null: 통계 중 아님)
+		    static	kLensAbort			= null;								// 렌즈 요청 중단 (실행: 계산 중 렌즈 끊음 → 서버도 멈춤·계정 자리 비움, null: 렌즈 중 아님)
 		    static	RANGE_PAD			= 1;								// D 기간 여유 (초, E: 기준 + X초 → 지금 초 줄 포함, S: E - D (같은 초), 서치·쿼리 공통)
 		    static	RESET_WAIT_MS		= 50;								// 리셋: 쿼리·서치 끝 확인 간격 (ms)
 		    static	RESET_STOP_MS		= 1000;								// 리셋: 서치 중지 다시 요청 간격 (ms, 막 시작한 검색: 중지 안 됨 → 다시)
@@ -4168,6 +4175,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        const	kFrom	= Query.GetPicker(kStart, kStartHour, kStartMinute);	// 시작 (포함)
 		        const	kTo		= Query.GetPicker(kEnd, kEndHour, kEndMinute);			// 끝 (미포함)
 
+		        Query.kLensAbort?.abort();	// 계산 중 렌즈 끊음 (서버 계산도 멈춤 → 새 쿼리 바로)
 		        Query.Query(sKey, kFrom, kTo, true, true);	// 최초 단계부터 새로
 		    }
 
@@ -6188,10 +6196,13 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        Query.ShowLens();
 
 		        const	nPopup	= setTimeout(() => { kQueryProgress.hidden = false; }, PROGRESS_DELAY_MS);	// 팝업: X초 이상 걸릴 때만
+		        const	kAbort	= new AbortController();	// 중단 (실행 누름)
+
+		        Query.kLensAbort = kAbort;
 
 		        try
 		        {
-		            const	kResponse	= await fetch("/api/query/lens?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nSec: nLevel === 0 ? "1" : "60", nLimit: String(nQueryLimitSec) }));
+		            const	kResponse	= await fetch("/api/query/lens?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nSec: nLevel === 0 ? "1" : "60", nLimit: String(nQueryLimitSec) }), { signal: kAbort.signal });
 
 		            if (!kResponse.ok)
 		            {
@@ -6214,9 +6225,9 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		            return true;
 		        }
-		        catch (kError)	// 요청 실패·서버 오류 (막대는 그대로)
+		        catch (kError)	// 요청 실패·서버 오류·중단 (막대는 그대로)
 		        {
-		            if (kData === Query.kChartData && !Query.bQuerying)
+		            if (kError.name !== "AbortError" && kData === Query.kChartData && !Query.bQuerying)	// 중단 (실행): 실패 글 안 씀
 		            {
 		                kQueryTitle.textContent = `${Query.FormatSpan(Query.nStart, Query.nEnd)} - ${sName} 실패: ${ErrorText(kError)}`;
 		            }
@@ -6225,6 +6236,11 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        }
 		        finally
 		        {
+		            if (Query.kLensAbort === kAbort)
+		            {
+		                Query.kLensAbort = null;
+		            }
+
 		            Query.bLensLoading = false;
 
 		            clearTimeout(nPopup);

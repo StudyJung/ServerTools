@@ -1,4 +1,4 @@
-class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 블랙리스트 aBlacklist 맞음 → 막음 (우선), 화이트리스트 aWhitelist 있음 → 맞는 IP 만, 비었음·파일 없음: 모두 허용, 칸 범위 '*' (예: 192.168.*.*, *.*.*.*), 파일 바뀜: 재시작 없이 반영
+class IPList	// 접속 IP 목록 (Json/IP.json): aWhiteTCP = 클라 TCP 접속 허용 IP (있는 IP 만, 비었음·파일 없음: 모두 거절), aBlackWeb = 웹 막을 IP (모든 웹 요청 맨 앞), 서로 따로, 칸 범위 '*' (예: 192.168.*.*, *.*.*.*), 파일 바뀜: 재시작 없이 반영 (TCP: 새 접속부터)
 {
 	private const string	m_sFile		= "IP.json";	// 목록 파일 (Json 폴더)
 	private const int		m_nCheckMs	= 2000;			// 파일 바뀜 확인 간격 (ms)
@@ -14,17 +14,23 @@ class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 
 	private static readonly object	m_kLoadLock		= new object();			// 다시 읽기 1건씩
 	private static readonly ConcurrentDictionary<string, long>	m_hmapLog	= new ConcurrentDictionary<string, long>(StringComparer.Ordinal);	// IP → 마지막 막음 로그 (TickCount64)
 
-	public static bool IsAllow(string sAddr)	// 접속 허용: 블랙리스트 맞음 → 막음, 화이트리스트 비었음 → 허용, 그 외: 화이트리스트 맞음만
+	public static bool IsWebAllow(string sAddr)	// 웹 접속 허용: aBlackWeb 맞음 → 막음 (aWhiteTCP: 웹 대상 아님)
 	{
-		Rule		kRule	= GetRule();
-		IPAddress?	kAddr	= IPAddress.TryParse(sAddr, out IPAddress? kParse) ? (kParse.IsIPv4MappedToIPv6 ? kParse.MapToIPv4() : kParse) : null;	// 모름 ("-"): null
+		IPAddress?	kAddr	= ToAddr(sAddr);
 
-		if (kRule.arrBlack.Any(kPattern => IsMatch(kPattern, kAddr)))
-		{
-			return false;
-		}
+		return !GetRule().arrBlack.Any(kPattern => IsMatch(kPattern, kAddr));
+	}
 
-		return kRule.arrWhite.Length == 0 || kRule.arrWhite.Any(kPattern => IsMatch(kPattern, kAddr));
+	public static bool IsTcpAllow(string sAddr)	// 클라 TCP 접속 허용: aWhiteTCP 에 있는 IP 만 (비었음: 모두 거절, aBlackWeb: TCP 대상 아님)
+	{
+		IPAddress?	kAddr	= ToAddr(sAddr);
+
+		return GetRule().arrWhite.Any(kPattern => IsMatch(kPattern, kAddr));
+	}
+
+	private static IPAddress? ToAddr(string sAddr)	// 접속 IP 글 → 주소 (IPv4 매핑: IPv4, 모름 "-": null)
+	{
+		return IPAddress.TryParse(sAddr, out IPAddress? kParse) ? (kParse.IsIPv4MappedToIPv6 ? kParse.MapToIPv4() : kParse) : null;
 	}
 
 	public static void LogBlock(string sAddr, string sPath)	// 막음 로그 (같은 IP: m_nLogMs 에 1번, 로그 넘침 방지)
@@ -46,7 +52,103 @@ class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 
 		Log.Write(WARN_, $"IP 막음: {sAddr} {sPath}");
 	}
 
-	public static void Check()	// 시작 때 목록 읽기 (로그: 화이트·블랙 수)
+	public static void AddBlack(string sAddr, string sID, string sReason)	// 블랙리스트 자동 등록 (IP.json aBlackWeb 끝에 {sIP, sID: 시도한 아이디} 추가 → 바로 반영, 루프백·모름·이미 있음: 안 함, 파일 형식 오류: 안 씀, 서버가 다시 씀: 주석 사라짐)
+	{
+		if (!IPAddress.TryParse(sAddr, out IPAddress? kAddr) || IPAddress.IsLoopback(kAddr))	// 모름 ("-")·루프백 (IIS 가 실제 IP 안 넘김: 모두 막힘 방지)
+		{
+			Log.Write(WARN_, $"IP 블랙리스트 등록 안 함 ({sReason}): {sAddr} (루프백·모름)");
+
+			return;
+		}
+
+		string	sPath	= Path.Combine(GetConfigDir(), m_sFile);
+
+		lock (m_kLoadLock)
+		{
+			try
+			{
+				JsonObject	kRoot	= File.Exists(sPath) ? JsonNode.Parse(File.ReadAllText(sPath), null, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject() : new JsonObject { ["aWhiteTCP"] = new JsonArray() };
+				JsonArray?	kBlack	= kRoot["aBlackWeb"] as JsonArray;
+
+				if (kBlack == null)	// 없음: 만듦
+				{
+					kBlack = new JsonArray();
+
+					kRoot["aBlackWeb"] = kBlack;
+				}
+
+				if (kBlack.Any(kItem => GetItemIP(kItem) == sAddr))	// 이미 있음
+				{
+					return;
+				}
+
+				kBlack.Add(new JsonObject { ["sIP"] = sAddr, ["sID"] = sID });	// IP·시도한 아이디 같이
+
+				WriteFile(sPath, kRoot);
+
+				Log.Write(WARN_, $"IP 블랙리스트 등록 ({sReason}): {sAddr} {sID} ({sPath})");
+			}
+			catch (Exception kException)	// 형식 오류·쓰기 실패: 파일 그대로
+			{
+				Log.Write(ERROR, $"IP 블랙리스트 등록 실패 ({sReason}): {sAddr} ({kException.Message})");
+			}
+		}
+	}
+
+	public static void RemoveBlack(string sID, string sReason)	// 블랙리스트 풀기: aBlackWeb 항목 중 sID (',' 구분) 에 그 아이디 있음 → 뺌 (관리 계정이 계정 비밀번호 바꿈, sID 빈칸 (수동: IP 만): 안 뺌, 대소문자까지 같은 아이디)
+	{
+		string	sPath	= Path.Combine(GetConfigDir(), m_sFile);
+
+		if (sID == "" || !File.Exists(sPath))
+		{
+			return;
+		}
+
+		lock (m_kLoadLock)
+		{
+			try
+			{
+				JsonObject	kRoot	= JsonNode.Parse(File.ReadAllText(sPath), null, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject();
+
+				if (kRoot["aBlackWeb"] is not JsonArray kBlack)
+				{
+					return;
+				}
+
+				JsonNode?[]	arrRemove	= kBlack.Where(kItem => kItem is JsonObject kObject && kObject["sID"] is JsonValue kValue && kValue.TryGetValue(out string? sValue) && sValue.Split(',').Any(sItem => sItem.Trim() == sID)).ToArray();	// 그 계정 항목
+
+				if (arrRemove.Length == 0)
+				{
+					return;
+				}
+
+				foreach (JsonNode? kItem in arrRemove)
+				{
+					kBlack.Remove(kItem);
+				}
+
+				WriteFile(sPath, kRoot);
+
+				Log.Write(NOTI_, $"IP 블랙리스트 풀기 ({sReason}): {sID} → {string.Join(", ", arrRemove.Select(GetItemIP))} ({sPath})");
+			}
+			catch (Exception kException)	// 형식 오류·쓰기 실패: 파일 그대로
+			{
+				Log.Write(ERROR, $"IP 블랙리스트 풀기 실패 ({sReason}): {sID} ({kException.Message})");
+			}
+		}
+	}
+
+	private static void WriteFile(string sPath, JsonObject kRoot)	// IP.json 저장 (임시 파일 뒤 교체: 쓰는 중 실패 → 원본 유지) → 다음 요청: 바로 다시 읽음 (서버가 다시 씀: 주석 사라짐)
+	{
+		string	sTemp	= sPath + ".tmp";
+
+		File.WriteAllText(sTemp, kRoot.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }), new UTF8Encoding(false));
+		File.Move(sTemp, sPath, true);
+
+		Volatile.Write(ref m_nCheckTick, Environment.TickCount64 - m_nCheckMs);
+	}
+
+	public static void Check()	// 시작 때 목록 읽기 (로그: TCP 화이트·웹 블랙 수)
 	{
 		GetRule();
 	}
@@ -97,7 +199,7 @@ class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 
 
 		if (!bExist)
 		{
-			Log.Write(INFO_, $"IP 목록 없음: {sPath} (모두 허용)");
+			Log.Write(WARN_, $"IP 목록 없음: {sPath} (클라 TCP 접속 모두 거절, 웹 막을 IP 없음)");
 
 			return new Rule(Array.Empty<Pattern>(), Array.Empty<Pattern>());
 		}
@@ -105,10 +207,10 @@ class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 
 		try
 		{
 			JsonObject	kRoot		= JsonNode.Parse(File.ReadAllText(sPath), null, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject();
-			Pattern[]	arrWhite	= ParseList(kRoot["aWhitelist"], "aWhitelist");
-			Pattern[]	arrBlack	= ParseList(kRoot["aBlacklist"], "aBlacklist");
+			Pattern[]	arrWhite	= ParseList(kRoot["aWhiteTCP"], "aWhiteTCP");
+			Pattern[]	arrBlack	= ParseList(kRoot["aBlackWeb"], "aBlackWeb");
 
-			Log.Write(INFO_, $"IP 목록: 화이트 {arrWhite.Length}·블랙 {arrBlack.Length} ({sPath}{(arrWhite.Length == 0 ? ", 화이트 비었음: 블랙 빼고 모두 허용" : "")})");
+			Log.Write(arrWhite.Length == 0 ? WARN_ : INFO_, $"IP 목록: TCP 화이트 {arrWhite.Length}·웹 블랙 {arrBlack.Length} ({sPath}{(arrWhite.Length == 0 ? ", TCP 화이트 비었음: 클라 접속 모두 거절" : "")})");
 
 			return new Rule(arrWhite, arrBlack);
 		}
@@ -137,7 +239,7 @@ class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 
 
 		foreach (JsonNode? kItem in kArray)
 		{
-			string		sText		= (kItem is JsonValue kValue && kValue.TryGetValue(out string? sValue) ? sValue : "").Trim();
+			string		sText		= GetItemIP(kItem);
 			Pattern?	kPattern	= ParsePattern(sText);
 
 			if (kPattern == null)
@@ -151,6 +253,18 @@ class IPList	// 웹 접속 IP 막기 (Json/IP.json, 모든 웹 요청 맨 앞): 
 		}
 
 		return listPattern.ToArray();
+	}
+
+	private static string GetItemIP(JsonNode? kItem)	// 목록 항목 IP 글: {"sIP", "sID"} 의 sIP·예전 문자열 그대로 (그 밖: "")
+	{
+		JsonNode?	kIP	= kItem is JsonObject kObject ? kObject["sIP"] : kItem;
+
+		return (kIP is JsonValue kValue && kValue.TryGetValue(out string? sValue) ? sValue : "").Trim();
+	}
+
+	public static bool IsPattern(string sText)	// 맞는 IP 패턴 (시작 검사 ConfigCheck)
+	{
+		return ParsePattern(sText.Trim()) != null;
 	}
 
 	private static Pattern? ParsePattern(string sText)	// 패턴: "*" 모두, IPv4 네 칸 (숫자 0~255·'*'), IPv6 그대로 (틀림: null)

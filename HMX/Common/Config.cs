@@ -173,6 +173,11 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 		return JsonNode.Parse(FixPathEscape(File.ReadAllText(sPath)), null, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject();
 	}
 
+	public static JsonObject ParseFile(string sPath)	// json 파일 → 객체 (설정 읽기와 같은 규칙: 주석·끝 쉼표·경로 \ 하나 허용, 없음·빈 파일: 빈 객체, 형식 오류: 예외 → 시작 검사)
+	{
+		return ReadJson(sPath) ?? new JsonObject();
+	}
+
 	public static string FixPathEscape(string sJson)	// 설정 JSON 글의 윈도 경로 문자열 ("X:\…"·"\\…" 시작): \ 하나도 허용 (서버·클라 공통) → \ 는 모두 글자로 보고 \\ 로 (제대로 쓴 \\ 는 \ 하나, 끝 \" 는 뒤가 구분자면 문자열 끝), 그 밖 문자열: 표준 그대로
 	{
 		StringBuilder	kOut	= new StringBuilder(sJson.Length + 64);

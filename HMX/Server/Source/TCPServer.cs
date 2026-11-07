@@ -370,6 +370,18 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 				continue;
 			}
 
+			IPAddress?	kRemote	= (kClient.Client.RemoteEndPoint as IPEndPoint)?.Address;	// 접속 IP
+			string		sRemote	= kRemote == null ? "-" : (kRemote.IsIPv4MappedToIPv6 ? kRemote.MapToIPv4() : kRemote).ToString();
+
+			if (!IPList.IsTcpAllow(sRemote))	// aWhiteTCP 에 있는 IP 만 (IP.json, 비었음: 모두 거절)
+			{
+				IPList.LogBlock(sRemote, "TCP");
+
+				kClient.Dispose();
+
+				continue;
+			}
+
 			_ = ReadLoop(kClient, kStop);
 		}
 	}
@@ -727,7 +739,9 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		if (sType == "MasterKey")	// 클라 마스터 키 요청 (클라: 첫 접속부터 X초마다, 받을 때까지, 메모리만) → 서버 메모리 마스터 키 (TCP 수신: 서버 마스터 키 뒤 엶)
 		{
-			SendLine(kInfo, JsonSerializer.Serialize(new { sType = "MasterKey", sKey = GetMasterKey() }));
+			string	sMasterKey	= GetMasterKey();
+
+			SendLine(kInfo, JsonSerializer.Serialize(new { sType = "MasterKey", sKey = sMasterKey == "" ? "" : AES.Encrypt(sMasterKey, Define.m_sSolution) }));	// 솔루션명 암호화 (평문 안 보냄, 빈 키: 그대로)
 
 			return null;
 		}

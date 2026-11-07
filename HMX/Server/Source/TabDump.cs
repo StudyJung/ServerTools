@@ -1,7 +1,7 @@
 class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Server Dump 폴더 zip)·zip 받기·삭제 API (페이지 쪽: DumpHTML)
 {
 	private const int	m_nDumpResultMs		= 60000;	// 끝난 다운 결과 보관 (ms, 지남: 버리고 zip 유무로 판단, 조회 안 한 것도 정리)
-	private const int	m_nDownConcurrent	= 2;		// 동시 덤프 다운 (전체, 세션마다 1건)
+	private const int	m_nDownConcurrent	= 0;		// 동시 덤프 다운 전체 제한 (0: 없음 → 세션마다 1건씩 동시)
 
 	private static readonly Gate	m_kGate	= new Gate(m_nDownConcurrent);	// 덤프 다운 자리 (저장 작업 안에서 잡음)
 

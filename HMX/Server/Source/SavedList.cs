@@ -163,6 +163,35 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 		return sError;
 	}
 
+	public static void CheckConfig(IConfiguration kFile, List<string> listError)	// 시작 검사 (ConfigCheck): 파일의 aQuery·aSearch 값 (제목·내용·형식·간격·제목 겹침)
+	{
+		foreach (string sKey in new[] { "aQuery", "aSearch" })
+		{
+			HashSet<string>	setKey	= new HashSet<string>(StringComparer.OrdinalIgnoreCase);	// 제목 겹침 (대소문자 무시: Find 와 같음)
+			int				nIndex	= 0;
+
+			foreach (IConfigurationSection kSection in kFile.GetSection(sKey).GetChildren())
+			{
+				string	sTitle	= (kSection["sKey"] ?? "").Trim();
+				string	sQuery	= (kSection["sQuery"] ?? "").Trim();
+				string?	sMinute	= kSection["nMinute"];
+				string	sError	= sTitle == "" || sTitle.Length > m_nKeyMax ? $"제목 없음·{m_nKeyMax}자 넘음"
+								: !setKey.Add(sTitle) ? "제목 겹침"
+								: sQuery == "" || sQuery.Length > m_nQueryMax ? $"sQuery 없음·{m_nQueryMax}자 넘음"
+								: !SearchNode.IsValid(sQuery) ? "sQuery 형식 오류 (예: A AND (B NOT C) OR D)"
+								: sMinute != null && !(int.TryParse(sMinute, out int nMinute) && nMinute >= 1 && nMinute <= m_nMinuteMax) ? $"nMinute 1 ~ {m_nMinuteMax}"
+								: "";
+
+				if (sError != "")
+				{
+					listError.Add($"{sKey}[{nIndex}] {sTitle}: {sError}");
+				}
+
+				++nIndex;
+			}
+		}
+	}
+
 	private List<(string sKey, string sQuery, int nMinute)> Load(IEnumerable<IConfigurationSection>? listSection = null, List<string>? listWarn = null)	// 설정 → 목록 (제목 없음·너무 김·같은 제목: 뺌, 간격 범위 밖: 기본, listWarn: 오류 글 모음, 없음: 바로 출력)
 	{
 		List<(string sKey, string sQuery, int nMinute)>	listSaved	= new List<(string sKey, string sQuery, int nMinute)>();

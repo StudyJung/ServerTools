@@ -122,7 +122,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		});
 	}
 
-	private static void UseIPList(WebApplication WebApp)	// 접속 IP 막기 (모든 웹 요청 맨 앞, IPList: IP.json 블랙·화이트리스트) → 막음: 403 (로그: 같은 IP 1분에 1번, 외부 API 토큰 ****)
+	private static void UseIPList(WebApplication WebApp)	// 웹 접속 IP 막기 (모든 웹 요청 맨 앞, IPList: IP.json aBlackWeb) → 막음: 403 (로그: 같은 IP 1분에 1번, 외부 API 토큰 ****)
 	{
 		IPList.Check();	// 시작 로그: 목록 수
 
@@ -130,7 +130,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 			string	sAddr	= GetAddr(kContext);
 
-			if (!IPList.IsAllow(sAddr))
+			if (!IPList.IsWebAllow(sAddr))
 			{
 				IPList.LogBlock(sAddr, Auth.GetLogPath(kContext));
 
@@ -1260,8 +1260,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const	MACHINE_DEFAULT			= 1000;																																				// 머신당 최대 건수 기본값 (서버·클라 m_nSearchDefault 와 같음)
 		const	RESULT_DEFAULT			= 10000;																																			// 전체 최대 건수 기본값 (모든 머신 합)
 		const	LIMIT_KEY				= "HMX.Limit";																																		// 설정 localStorage 키 (서치·쿼리)
-		const	LIMIT_SEC_DEFAULT		= 60;																																				// 서치·쿼리 제한 시간 기본값 (초, 서버 m_nSearchLimitSec·m_nQueryLimitSec 와 같음)
-		const	LIMIT_SEC_MAX			= 600;																																				// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
+		const	LIMIT_SEC_DEFAULT		= 30;																																				// 서치·쿼리 제한 시간 기본값 (초, 서버 m_nSearchLimitSec·m_nQueryLimitSec 와 같음)
+		const	LIMIT_SEC_MAX			= 100;																																				// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
 		let		nMachineMax				= MACHINE_DEFAULT;																																	// 머신당 최대 건수 (설정)
 		let		nResultMax				= RESULT_DEFAULT;																																	// 전체 최대 건수 (설정, 넘음: 이후 머신 검색 안 함)
 		let		nSearchLimitSec			= LIMIT_SEC_DEFAULT;																																// 서치 제한 시간 (설정, 초, /api/search nLimit → 클라 마감)

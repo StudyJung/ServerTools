@@ -1,4 +1,4 @@
-class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다운 따로 1개씩): 세션 (로그인 계정, 없음: IP) 1건 → 전체 X건, 넘침: 대기 → 한 사용자가 오래 써도 다른 사용자 동시 사용, Yield: 스레드 양보 (CPU 루프 공통)
+class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다운 따로 1개씩): 세션 (로그인 계정, 없음: IP) 마다 1건씩 동시 (같은 세션 둘째: 대기), 전체 제한: nAll 0 없음 (> 0: 전체 X건) → 한 사용자가 오래 써도 다른 사용자 동시 사용, Yield: 스레드 양보 (CPU 루프 공통)
 {
 	private const int	m_nYieldBusyMs	= 500;	// 양보: 스레드 연속 실행 (ms)
 	private const int	m_nYieldRestMs	= 100;	// 양보: 쉼 (ms)
@@ -6,12 +6,12 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 	[ThreadStatic] private static long	m_nYieldSlice;	// 이 스레드 연속 실행 시작 (Stopwatch)
 	[ThreadStatic] private static long	m_nYieldLast;	// 이 스레드 마지막 Yield (Stopwatch, 0: 처음)
 
-	private readonly SemaphoreSlim	m_kAll;	// 전체 자리
+	private readonly SemaphoreSlim?	m_kAll;	// 전체 자리 (null: 제한 없음)
 	private readonly ConcurrentDictionary<string, SemaphoreSlim>	m_hmapSession	= new ConcurrentDictionary<string, SemaphoreSlim>();	// 세션 → 1건 자리
 
-	public Gate(int nAll)
+	public Gate(int nAll = 0)	// nAll: 전체 자리 (0 이하: 제한 없음 → 세션마다 1건씩 동시)
 	{
-		m_kAll = new SemaphoreSlim(nAll, nAll);
+		m_kAll = nAll > 0 ? new SemaphoreSlim(nAll, nAll) : null;
 	}
 
 	public static string GetSession(HttpContext kContext)	// 세션 키: 로그인 계정, 없음: IP
@@ -44,15 +44,18 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 
 		await kSession.WaitAsync(kStop);
 
-		try
+		if (m_kAll != null)	// 전체 제한 있음
 		{
-			await m_kAll.WaitAsync(kStop);
-		}
-		catch
-		{
-			kSession.Release();
+			try
+			{
+				await m_kAll.WaitAsync(kStop);
+			}
+			catch
+			{
+				kSession.Release();
 
-			throw;
+				throw;
+			}
 		}
 
 		return new Release(m_kAll, kSession);
@@ -79,11 +82,11 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 		m_nYieldLast = nNow;
 	}
 
-	private sealed class Release(SemaphoreSlim kAll, SemaphoreSlim kSession) : IDisposable	// 자리 반납 (전체 → 세션)
+	private sealed class Release(SemaphoreSlim? kAll, SemaphoreSlim kSession) : IDisposable	// 자리 반납 (전체 → 세션)
 	{
 		public void Dispose()
 		{
-			kAll.Release();
+			kAll?.Release();
 			kSession.Release();
 		}
 	}

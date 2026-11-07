@@ -68,7 +68,9 @@ static class TCPClient	// Server TCP 접속: 접속·재접속, Hello 뒤 대기
 					{
 						if (GetText(kDoc.RootElement, "sType") == "MasterKey")
 						{
-							return GetText(kDoc.RootElement, "sKey");
+							string	sKey	= GetText(kDoc.RootElement, "sKey");	// 솔루션명 암호화된 마스터 키
+
+							return sKey == "" ? "" : AES.Decrypt(sKey, Define.m_sSolution) ?? throw new FormatException();	// 복호화 실패: 경고 → X초 뒤 다시
 						}
 					}
 

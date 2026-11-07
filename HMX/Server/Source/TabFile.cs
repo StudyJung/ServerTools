@@ -5,7 +5,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 	private static readonly byte[]	m_arrUtf8Bom	= { 0xEF, 0xBB, 0xBF };	// 다운 앞 UTF-8 BOM (편집기 인코딩 판별)
 	private static Encoding?		m_kCp949;	// CP949 (처음 쓸 때 생성 → Main 의 코드 페이지 등록 뒤)
 
-	private const int	m_nDownConcurrent	= 2;	// 동시 파일 다운 (전체, 세션마다 1건)
+	private const int	m_nDownConcurrent	= 0;	// 동시 파일 다운 전체 제한 (0: 없음 → 세션마다 1건씩 동시)
 
 	private static readonly Gate	m_kGate	= new Gate(m_nDownConcurrent);	// 파일 다운 자리
 	private readonly TCPServer		m_kListener;	// Client TCP 수신 (Main 이 넘김)

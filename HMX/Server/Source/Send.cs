@@ -177,9 +177,14 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 		return kJob.sApiLink != "" ? kJob.sApiLink : kJob.sLink;
 	}
 
-	private static string GetText(AlarmJob kJob)	// 보낼 내용: 알람 내용 + 빈 줄 2개 + 쿼리 링크 (링크 없음: 내용만, 예전 펜딩: 끝 페이지 주소 뺀 뒤 붙임, 알람 기록: 링크 따로)
+	private static string GetBody(AlarmJob kJob)	// 알람 내용만 (링크 없음, 예전 펜딩: 끝 페이지 주소 뺌)
 	{
-		string	sText	= kJob.sLink != "" && kJob.sText.EndsWith(kJob.sLink, StringComparison.Ordinal) ? kJob.sText[..^kJob.sLink.Length].TrimEnd('\n') : kJob.sText;	// 알람 내용 (링크 없음)
+		return kJob.sLink != "" && kJob.sText.EndsWith(kJob.sLink, StringComparison.Ordinal) ? kJob.sText[..^kJob.sLink.Length].TrimEnd('\n') : kJob.sText;
+	}
+
+	private static string GetText(AlarmJob kJob)	// 보낼 내용 (메일): 알람 내용 + 빈 줄 2개 + 쿼리 링크 (링크 없음: 내용만, 알람 기록: 링크 따로)
+	{
+		string	sText	= GetBody(kJob);	// 알람 내용 (링크 없음)
 
 		return GetLink(kJob) == "" ? sText : sText + "\n\n\n" + GetLink(kJob);
 	}
@@ -211,13 +216,9 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 		return kHtml.ToString();
 	}
 
-	private static void SendHook(AlarmJob kJob)	// 훅: POST {"botName", "text": 메일 제목, "attachments": [{"text": 메일 내용 (구분 줄: 마크다운 가로줄, 마지막 쿼리 주소: 마크다운 링크)}]} (두레이·슬랙 수신 훅 형식, 2xx: 성공, 길이 있는 본문: chunked 못 받는 곳 대비)
+	private static void SendHook(AlarmJob kJob)	// 훅: POST {"botName", "text": 메일 제목, "attachments": [{"text": 알람 내용 (구분 줄: 마크다운 가로줄, 쿼리 링크 없음: 채널 누구나 누름 → 키 계정 로그인 막음)}]} (두레이·슬랙 수신 훅 형식, 2xx: 성공, 길이 있는 본문: chunked 못 받는 곳 대비)
 	{
-		string	sText	= string.Join('\n', GetText(kJob).Split('\n').Select(sLine => sLine == Stat.MAIL_LINE ? "\n---" : sLine));	// 구분 줄 → 빈 줄 + --- (빈 줄 없음: 윗줄이 제목으로 바뀜)
-
-		string	sLink	= GetLink(kJob);	// 보낼 쿼리 링크
-
-		sText = sLink != "" && sText.EndsWith(sLink, StringComparison.Ordinal) ? sText[..^sLink.Length] + $"[{sLink}]({sLink})" : sText;	// 본문 마지막 쿼리 주소: 누르면 외부 API 쿼리 (주소 괄호·대괄호: 인코딩됨)
+		string	sText	= string.Join('\n', GetBody(kJob).Split('\n').Select(sLine => sLine == Stat.MAIL_LINE ? "\n---" : sLine));	// 구분 줄 → 빈 줄 + --- (빈 줄 없음: 윗줄이 제목으로 바뀜)
 
 		using StringContent kBody = new StringContent(JsonSerializer.Serialize(new { botName = Web.GetTitle(), text = kJob.sTitle, attachments = new[] { new { text = sText } } }, new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }), Encoding.UTF8, "application/json");	// 본문 (보낸 이: HMX 존, 제목·내용: 메일과 같음)
 

@@ -913,6 +913,32 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 		m_sCheckTime	= "";
 	}
 
+	public static void CheckConfig(IConfiguration kFile, List<string> listError)	// 시작 검사 (ConfigCheck): 파일의 Manager:ServerList 존마다 서버 (sIP·nPort 1 ~ 65535·주소 겹침)
+	{
+		foreach (IConfigurationSection kZone in kFile.GetSection("Manager:ServerList").GetChildren())
+		{
+			HashSet<string>	setKey	= new HashSet<string>(StringComparer.OrdinalIgnoreCase);	// 존 안 주소 겹침
+
+			foreach (IConfigurationSection kSection in kZone["sIP"] != null ? new[] { kZone } : kZone.GetChildren())
+			{
+				string	sIP		= kSection["sIP"] ?? "";
+				string	sPath	= kSection.Path.Replace(':', '.');
+
+				if (sIP == "" || !int.TryParse(kSection["nPort"], out int nPort) || nPort <= 0 || nPort > 65535)
+				{
+					listError.Add($"{sPath}: sIP 없음·nPort 1 ~ 65535");
+
+					continue;
+				}
+
+				if (!setKey.Add($"{sIP}:{nPort}"))
+				{
+					listError.Add($"{sPath}: 주소 겹침 ({sIP}:{nPort})");
+				}
+			}
+		}
+	}
+
 	private static OperationServer[] LoadConfig()	// 설정 Manager:ServerList:{Manager:sZone} (Manager.json) → 서버 목록 (sIP 없음·nPort 오류·주소 중복은 제외, 정렬)
 	{
 		string	sGroup	= TabOperation.GetZone();	// 사용할 존 (Dev | Alpha | Real, Manager:sZone, 없음: sZone)

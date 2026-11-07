@@ -57,7 +57,7 @@
    ### 다음 시간 파일 (yyyyMMdd_HH, 날짜 바뀜 포함): 지금 파일 끝까지 본 뒤 이동 (시간 건너뜀 없음, 폴더 훑기는 감시 파일 시간 경과 후 X초마다만)
    ### 서버 접속 중에만 검사·전송 (끊김: 위치 유지, 재접속 시 서버 받은 진행으로 보정 후 이어서), 전송은 일방 (응답 확인 없음, 쓰기 실패: 다음 주기 재시도)
 ## 전송: TCP 한 줄 = JSON 1건 (UTF-8, '\n' 구분), 끊김: X초부터 2배씩 최대 X초 대기 후 재접속 (실패 로그: 처음 1회 + X회마다)
-   ### {"sType":"MasterKey","sMachine":""}	클라 시작 뒤 첫 접속부터 X초마다 (받을 때까지, 따로 접속 → 받으면 닫음) → 서버 {"sType":"MasterKey","sKey":""}
+   ### {"sType":"MasterKey","sMachine":""}	클라 시작 뒤 첫 접속부터 X초마다 (받을 때까지, 따로 접속 → 받으면 닫음) → 서버 {"sType":"MasterKey","sKey":""} (sKey: 솔루션명 AES 암호화 → 클라 솔루션명 복호화, 실패: 경고 → X초 뒤 다시)
    ### {"sType":"Hello","sMachine":"","sDir":"","nPid":0,"sTime":""}	접속 직후 1회 (sDir: aLogFolder 전체 경로, "|" 구분)
    ### {"sType":"Count","arrFolder":[""],"sTime":""}	Hello 뒤 1회, 관리 목록 한 패킷 (로그 감시 대상 폴더, aLogType 없음: 빈 목록 → 서버 Count 모두 지움)
    ### {"sType":"CountDel","arrFolder":[""],"sTime":""}	감시 폴더 사라짐 (탐색 때 발견, 한 패킷, 답 없음) → 서버 관리 목록에서 뺌·그 폴더 Count 지움 (클라: 감시·상태 파일 닫고 목록에서 뺌, 상태 파일 남김 → 다시 생기면 이어서)
@@ -88,7 +88,7 @@
    ### 허용 경로: 덤프 aLogFolder 하위 *.dmp (aBlockDump 밖), 폴더 보기·파일 다운 aLogFolder 자신·하위 (aBlockFile 밖) (그 외 거부), 동시 처리: 보기와 합쳐 m_nViewConcurrent 건
 ## 검색 대상: 쿼리 대상 폴더의 날짜 폴더(yyyyMMdd) 안 *yyyyMMdd_HH.log (예: Logs\XLobby\20261020\XLobby_20261020_11.log)
    ### 기간 nStart~nEnd (yyyyMMddHH, 양끝 포함, 24시 = 그날 23시까지), 검색어 포함 줄 (대소문자 무시, AND·OR·NOT (대소문자 무시)·괄호·앞뒤 * 와일드카드 (ab*·*ab·*ab*), 왼쪽부터, 예: "A AND (B NOT C) OR D", SearchNode)
-   ### 머신당 최대 nMax 건·X초, 1건씩 처리 (게임 서버 부하 제한)
+   ### 머신당 최대 nMax 건·X초, 동시 16건 안전 상한 (서버: 세션마다 1건씩 동시, 넘음: 20초 대기 후 거절, 게임 서버 폭주 방지)
    ### 부하 조절: 검색·보기 Throttle (X ms 일하면 X ms 쉼)
    ### 보기 허용: aLogFolder 하위 *.log·*.txt·*.json·*.ini·*.bat·*.xml·*.config·*.md·*.lua (그 외 거부), 인코딩: 줄마다 UTF-8·CP949 판별 (UTF-8·UTF-16 BOM 지원)
 ## 로그: bLog 가 true 일 때만 기준 폴더 Log/YYYYMMDD/Client_YYYYMMDD_HH.log 기록 → Log.Write(INFO_, "메시지") (레벨: DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL)

@@ -1,6 +1,6 @@
 {
-  "aWhitelist": [
+  "aWhiteTCP": [
   ],
-  "aBlacklist": [
+  "aBlackWeb": [
   ]
 }

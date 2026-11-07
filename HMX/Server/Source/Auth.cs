@@ -18,6 +18,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	private const int		m_nAccountMailMax	= 254;		// 계정 메일 최대 글자
 	private const int		m_nAccountPhoneMax	= 20;		// 계정 전화 번호 최대 글자
 	private const int		m_nLoginFailMax		= 3;		// 같은 IP 연속 로그인 실패 (닿음: 그동안 시도한 계정 비밀번호 랜덤, 관리 계정 제외)
+	private const int		m_nLoginBlockMax	= 5;		// 같은 IP 연속 로그인 실패 (닿음: Json/IP.json aBlackWeb 자동 등록, 루프백·모름 제외)
 	private const int		m_nLoginFailIPMax	= 10000;	// 실패 기억 IP 최대 (넘음: 비움)
 	private const string	m_sRandomPassChar	= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*-_=+";	// 랜덤 비밀번호 글자
 
@@ -26,7 +27,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	private static readonly object	m_kUnlockLock	= new object();	// 마스터 키 입력 1건씩 (설정 다시 로딩)
 
 	private static readonly object	m_kFailLock	= new object();	// 로그인 실패 기억 1건씩
-	private static readonly Dictionary<string, (int nCount, HashSet<string> setID)>	m_hmapFail	= new Dictionary<string, (int nCount, HashSet<string> setID)>(StringComparer.Ordinal);	// IP → 연속 실패 수·시도한 아이디 (성공: 지움)
+	private static readonly Dictionary<string, (int nCount, HashSet<string> setID, HashSet<string> setDone)>	m_hmapFail	= new Dictionary<string, (int nCount, HashSet<string> setID, HashSet<string> setDone)>(StringComparer.Ordinal);	// IP → 연속 실패 수·시도한 아이디·비밀번호 바꾼 아이디 (성공·관리 계정 비밀번호 변경: 지움)
 
 	private const int	m_nKeyLength	= 20;	// 계정 키 sKey 글자 수 (외부 API 경로 키, 페이지 ACCOUNT_KEY_LENGTH 와 같음)
 
@@ -351,7 +352,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		return sBase.Length % 4 == 0 ? sBase : sBase.PadRight(sBase.Length + 4 - sBase.Length % 4, '=');	// 뺀 = 채움
 	}
 
-	public static string GetMainPath()	// 관리 계정 외부 API "키/토큰" (알람 메일·훅 쿼리 링크, 관리 계정·키·sRand 없음: "")
+	public static string GetMainPath()	// 관리 계정 외부 API "키/토큰" (관리 계정·키·sRand 없음: "", 훅 링크: 안 씀 → 관리 계정 로그인 노출 막음)
 	{
 		string	sMainKey	= Config.GetString("sKey");
 		string	sMainToken	= GetUrlToken(Config.GetString("sRand"), Config.GetString("sCode"));	// 훅 링크: URL 용 (sRand·sCode 없음: "")
@@ -387,6 +388,39 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	public static bool HasPhone(string sID)	// aAccount 계정 전화 번호 있음 (대소문자 무시, 알람 SMS 받는 계정 검사)
 	{
 		return Config.GetChildren("aAccount").Any(kSection => string.Equals(kSection["sID"]?.Trim(), sID, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(kSection["sPhone"]));
+	}
+
+	public static void CheckConfig(IConfiguration kFile, List<string> listError)	// 시작 검사 (ConfigCheck): 파일의 aAccount 값 (아이디·겹침·비밀번호 sCode·메뉴·외부 권한·메일·전화)
+	{
+		HashSet<string>	setID	= new HashSet<string>(StringComparer.OrdinalIgnoreCase);	// 아이디 겹침
+		string			sMainID	= Config.GetString("sID");	// 관리 계정 (겹치면 안 됨)
+		int				nIndex	= 0;
+
+		foreach (IConfigurationSection kSection in kFile.GetSection("aAccount").GetChildren())
+		{
+			string		sID			= (kSection["sID"] ?? "").Trim();
+			string		sMail		= (kSection["sMail"] ?? "").Trim();
+			string		sPhone		= (kSection["sPhone"] ?? "").Trim();
+			string[]	arrMenu		= kSection.GetSection("aMenu").GetChildren().Select(kItem => (kItem.Value ?? "").Trim()).Where(sMenu => sMenu != "").ToArray();
+			string[]	arrApi		= kSection.GetSection("aAPI").GetChildren().Select(kItem => (kItem.Value ?? "").Trim()).Where(sApi => sApi != "").ToArray();
+			string?		sBadMenu	= arrMenu.FirstOrDefault(sMenu => !Main.m_arrTab.Contains(sMenu) && sMenu != MENU_LOG);	// 없는 탭 (예전 로그: 허용)
+			string?		sBadApi		= arrApi.FirstOrDefault(sApi => !m_arrApiMenu.Contains(sApi));	// 없는 외부 권한
+			string		sError	= sID == "" || sID.Length > m_nAccountIDMax || sID.Any(cID => char.IsWhiteSpace(cID) || cID == '/') ? $"sID: 빈칸·'/' 없이 {m_nAccountIDMax}자 이하"
+								: !setID.Add(sID) || string.Equals(sID, sMainID, StringComparison.OrdinalIgnoreCase) ? "sID 겹침 (관리 계정 포함)"
+								: (kSection["sCode"] ?? kSection["sPass"] ?? "") == "" ? "비밀번호 없음 (sCode)"
+								: sBadMenu != null ? $"aMenu: 없는 탭 \"{sBadMenu}\" ({string.Join("·", Main.m_arrTab)})"
+								: sBadApi != null ? $"aAPI: 없는 권한 \"{sBadApi}\" ({string.Join("·", m_arrApiMenu)})"
+								: sMail != "" && (sMail.Length > m_nAccountMailMax || !IsMail(sMail)) ? "sMail: 메일 형식 오류"
+								: sPhone != "" && (sPhone.Length > m_nAccountPhoneMax || !sPhone.All(cPhone => char.IsAsciiDigit(cPhone) || cPhone == '-' || cPhone == '+') || !sPhone.Any(char.IsAsciiDigit)) ? $"sPhone: 숫자·-·+ {m_nAccountPhoneMax}자 이하"
+								: "";
+
+			if (sError != "")
+			{
+				listError.Add($"aAccount[{nIndex}] {sID}: {sError}");
+			}
+
+			++nIndex;
+		}
 	}
 
 	private static bool IsMail(string sMail)	// 메일 형식 (알람 메일과 같음)
@@ -464,16 +498,18 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		string				sPass		= kForm?["pass"].LastOrDefault() ?? "";
 		string				sAddr		= Web.GetAddr(kContext);
 
-		if (GetMasterKey() == "" && !Unlock(sID, sPass, kForm?["key"].LastOrDefault() ?? ""))	// 첫 접속: 계정 (관리 계정·aAccount) 아이디·비밀번호·마스터 키 (마스터 키·비밀번호 로그 미기록)
+		if (GetMasterKey() == "")	// 마스터 키 전 (첫 접속): 관리 계정만 처리 (아이디·비밀번호·마스터 키 → 그 sCode 복호화 = 비밀번호), 그 외 계정: 처리 안 함 → 공통 오류 (실패 셈 안 함)
 		{
-			string	sError	= GetMasterError();	// 줄 번호 (로그만, 응답: LOGIN_ERROR)
+			bool	bMain	= IsSame(sID, Config.GetString("sID"));	// 관리 계정 아이디 (비교 시간 일정)
 
-			Log.Write(WARN_, sError);
-			CountFail(sAddr, sID);
+			if (!bMain || !Unlock(sID, sPass, kForm?["key"].LastOrDefault() ?? ""))	// 마스터 키·비밀번호 로그 미기록
+			{
+				Log.Write(WARN_, bMain ? GetMasterError() : $"로그인 거절 (마스터 키 전, 관리 계정만): {sID} ({sAddr})");	// 관리 계정: 줄 번호 (로그만, 응답: LOGIN_ERROR)
 
-			await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
+				await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
 
-			return Results.Json(new { success = false, error = LOGIN_ERROR });
+				return Results.Json(new { success = false, error = LOGIN_ERROR });
+			}
 		}
 
 		AccountInfo?	kAccount	= GetAccountList().FirstOrDefault(kItem => IsSame(sID, kItem.sID) & IsSame(sPass, kItem.sPass));	// 맞는 계정 (& : 둘 다 비교)
@@ -506,9 +542,11 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		return Results.Json(new { success = true });
 	}
 
-	private static void CountFail(string sAddr, string sID)	// 로그인 실패 셈 (웹 로그인만, 외부 API 토큰: 아님): 같은 IP 연속 m_nLoginFailMax 번 → 그동안 시도한 계정 비밀번호 랜덤 (마스터 키 전: 셈만)
+	private static void CountFail(string sAddr, string sID)	// 로그인 실패 셈 (아이디·비밀번호 불일치만, 마스터 키 뒤): 같은 IP 연속 m_nLoginFailMax 번 → 그동안 시도한 계정 비밀번호 랜덤 (계정마다 1번), m_nLoginBlockMax 번 → IP 블랙리스트 등록 (성공·관리 계정 비밀번호 변경: 지움)
 	{
-		string[]	arrID;	// 비밀번호 바꿀 아이디
+		string[]	arrID		= Array.Empty<string>();	// 비밀번호 바꿀 아이디
+		string		sBlockID	= "";						// 블랙리스트 등록 아이디 (그동안 시도한 아이디, ',' 구분)
+		bool		bBlock		= false;					// 블랙리스트 등록
 
 		lock (m_kFailLock)
 		{
@@ -517,31 +555,65 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 				m_hmapFail.Clear();
 			}
 
-			if (!m_hmapFail.TryGetValue(sAddr, out (int nCount, HashSet<string> setID) kFail))
+			if (!m_hmapFail.TryGetValue(sAddr, out (int nCount, HashSet<string> setID, HashSet<string> setDone) kFail))
 			{
-				kFail = (0, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				kFail = (0, new HashSet<string>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
 			}
 
 			kFail.nCount++;
 
-			if (sID != "")
+			if (sID != "" && sID.Length <= m_nAccountIDMax)	// 아이디 글자 넘음: 안 쌓음 (메모리)
 			{
 				kFail.setID.Add(sID);
 			}
 
-			if (kFail.nCount < m_nLoginFailMax || GetMasterKey() == "")	// 아직·마스터 키 전 (암호화 못 함): 셈만
+			if (GetMasterKey() == "")	// 마스터 키 전 (안 옴, 방어): 셈만
 			{
 				m_hmapFail[sAddr] = kFail;
 
 				return;
 			}
 
-			m_hmapFail.Remove(sAddr);	// 처리 뒤 다시 셈
+			if (kFail.nCount >= m_nLoginFailMax)	// 랜덤: 아직 안 바꾼 아이디만 (반복 저장 막음)
+			{
+				arrID = kFail.setID.Except(kFail.setDone).ToArray();
 
-			arrID = kFail.setID.ToArray();
+				kFail.setDone.UnionWith(arrID);
+			}
+
+			if (kFail.nCount >= m_nLoginBlockMax)	// 블랙리스트: 등록 뒤 다시 셈
+			{
+				bBlock		= true;
+				sBlockID	= string.Join(",", kFail.setID);
+
+				m_hmapFail.Remove(sAddr);
+			}
+			else
+			{
+				m_hmapFail[sAddr] = kFail;
+			}
 		}
 
-		RandomPass(sAddr, arrID);
+		if (arrID.Length > 0)
+		{
+			RandomPass(sAddr, arrID);
+		}
+
+		if (bBlock)
+		{
+			IPList.AddBlack(sAddr, sBlockID, $"로그인 연속 실패 {m_nLoginBlockMax}번");
+		}
+	}
+
+	private static void ClearFail(string sID)	// 관리 계정이 비밀번호 바꿈: 그 아이디를 시도한 IP 연속 실패 지움 (다시 셈)
+	{
+		lock (m_kFailLock)
+		{
+			foreach (string sAddr in m_hmapFail.Where(kItem => kItem.Value.setID.Contains(sID)).Select(kItem => kItem.Key).ToArray())
+			{
+				m_hmapFail.Remove(sAddr);
+			}
+		}
 	}
 
 	private static void RandomPass(string sAddr, string[] arrID)	// 연속 실패 계정 비밀번호 랜덤 (aAccount 만, 관리 계정·없는 아이디: 뺌, 최대 글자, 기존 쿠키·외부 API 토큰: 무효 → 관리 계정이 수정 창에서 새로)
@@ -557,7 +629,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 			foreach (string sID in arrID)
 			{
-				int	nIndex	= FindSection(listSection, sID);
+				int	nIndex	= listSection.FindIndex(kSection => string.Equals(kSection["sID"]?.Trim(), sID, StringComparison.Ordinal));	// 대소문자까지 같은 아이디만 (로그인과 같음)
 
 				if (nIndex < 0 || string.Equals(sID, sMainID, StringComparison.OrdinalIgnoreCase))	// 없는 아이디·관리 계정
 				{
@@ -741,6 +813,19 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 					}
 
 					sError = SetAccounts(kArray);
+				}
+
+				if (sError == "" && sPass != "")	// 비밀번호 바꿈: 로그인 연속 실패 지움 (다시 셈)
+				{
+					ClearFail(sID);
+					ClearFail(sOldID);
+
+					IPList.RemoveBlack(sID, "계정 비밀번호 바뀜");	// 그 계정으로 막힌 IP 풀기 (자동 등록 sID, 수동 빈칸: 그대로)
+
+					if (sOldID != "" && sOldID != sID)
+					{
+						IPList.RemoveBlack(sOldID, "계정 비밀번호 바뀜");
+					}
 				}
 
 				if (sError == "")

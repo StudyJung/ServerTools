@@ -19,7 +19,7 @@
 | Server.csproj | Web SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시 (런타임 포함 self-contained, .NET·ASP.NET Core 설치 불필요), web.config 변환 안 함 (참조 Server.html·wwwroot: 폴더에 없음) |
 | Json/Server.json | 설정 (bLog·bWeb 등 최상위, 예전 Base 묶음: 읽을 때 풀어 씀, 모든 설정 json: Json 폴더, 예전 위치 Server 폴더에만 있음: 그 파일 + 경고) |
 | Json/Query.json / Search.json / Alarm.json / Field.json | 따로 관리 설정 (웹에서 고침: 저장 쿼리 aQuery·저장 서치 aSearch·알람 aAlarm·필드 aField, 빌드·게시 출력 복사 안 함) |
-| Json/IP.json | 웹 접속 IP 목록 {aWhitelist, aBlacklist} (손으로 고침, 화이트 비었음: 블랙 빼고 모두 허용, 바뀜: 2초 안 반영) |
+| Json/IP.json | 접속 IP 목록 {aWhiteTCP, aBlackWeb} (손으로 고침, aWhiteTCP 비었음: 클라 TCP 모두 거절, 바뀜: 2초 안 반영, 없음: 시작 오류) |
 | Json/Manager.json | 운영 탭 존 (Manager:sZone → ServerList 선택·운영 탭 켜짐: 존 색만 (제목 색 포함 페이지 전체, 제목 글자 그대로), 없음: sZone)·XLO 모니터 요청 제한 (Manager:nTimeout ms, 기본 30000)·비밀번호 (Manager:sCode `****`, 없음: 비밀번호 폼 → AuthKey·접속자 안 나옴)·서버 목록 (Manager:ServerList:{존} [{sName, sIP, nPort}], 웹에서 안 고침, 빌드·게시 출력 복사 안 함) |
 | Server.txt | 테스트 데이터 생성·부하 테스트 요청 메모 (3개월 3천만 건, 클라 50대 × 초당 1,000 × 600초) |
 | web.config | IIS HttpPlatformHandler 설정 |
@@ -36,11 +36,12 @@
 | Server.cs | Main | 진입점 + 공통·기능 연결 (Create: TCP 수신·공통 API·탭 생성, MapRoute: 기본 페이지 → 공통 API → 탭 → 로그인, StartTCP·WaitTCP: 웹 ↔ TCP, OnMinute·OnTick: 타이머 → TCP·쿼리, Shutdown) |
 | ../Common | Global·Config·Log·AES·Count·Define | 공통 (전역 함수·메모리 조회, 설정·설정 쓰기, 시간별 로그, AES 복호화, 받은 진행, 상수·데이터 정의: FieldRule·LogBatch·SEARCH_OP·*Param·AlarmItem·RelayException 등) |
 | Server.cs (Main 상수) | m_nDefaultPort·m_sPeerOff·m_sSelfError·m_arrConfigSplit | 프로젝트별 값 (기본 웹 포트 800·오류 문구 Client Off·Server Error → 공통 Global, 따로 관리 설정 aQuery·aSearch·aAlarm·aField → 공통 Config) |
-| Gate.cs | Gate | 부하 자리 (기능마다 1개: 세션 1건 → 전체 X건, 세션 = 로그인 계정·없음 IP, 넘침: 대기) + Yield (스레드 양보: 연속 0.5초 → 0.1초 쉼, CPU 루프 공통) → 한 사용자가 오래 써도 다른 사용자 동시 사용 |
+| Gate.cs | Gate | 부하 자리 (기능마다 1개: 세션마다 1건씩 동시, 전체 제한 없음 (nAll > 0: 전체 X건), 세션 = 로그인 계정·없음 IP, 같은 세션 둘째: 대기) + Yield (스레드 양보: 연속 0.5초 → 0.1초 쉼, CPU 루프 공통) → 한 사용자가 오래 써도 다른 사용자 동시 사용 |
 | SavedList.cs | SavedList | 저장 목록 공용 (저장 쿼리 aQuery·저장 서치 aSearch): 설정 파일 읽기·저장·API (목록·저장·삭제·순서), 항목 {sKey, sQuery, nMinute} |
 | Timer.cs | Timer | 타이머 (X초 Batch·1분 타이머 → Main) |
 | Auth.cs | Auth | 쿠키 인증 등록·로그인 검사·로그인·로그아웃·계정 API·계정 메뉴 검사·LoginHtml, 로그 수신 토큰 검사 |
-| IPList.cs | IPList | 웹 접속 IP 막기 (Json/IP.json 블랙·화이트리스트, 칸 범위 '*', 파일 바뀜: 바로 반영, Web.UseIPList: 모든 요청 맨 앞 → 403) |
+| IPList.cs | IPList | 접속 IP 목록 (Json/IP.json: aWhiteTCP 클라 TCP 허용·aBlackWeb 웹 막음, 칸 범위 '*', 파일 바뀜: 바로 반영, 웹: Web.UseIPList 403·TCP: AcceptLoop 끊음) |
+| ConfigCheck.cs | ConfigCheck | 서버 시작 맨 앞 Json 폴더 모든 json 형식·값 검사 (오류: 파일·필드·이유 로그 → 종료, 기능별 CheckConfig: SavedList·TabQuery·Auth·OperationMonitor·IPList) |
 | Web.cs | Web | Kestrel·미들웨어 (요청 로그·정적 파일), 기본 페이지 (IndexHtml = IndexHead + 탭 *HTML + IndexTail), 제목·존 색·알람 링크 주소 |
 | API.cs | API | 공통 API (/api/info·echo·client·log), 클라 조각 읽기 재요청·응답 조립 (탭 공용) |
 | TCPServer.cs | TCPServer·ClientInfo·LineWriter·LineReader | Client TCP 수신·요청 중계·Pause/Resume, 접속 클라 정보 |
@@ -60,7 +61,7 @@
 - 원문: Data\Origin\머신\경로 에 `[시간][Machine][Folder][Line]:[원문]:[Type]{필드}` 레코드
 - 색인: Data\Index\yyyyMMddHH\ (doc.bin + 세그먼트 *.idx: 단어 해시 256 버킷·필드 사전·varint 포스팅), 워커 버퍼는 단어 해시만 (문자열 없음) + 포스팅 int 블록 아레나 (ArrayPool), 1초마다 쓰기 (버퍼마다 해시 순 → k-way 합침 → 포스팅 이어 쓰기), 8개 초과·10분 유휴 시 병합: 합침 스레드 따로 (쓰기 안 밀림) + 스트리밍 (포스팅 바이트 이어 붙임, 조각 첫 varint 만 재인코딩, 메모리 = 파일 크기 합)
 - 쿼리: AND·OR·NOT·괄호·`필드:값`·`*`, 시간 폴더 병렬 (코어 절반), 시간·분·초별 건수 + 최신 순 1,000건 페이지, 60초 결과 보관, 최대 1,096일 (3년, 쿼리 S 달력: E 기준 그 안만 고름)
-- 부하 분산 (Gate, 쿼리·통계·렌즈 / 서치 / 파일 보기 / 덤프 다운 / 파일 다운 따로): 세션 (로그인 계정, 없음: IP) 1건 → 전체 X건 (쿼리 2·서치 2·보기 4·덤프 다운 2·파일 다운 2), 넘침: 대기 → 한 사용자가 오래 써도 다른 사용자 사용, 제한 시간 (페이지 설정 버튼, localStorage): 쿼리 nLimit (기본 60초, 넘음: sError "제한 시간 초과")·서치 nLimit (기본 60초, 클라 마감 → 그때까지 결과, 서버 대기 = + 30초), 양보 Yield: 스레드 연속 0.5초 → 0.1초 쉼 + 취소 확인 (세그먼트·줄·조각 단위, 클라 Throttle 과 같은 값), 스레드 풀 최소 = 코어 × 2
+- 부하 분산 (Gate, 쿼리·통계·렌즈 / 서치 / 파일 보기 / 덤프 다운 / 파일 다운 따로): 세션 (로그인 계정, 없음: IP) 마다 1건씩 동시 (전체 제한 없음, 클라 안전 상한: 서치·보기 16), 넘침: 대기 → 한 사용자가 오래 써도 다른 사용자 사용, 제한 시간 (페이지 설정 버튼, localStorage): 쿼리 nLimit (기본 30초·최대 100초, 넘음: sError "제한 시간 초과")·서치 nLimit (기본 30초·최대 100초, 클라 마감 → 그때까지 결과, 서버 대기 = + 30초), 양보 Yield: 스레드 연속 0.5초 → 0.1초 쉼 + 취소 확인 (세그먼트·줄·조각 단위, 클라 Throttle 과 같은 값), 스레드 풀 최소 = 코어 × 2
 - 막대 렌즈 (Lens 버튼, 막대 왼쪽 ↑·스텝·↓): 스텝 0 = 기간 기본 단위 (1분 이하 초·1시간 이하 분·24시간 이하 시·90일 미만 일·넘음 월봉), ↓ 월 → 일 → 시 → 분 → 초 (마지막, 막대 86,400개 넘는 단위: 꺼짐, 24시간 이하: 초봉까지), ↑ 한 단위 크게 (렌즈 숫자 ↑ +1·↓ -1, 스텝 0: 기준 시각 포함 지난 분봉 60분·시봉 24시간·일봉 그 달·월봉 12개월로 기간 넓혀 쿼리, 넓힌 단계 ↓·넓혀 둔 단계 ↑: 보관 결과 스냅샷 그대로·다시 쿼리 안 함), 기본 단위보다 작은 초·분봉: /api/query/lens
 - 통계: 필드별 상위 20개 값 건수 (기본 필드 Machine·Folder·Type + 설정 aField, 존: aField zone)
 - 알람: 적재 시 앵커 매칭 → 매분 합산, nMinute 분 nCount 건 이상 발생·nDelay 분 억제 (발송 뒤 그 시간과 겹친 구간: 판정 안 함) → 발송 스레드 5개 메일 (SMTP)·훅 (botName·text·attachments), 실패: pending.json 재시도, 로그 Data\Alarm\log\yyyyMMdd.jsonl, 기록 Data\Alarm\history.jsonl (날짜·제목·내용·결과, 최신 1,000건 → 쿼리 기록 버튼), SMS: 미구현
@@ -69,8 +70,9 @@
 - 파일: 클라 폴더 트리·파일 다운 (CP949 줄 → UTF-8 변환, BOM 추가)
 - 관리 (ServerManager 이식): 존 (Manager:sZone, 없음: sZone) 게임 서버 XLO 모니터 동시 점검 (요청 제한 nTimeout·비밀번호 sCode: Manager.json) → 운영·로비/룸·AuthKey (패치 전 빨강·후 초록)·접속자·CDS, 미운영 접힘, 패치 시작 시각 (Redis), 오른쪽 동접 (최고 동접·최근 X일)·차트 (Chart.js CDN, 처음 볼 때 불러옴)·모니터 (서버 URL → iframe), X분 정각 동접 기록 타이머 (서버 목록·Redis 있을 때만)
 - 실행 (HMXServer 이식): Redis 서버 목록 (대분류·중분류·서버) 시작·정지·다운 지시 (값 앞 상태,False → 머신별 HMXClient 처리 후 True)·등록·편집·복제·삭제·이름 변경 (버전 검증)·작업 로그·에러 (상세: 반영 탭)
-- 로그인: bAuth 시 쿠키 인증, 계정: 관리 계정 (sID·sCode) + Account.json aAccount (aMenu: 탭·API 제한, 403) (365일 슬라이딩, 메모리 키 → 재시작 시 재로그인), 실패 응답 1초 지연, 같은 IP 연속 3번 실패 (아이디·비밀번호 불일치만): 그동안 시도한 계정 (관리 계정 제외) 비밀번호 랜덤 100자 (풀기: 관리 계정이 수정 창에서 새로, 외부 API 토큰 검사: 안 셈), 미인증 API 401
-- 접속 IP: Json/IP.json {"aWhitelist": [], "aBlacklist": []} → 모든 웹 요청 맨 앞 (페이지·API·외부 API·로그인), 블랙리스트 맞음: 막음 (우선), 화이트리스트 있음: 맞는 IP 만 (비었음·파일 없음: 블랙 빼고 모두 허용), 값: IPv4 네 칸 숫자·'*' (예: 10.0.0.1, 192.168.*.*, 127.*.*.*, *.*.*.*), IPv6 그대로 (예: ::1), "*": 모두, 틀린 값: 경고 후 뺌, 형식 오류: 앞 목록 그대로, 파일 바뀜: 2초 안 반영 (재시작 안 함), 막음: 403 Access Denied + 경고 로그 (같은 IP 1분에 1번, 외부 API 토큰 ****), 접속 IP: Web.GetAddr (IIS: X-Forwarded-For, 안 넘어오면 모두 127.0.0.1), 로컬 접속: 127.*.*.*·::1 도 넣음, 클라 TCP 수신: 대상 아님
+- 로그인: bAuth 시 쿠키 인증, 계정: 관리 계정 (sID·sCode) + Account.json aAccount (aMenu: 탭·API 제한, 403) (365일 슬라이딩, 메모리 키 → 재시작 시 재로그인), 실패 응답 1초 지연, 같은 IP 연속 실패 (아이디·비밀번호 불일치만, 외부 API 토큰 검사: 안 셈) 3번: 그동안 시도한 계정 (관리 계정 제외, 대소문자까지 같은 아이디만) 비밀번호 랜덤 100자 (계정마다 1번, 풀기: 관리 계정이 수정 창에서 새로 → 그 아이디 실패 기록 지움·그 아이디로 막힌 IP 풀기), 5번: 그 IP 를 IP.json 블랙리스트 자동 등록 (루프백 제외), 마스터 키 전: 관리 계정만 로그인 처리, 미인증 API 401
+- 접속 IP: Json/IP.json {"aWhiteTCP": [{"sIP", "sID"}], "aBlackWeb": [{"sIP", "sID"}]} (항목: sIP = IP 패턴, sID = aWhiteTCP: 구분용 메모 (검사 안 함)·aBlackWeb: 막힌 계정 (자동 등록, 계정 비밀번호 바뀜: 그 IP 풀림)·수동: "" (IP 만), 예전 "IP" 문자열도 됨): aWhiteTCP = 클라 TCP 접속 허용 IP (있는 IP 만 접속, 비었음·파일 없음: 모두 거절 → 경고 로그, 바뀜: 새 접속부터), aBlackWeb = 웹 막을 IP (모든 웹 요청 맨 앞: 페이지·API·외부 API·로그인 → 403 Access Denied), 서로 따로 (aWhiteTCP: 웹 대상 아님, aBlackWeb: TCP 대상 아님), 값: IPv4 네 칸 숫자·'*' (예: 10.0.0.1, 192.168.*.*, 127.*.*.*, *.*.*.*), IPv6 그대로 (예: ::1), "*": 모두, 틀린 값: 시작 때 오류 → 종료 (실행 중: 경고 후 뺌), 형식 오류: 앞 목록 그대로, 파일 바뀜: 2초 안 반영 (재시작 안 함), 막음 로그 (같은 IP 1분에 1번, 외부 API 토큰 ****), 접속 IP: 웹 Web.GetAddr (IIS: X-Forwarded-For)·TCP 상대 주소, 자동 등록: 로그인 연속 실패 5번 → aBlackWeb 끝에 {sIP, sID: 그동안 시도한 아이디 (',' 구분)} 추가 (서버가 파일 다시 씀: 주석 사라짐)
+- 설정 시작 검사: 서버 시작 맨 앞 (ConfigCheck): Json 폴더 모든 *.json 미리 읽기·검사 → 1단계 형식 (설정 로딩 전, 주석·끝 쉼표·경로 \ 하나 허용), 2단계 값 (설정 로딩 뒤, 파일 안 키마다: bLog·bWeb·bAuth·bHttps·bTest true·false, nPort·Redis.nPort·Mail.nPort 1 ~ 65535, sUrl http·https, aMenu 탭 이름, aQuery·aSearch 제목·내용·형식·간격·겹침, aField 이름·정규식, aAlarm 값 (CheckAlarm), aAccount 아이디·겹침·sCode·메뉴·외부 권한·메일·전화, Manager.ServerList sIP·nPort·겹침, IP.json aWhiteTCP·aBlackWeb 만·IP 패턴·IP.json 없음: 오류) → 오류 하나라도: 파일·필드·이유 ERROR 로그 (전부) + FATAL → 서버 종료 (고친 뒤 다시 시작), 실행 중 다시 읽기 (설정 팝업·IP.json 바뀜): 기능마다 그대로 (경고·앞 값 유지)
 - 연결 끊김 (페이지): 접속 머신 목록 1초 갱신 요청 실패 → 제목 옆 빨강 글 "서버 연결 끊김 - 재시도 N초" (오류 글: 툴팁), 1초마다 /api/echo 재시도, 응답: 해제·머신 목록 다시 (HMX 와 같은 모양)
 - 설정 쓰기: 저장 쿼리·저장 서치·알람·필드 정의 수정 (쿼리 탭 저장·알람·필드 버튼, 서치 탭 저장 버튼: 같은 창·같은 기능 (더블클릭: 검색어·기간 넣고 서치)) → Query.json·Search.json·Alarm.json·Field.json 그 파일 통째로 저장 (요청자 IP 로그), 팝업 열 때마다: 그 파일 다시 읽음 → 다름: 바로 적용 (json 직접 고침, 재시작 안 함), 예전 형식 (Server.json 에 있음·파일 없음): 시작 때 파일 만듦 (Server.json 그대로)
 - 얼라이브: 클라 1분마다 Alive (관리 목록) → 관리 폴더와 다름만 Count 처럼 맞춤 + 답 aField (받은 진행 없음)
@@ -93,7 +95,7 @@
 | sTitle | 이름 (제목 `{이름} {존}`·로그 줄 레벨 앞 `[이름_]` 태그, 예: HMX → `HMX Dev`·`[시각] [HMX_][INFO_] 내용`, 없음: 제목 HMX·로그 태그 없음) |
 | sZone | 존 (제목 `{이름} {존}`·색) |
 | aMenu | 보일 탭 (예: `[ "쿼리", "서치" ]` → 두 탭만 그 순서대로, 탭 버튼 이름, 계정·힌트: 늘 끝, 없음·맞는 이름 없음: 전체, 첫 화면: 첫 탭), 빠진 탭: 서버·페이지 동작 안 함 (긴급 내림: 탭 생성·API·스레드·타이머·시작 조회, 쿼리: 적재·색인·알람·클라 Pause, 쿼리·서치·파일·덤프 모두 빠짐: TCP 포트 안 엶) |
-| sUrl | (선택) 알람 링크 주소 (메일·훅 본문 끝, 알람 기록 내용 클릭), 없음: 바인딩 주소 (localhost·모든 주소: 이 머신 내부 IP, 사설 10·172.16~31·192.168 우선), 포트: exe 실행 바인딩 포트, IIS 실행 첫 요청 포트 (사이트 포트, 예: `http://10.x.x.x:700`, bHttps: `https://10.x.x.x`) |
+| sUrl | (선택) 알람 링크 주소 (메일 본문 끝, 알람 기록 내용 클릭, 훅: 링크 없음), 없음: 바인딩 주소 (localhost·모든 주소: 이 머신 내부 IP, 사설 10·172.16~31·192.168 우선), 포트: exe 실행 바인딩 포트, IIS 실행 첫 요청 포트 (사이트 포트, 예: `http://10.x.x.x:700`, bHttps: `https://10.x.x.x`) |
 | nPort | Client TCP 수신 포트 (801, 없음: 미사용) |
 | Mail:sHost·nPort·bSsl·sFrom | 알람 SMTP (STARTTLS, 465 암시적 SSL 미지원) |
 | Mail:sID / Mail:sCode | SMTP 계정 `****` / 암호화 비밀번호 `****` |
@@ -104,7 +106,7 @@
 | aAlarm[] (Alarm.json) | 알람 {nID, sKey, sQuery, nMinute (1~1440, 구간: KST 자정부터 nMinute 분마다·하루 안 넘김, 하루에 안 나눠떨어지면 그날 마지막 구간 짧음), nCount, nDelay (≤1440), aMail, aSMS (아이디), sHook, bEnable}, 수신처·훅 주소 `****` |
 | aField[] (Field.json) | 줄 추가 필드 정의 {sKey, sRegex 또는 sValue} (sValue: 고정값, 예: 존 `{"sKey":"zone","sValue":"Dev"}`, 현재: zone·ip·sno·tno·hid·nick) → TCP: 클라 Count 답·Alive 답 (클라 1분마다)·필드 버튼 저장 때 바로 내려줌, /api/external/log·TCP: 이 키·고정값만 받음, 설정 순서 = 필드 목록 순서, 바꿈: 쿼리 필드 버튼 (바로 적용, json 직접: 필드 팝업 열 때 반영) |
 
-- sCode: MySQL 호환 AES-128-ECB, 키 = 마스터 키 (메모리만, bWeb·bAuth: 서버 오픈 뒤 첫 접속 1회 계정 (관리 계정·aAccount) 아이디·비밀번호·마스터 키 입력 → 그 계정 sCode 복호화 = 비밀번호 확인, 그 전: 첫 접속 계정 + 마스터 키만 → 복호화·Redis·메일 인증 안 함, 외부 API: 503, 로그인 안 씀: 솔루션명 HMX)
+- sCode: MySQL 호환 AES-128-ECB, 키 = 마스터 키 (메모리만, bWeb·bAuth: 서버 오픈 뒤 첫 접속 1회 관리 계정 아이디·비밀번호·마스터 키 입력 (그 전: 다른 계정 로그인 처리 안 함 → 공통 오류) → 그 계정 sCode 복호화 = 비밀번호 확인, 그 전: 첫 접속 계정 + 마스터 키만 → 복호화·Redis·메일 인증 안 함, 외부 API: 503, 로그인 안 씀: 솔루션명 HMX, 클라: TCP 로 받음 (솔루션명 AES 암호화 → 클라 복호화))
 - 알람 간격 최대 1440 분 (예전 60): 집계 메모리·부하 같음, 서버 재시작: 진행 중 구간 합계 0 부터
 
 ## API (총 45개, 대표, 쿼리·통계·렌즈·서치: nLimit 제한 시간 초)
@@ -134,15 +136,15 @@
 ## 외부 API (/api/external, 목록: API.m_arrExternal)
 - 인증: 로그인 대신 경로 뒤 키/토큰 → 키 (계정 sKey, 메모리 키 맵) 로 계정 찾음 → 그 API 권한 (aAccount aAPI, 관리 계정: 전체) + 토큰을 그 계정 sRand 키로 복호화 = sCode 면 통과 (로그인해도 필요, 끝 '/' 허용)
 - 키: 영문·숫자 20자리 무작위, Account.json (aAccount 항목 sCode 아래 sKey·sRand·sToken, 관리 계정: 최상위 sKey·sRand·sToken), 키 바꾸기: 관리 계정 팝업 → 계정 수정 → 새 키 (화면에서 만들어 보여줌, 저장 안 함) → 관리 비밀번호 입력 → 적용 (POST /api/account/key {sID, sKey, sAdmin}: 관리 비밀번호·형식·겹침 확인 → 저장·토큰 다시, 예전 키·링크 못 씀)만, 없음: 그 계정 외부 API 못 씀, 계정 추가·수정: 토큰만 다시 계산 저장
-- 쿼리 브라우저 열기 (메일·훅 링크): 키 계정 로그인 (쿠키) → 쿼리 탭 그 쿼리·기간 바로 실행
-- 토큰: 그 계정 sCode 를 sRand 키로 암호화 = `SELECT TO_BASE64(AES_ENCRYPT('sCode', 'sRand'))` (Auth.GetToken, Account.json sToken: 이 표준 base64 (+·/·=) 그대로 저장), 보이는 곳·링크 (계정 팝업·메일·훅·외부 호출): URL 용 = + → -, / → _, 끝 = 뺌 (Auth.GetUrlToken, sCode·sRand 바뀜: 토큰도 바뀜, sRand 없음: 토큰 없음, IIS 이중 이스케이프 거부 (404.11) 피함, 받을 때: 예전 표준 base64 (+·/·=) 도 허용)
+- 쿼리 브라우저 열기 (메일 링크): 키 계정 로그인 (쿠키) → 쿼리 탭 그 쿼리·기간 바로 실행
+- 토큰: 그 계정 sCode 를 sRand 키로 암호화 = `SELECT TO_BASE64(AES_ENCRYPT('sCode', 'sRand'))` (Auth.GetToken, Account.json sToken: 이 표준 base64 (+·/·=) 그대로 저장), 보이는 곳·링크 (계정 팝업·메일·외부 호출): URL 용 = + → -, / → _, 끝 = 뺌 (Auth.GetUrlToken, sCode·sRand 바뀜: 토큰도 바뀜, sRand 없음: 토큰 없음, IIS 이중 이스케이프 거부 (404.11) 피함, 받을 때: 예전 표준 base64 (+·/·=) 도 허용)
 - 불일치·목록에 없음: X초 지연 후 401, 마스터 키 입력 전: 503, 요청 로그: 토큰 ****, bAuth false: 확인 안 함
 - 추가: API.m_arrExternal (경로 앞 + 권한 메뉴) + API.MapRoute
 
 | Method | Path | 권한 (aAPI) | 설명 |
 |---|---|---|---|
 | GET·POST | /api/external/log/{키}/{토큰}/ | 로그 | 로그 수신 (쿼리 문자열 ?sMachine=&sPath=&sFolder=&aLine=&aNo=&추가 필드=값, 없음: 본문 JSON {sMachine, sPath, sFolder, aLine, aNo, aField}, TCP arr* 키 → a*, 추가 필드: 설정 aField 키·고정값만 → 그 밖: 400 필드 오류) → TCP Log 와 같은 처리 (ReadLog → 적재 큐, 받은 진행 관리 안 함, 원문 시간: 요청 받은 시각 (원문은 그대로), 쿼리 탭 켜짐만) |
-| GET·POST | /api/external/query/{키}/{토큰}/ | 쿼리 | 쿼리 (쿼리 문자열 ?sKey=&nStart=&nEnd=&nMinute=&nPage=&nLimit=, 없음: POST 본문 JSON 같은 키, sKey 없음: *, nStart·nEnd: yyyyMMddHHmm·yyyyMMddHHmmss (시작 포함·끝 미포함, 끝 없음: 지금, 시작 없음: 끝 nMinute 분 전 (기본 60)) → /api/query 와 같은 응답 {nTotal, arrHour, arrMinute, arrLine (1,000건씩 nPage)...}), 알람 메일·훅 링크 (관리 계정 토큰) |
+| GET·POST | /api/external/query/{키}/{토큰}/ | 쿼리 | 쿼리 (쿼리 문자열 ?sKey=&nStart=&nEnd=&nMinute=&nPage=&nLimit=, 없음: POST 본문 JSON 같은 키, sKey 없음: *, nStart·nEnd: yyyyMMddHHmm·yyyyMMddHHmmss (시작 포함·끝 미포함, 끝 없음: 지금, 시작 없음: 끝 nMinute 분 전 (기본 60)) → /api/query 와 같은 응답 {nTotal, arrHour, arrMinute, arrLine (1,000건씩 nPage)...}), 알람 메일 링크 (받는 계정 토큰, 훅: 링크 없음) |
 | GET·POST | /api/external/search/{키}/{토큰}/ | 서치 | 서치 (쿼리 문자열 ?sKey=&aMachine=&nStart=&nEnd=&nHour=&nMax=&nLimit=, 없음: POST 본문 JSON 같은 키 (aMachine: 배열), sKey: 검색어 필수, aMachine: 반복·쉼표 (없음: 접속 머신 전체), nStart·nEnd: yyyyMMddHH (끝 없음: 지금 시, 시작 없음: 끝 nHour - 1 시간 전, 기본 1) → /api/search 와 같은 응답 (NDJSON: 머신마다 한 줄 {nIndex, sMachine, sError, kResult}), 서치 탭 켜짐만) |
 
 ## 실행·배포
