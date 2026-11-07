@@ -1,0 +1,36 @@
+{
+  "aAlarm": [
+    {
+      "nID": 1,
+      "sKey": "[ERR][1M]",
+      "sQuery": "ERROR",
+      "nMinute": 1,
+      "nCount": 100,
+      "nDelay": 0,
+      "aMail": [
+        "studyjung@gmail.com"
+      ],
+      "aSMS": [
+        "01039500301"
+      ],
+      "sHook": "",
+      "bEnable": true
+    },
+    {
+      "nID": 2,
+      "sKey": "[ERR][10M]",
+      "sQuery": "ERROR",
+      "nMinute": 1000,
+      "nCount": 10,
+      "nDelay": 0,
+      "aMail": [
+        "studyjung@gmail.com"
+      ],
+      "aSMS": [
+        "01039500301"
+      ],
+      "sHook": "",
+      "bEnable": true
+    }
+  ]
+}
