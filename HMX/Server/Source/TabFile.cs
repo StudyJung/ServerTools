@@ -1,11 +1,11 @@
 class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각마다 UTF-8 변환 후 브라우저로) API (페이지 쪽: FileHTML)
 {
-	private const int					m_nDownLineMax	= 4 * Define.m_nDumpChunk;	// 다운 줄 끝 기다림 최대 (바이트, 넘음: 줄 중간이라도 변환)
-	private static readonly byte[]		m_arrUtf8Bom	= { 0xEF, 0xBB, 0xBF };		// 다운 앞 UTF-8 BOM (편집기 인코딩 판별)
-	private static Encoding?			m_kCp949;									// CP949 (처음 쓸 때 생성 → Main 의 코드 페이지 등록 뒤)
-	private const int					m_nDownConcurrent	= 2;					// 동시 파일 다운 (전체, 세션마다 1건)
-	private static readonly Gate		m_kGate			= new Gate(m_nDownConcurrent);	// 파일 다운 자리
-	private readonly TCPServer		m_kListener;		// Client TCP 수신 (Main 이 넘김)
+	private const int				m_nDownLineMax		= 4 * Define.m_nDumpChunk;		// 다운 줄 끝 기다림 최대 (바이트, 넘음: 줄 중간이라도 변환)
+	private static readonly byte[]	m_arrUtf8Bom		= { 0xEF, 0xBB, 0xBF };			// 다운 앞 UTF-8 BOM (편집기 인코딩 판별)
+	private static Encoding?		m_kCp949;											// CP949 (처음 쓸 때 생성 → Main 의 코드 페이지 등록 뒤)
+	private const int				m_nDownConcurrent	= 2;							// 동시 파일 다운 (전체, 세션마다 1건)
+	private static readonly Gate	m_kGate				= new Gate(m_nDownConcurrent);	// 파일 다운 자리
+	private readonly TCPServer		m_kListener;										// Client TCP 수신 (Main 이 넘김)
 
 	public TabFile(TCPServer kListener)
 	{

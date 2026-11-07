@@ -1,16 +1,16 @@
 static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜 파일)·파일 보기·진행 알림
 {
-	private const int	m_nSearchMax		= 1000000;	// 검색 결과 최대 건수 (서버 nMax 상한)
-	public const int	m_nSearchDefault	= 1000;	// 검색 결과 최대 건수 기본값 (nMax 없음, 서버와 같음)
-	public const int	m_nSearchLimitSec	= 60;		// 검색 최대 시간 기본 (초, 서버 nLimit 없음, 초과 시 그때까지 결과만)
-	private const int	m_nSearchLimitMax	= 600;		// 검색 최대 시간 상한 (초, 서버 nLimit)
-	private const int	m_nSearchConcurrent	= 2;		// 동시 검색 (서버 동시 서치 수와 같음, 게임 서버 부하 제한)
-	private const int	m_nSearchTextMax	= 1000;		// 검색 결과 줄 최대 글자 (초과: "…")
+	private const int	m_nSearchMax		= 1000000;		// 검색 결과 최대 건수 (서버 nMax 상한)
+	public const int	m_nSearchDefault	= 1000;			// 검색 결과 최대 건수 기본값 (nMax 없음, 서버와 같음)
+	public const int	m_nSearchLimitSec	= 60;			// 검색 최대 시간 기본 (초, 서버 nLimit 없음, 초과 시 그때까지 결과만)
+	private const int	m_nSearchLimitMax	= 600;			// 검색 최대 시간 상한 (초, 서버 nLimit)
+	private const int	m_nSearchConcurrent	= 2;			// 동시 검색 (서버 동시 서치 수와 같음, 게임 서버 부하 제한)
+	private const int	m_nSearchTextMax	= 1000;			// 검색 결과 줄 최대 글자 (초과: "…")
 	private const long	m_nSearchTextTotal	= 300000000;	// 검색 결과 글자 수 합 최대 (초과: 그때까지 결과만, 브라우저 문자열 한도·서버 m_nLineMax 안쪽)
-	private const int	m_nViewCount		= 500;		// 보기 기본 줄 수
-	private const int	m_nViewCountMax		= 2000;		// 보기 최대 줄 수
-	private const int	m_nViewTextMax		= 10000;	// 보기 줄 최대 글자 (초과: "…")
-	private const int	m_nSearchWaitSec	= 20;		// 앞 검색 처리 중일 때 대기 (초, 초과: 거절 → 밀린 검색 방지)
+	private const int	m_nViewCount		= 500;			// 보기 기본 줄 수
+	private const int	m_nViewCountMax		= 2000;			// 보기 최대 줄 수
+	private const int	m_nViewTextMax		= 10000;		// 보기 줄 최대 글자 (초과: "…")
+	private const int	m_nSearchWaitSec	= 20;			// 앞 검색 처리 중일 때 대기 (초, 초과: 거절 → 밀린 검색 방지)
 	private const int	m_nProgressMs		= 1000;			// 검색 진행 알림 주기 (ms)
 
 	private static readonly SemaphoreSlim						m_kSearchLock = new SemaphoreSlim(m_nSearchConcurrent, m_nSearchConcurrent);	// 동시 검색 X건 (한 검색이 오래 걸려도 다른 사용자 검색)

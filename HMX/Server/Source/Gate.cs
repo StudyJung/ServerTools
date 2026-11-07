@@ -6,7 +6,7 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 	[ThreadStatic] private static long	m_nYieldSlice;	// 이 스레드 연속 실행 시작 (Stopwatch)
 	[ThreadStatic] private static long	m_nYieldLast;	// 이 스레드 마지막 Yield (Stopwatch, 0: 처음)
 
-	private readonly SemaphoreSlim								m_kAll;														// 전체 자리
+	private readonly SemaphoreSlim									m_kAll;	// 전체 자리
 	private readonly ConcurrentDictionary<string, SemaphoreSlim>	m_hmapSession	= new ConcurrentDictionary<string, SemaphoreSlim>();	// 세션 → 1건 자리
 
 	public Gate(int nAll)

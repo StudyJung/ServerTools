@@ -5,12 +5,12 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 	public const int	m_nMinuteMax	= 129600;	// 간격 최대 (분, 페이지 SAVED_MINUTE_MAX)
 	public const int	m_nMinute		= 10;		// 간격 기본 (분, 페이지 SAVED_MINUTE)
 
-	private readonly string	m_sKey;			// 설정 키 (aQuery·aSearch)
-	private readonly string	m_sName;		// 로그 이름 (저장 쿼리·저장 서치)
-	private readonly string	m_sWord;		// 항목 글 (쿼리·검색어)
-	private readonly string	m_sResult;		// 응답 배열 키 (arrQuery·arrSearch)
-	private readonly object	m_kLock	= new object();	// 바꾸기 1건씩
-	private volatile List<(string sKey, string sQuery, int nMinute)>	m_listSaved;	// 목록 (바꿀 때 통째로)
+	private readonly string												m_sKey;					// 설정 키 (aQuery·aSearch)
+	private readonly string												m_sName;				// 로그 이름 (저장 쿼리·저장 서치)
+	private readonly string												m_sWord;				// 항목 글 (쿼리·검색어)
+	private readonly string												m_sResult;				// 응답 배열 키 (arrQuery·arrSearch)
+	private readonly object												m_kLock	= new object();	// 바꾸기 1건씩
+	private volatile List<(string sKey, string sQuery, int nMinute)>	m_listSaved;			// 목록 (바꿀 때 통째로)
 
 	public SavedList(string sKey, string sName, string sWord, string sResult)
 	{

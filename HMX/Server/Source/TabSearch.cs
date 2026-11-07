@@ -1,22 +1,22 @@
 class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 서치·파일 보기·진행·중지 API + 보기 새 창 (페이지 쪽: SearchHTML)
 {
-	private const int	m_nKeyMax			= 200;	// 검색어 최대 글자
+	private const int	m_nKeyMax			= 200;		// 검색어 최대 글자
 	private const int	m_nSearchMax		= 1000000;	// 머신당 검색 결과 최대 건수 상한 (= 페이지 MACHINE_LIMIT, 요청 nMax: 1 ~ 이 값)
-	private const int	m_nSearchDefault	= 1000;	// 머신당 검색 결과 최대 건수 기본값 (요청 nMax 없음, = 페이지 MACHINE_DEFAULT)
-	private const int	m_nSearchLimitSec	= 60;	// 서치 제한 시간 기본 (초, 요청 nLimit 없음, 클라 검색 마감, 페이지 설정 기본과 같음)
-	private const int	m_nSearchLimitMax	= 600;	// 서치 제한 시간 최대 (초)
-	private const int	m_nSearchWaitSec	= 30;	// 검색 결과 대기 여유 (초, 제한 시간 + 이 값)
-	private const int	m_nSearchConcurrent	= 2;	// 동시 서치 (전체, 세션마다 1건, 클라 동시 처리 수와 같음)
-	private const int	m_nViewConcurrent	= 4;	// 동시 파일 보기 (전체, 세션마다 1건)
-	private const int	m_nViewCount		= 500;	// 보기 기본 줄 수 (요청 nCount 없음)
-	private const int	m_nViewCountMax		= 2000;	// 보기 최대 줄 수
+	private const int	m_nSearchDefault	= 1000;		// 머신당 검색 결과 최대 건수 기본값 (요청 nMax 없음, = 페이지 MACHINE_DEFAULT)
+	private const int	m_nSearchLimitSec	= 60;		// 서치 제한 시간 기본 (초, 요청 nLimit 없음, 클라 검색 마감, 페이지 설정 기본과 같음)
+	private const int	m_nSearchLimitMax	= 600;		// 서치 제한 시간 최대 (초)
+	private const int	m_nSearchWaitSec	= 30;		// 검색 결과 대기 여유 (초, 제한 시간 + 이 값)
+	private const int	m_nSearchConcurrent	= 2;		// 동시 서치 (전체, 세션마다 1건, 클라 동시 처리 수와 같음)
+	private const int	m_nViewConcurrent	= 4;		// 동시 파일 보기 (전체, 세션마다 1건)
+	private const int	m_nViewCount		= 500;		// 보기 기본 줄 수 (요청 nCount 없음)
+	private const int	m_nViewCountMax		= 2000;		// 보기 최대 줄 수
 	private const int	m_nExternalHour		= 1;		// 외부 API 서치 기본 기간 (시간, 시작 없음: 끝 시간만)
 
 	private static readonly Gate		m_kGate		= new Gate(m_nSearchConcurrent);	// 서치 자리
 	private static readonly Gate		m_kViewGate	= new Gate(m_nViewConcurrent);		// 파일 보기 자리
 	private static readonly SavedList	m_kSaved	= new SavedList("aSearch", "저장 서치", "검색어", "arrSearch");	// 저장 서치 (설정 aSearch → Search.json)
 
-	private readonly TCPServer		m_kListener;		// Client TCP 수신 (Main 이 넘김)
+	private readonly TCPServer			m_kListener;									// Client TCP 수신 (Main 이 넘김)
 
 	public TabSearch(TCPServer kListener)
 	{
