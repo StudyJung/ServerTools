@@ -6,8 +6,8 @@
   "bLog": true,
   "bWeb": true,
   "bAuth": true,
-  "bTest": false,
   "bHttps": true,
+  "bTest": false,
 
   "sID": "Huns",
   "sCode": "dNKiFt7UwcaY5wp3KRbj5w==",

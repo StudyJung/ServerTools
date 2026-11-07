@@ -481,7 +481,11 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		if (kAccount == null || kAccount.arrMenu.Length == 0)	// 계정 없음·불일치·접근 메뉴 없음 (비밀번호 로그 미기록)
 		{
 			Log.Write(WARN_, $"로그인 실패: {sID}{(kAccount == null ? "" : " 접근 메뉴 없음")} ({sAddr})");
-			CountFail(sAddr, sID);
+
+			if (kAccount == null)	// 아이디·비밀번호 불일치만 셈 (접근 메뉴 없음: 비밀번호 맞음 → 안 셈)
+			{
+				CountFail(sAddr, sID);
+			}
 
 			await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
 
