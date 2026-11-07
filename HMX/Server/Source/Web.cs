@@ -414,8 +414,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<label title="Duration(최근 기간)"><select id="QueryRange"><option value="" hidden>기타</option><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="180">3시간</option><option value="360">6시간</option><option value="540">9시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="21600">15일</option><option value="43200">30일</option><option value="86400">60일</option></select></label>
 		<label title="Start(날짜, 시, 분, 초, 포함, 쿼리: E 기준 최대 3년)"><input type="date" id="StartDate" value="__YESTERDAY__"><select id="StartHour" class="hour"></select><select id="StartMinute" class="hour"></select><select id="StartSecond" class="hour"></select><span class="rangeop">이상</span></label>
 		<label title="End(날짜, 시, 분, 초, 미포함)"><input type="date" id="EndDate" value="__TODAY__"><select id="EndHour" class="hour"></select><select id="EndMinute" class="hour"></select><select id="EndSecond" class="hour"></select><span class="rangeop">미만</span></label>
-		<span class="toolright"><button type="button" id="TimerButton" title="타이머(입력 엔터 시작, 클릭 중지)">10</button><button type="button" id="SearchSavedButton" class="searchonly" title="저장 서치(추가, 수정, 실행)">저장</button><button type="button" id="QueryRuleButton" class="queryonly" title="필드 정의(추가, 수정, 순서, 설정 aField)">필드</button><button type="button" id="QueryHistoryButton" class="queryonly" title="알람 기록(발송, 실패, 최신 1,000건)">기록</button><button type="button" id="QueryAlarmButton" class="queryonly" title="알람(추가, 수정, 켜기)">알람</button><button type="button" id="QuerySavedButton" class="queryonly" title="저장 쿼리(추가, 수정, 실행)">저장</button><button type="button" id="SettingButton" title="설정">설정</button></span>
-		<div class="searchbox">
+		<span class="toolright" id="FilterTool"><button type="button" id="TimerButton" title="타이머(입력 엔터 시작, 클릭 중지)">10</button><button type="button" id="SearchSavedButton" class="searchonly" title="저장 서치(추가, 수정, 실행)">저장</button><button type="button" id="QueryRuleButton" class="queryonly" title="필드 정의(추가, 수정, 순서, 설정 aField)">필드</button><button type="button" id="QueryHistoryButton" class="queryonly" title="알람 기록(발송, 실패, 최신 1,000건)">기록</button><button type="button" id="QueryAlarmButton" class="queryonly" title="알람(추가, 수정, 켜기)">알람</button><button type="button" id="QuerySavedButton" class="queryonly" title="저장 쿼리(추가, 수정, 실행)">저장</button><button type="button" id="SettingButton" title="설정">설정</button></span>
+		<div class="searchbox" id="SearchBox">
 		<input type="text" id="SearchKey" class="searchonly" title="검색어(AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
 		<input type="text" id="QueryKey" class="queryonly" title="쿼리(단어, 필드:값, AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
 		<button type="button" id="SearchButton" class="primary searchonly" title="서치 실행(Enter)">실행</button>
@@ -1119,7 +1119,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const kSearchButton	        = document.getElementById("SearchButton");	// 검색 버튼
 		const kQueryKey		        = document.getElementById("QueryKey");		// 쿼리 입력칸
 		const kQueryRunButton	    = document.getElementById("QueryRunButton");	// 쿼리 버튼
-		const kTimerButton	        = document.getElementById("TimerButton");	// 타이머 버튼 (오른쪽 버튼 묶음 맨 앞: 쿼리 필드·서치 설정 왼쪽, 초 입력 → 초 줄여 감 → 0: 실행 → 다시, 지금 탭 타이머 표시)
+		const kTimerButton	        = document.getElementById("TimerButton");	// 타이머 버튼 (기능 버튼 맨 앞: 쿼리 필드·서치 저장 왼쪽, 초 입력 → 초 줄여 감 → 0: 실행 → 다시, 지금 탭 타이머 표시)
 		const kTimer	            = { kSearch: { sName: "서치", kRun: kSearchButton, nSec: 10, nDue: 0, nId: 0, kFrom: null, kTo: null, nLast: 0, sPick: "" }, kQuery: { sName: "쿼리", kRun: kQueryRunButton, nSec: 10, nDue: 0, nId: 0, kFrom: null, kTo: null, nLast: 0, sPick: "" } };	// 서치·쿼리 타이머 따로 (실행 버튼, 주기 초 (기본 X초), 다음 실행 시각 ms, 1초 setInterval: 0 = 꺼짐, 실행 기간 (초 포함), 마지막 실행 시각 ms, 마지막으로 넣은 S·E 표시)
 		const TIMER_SEC_DEFAULT	    = 10;		// 타이머 기본 주기 (초, 리셋 때)
 		const QUERY_DAY_MAX	        = 1096;		// 쿼리 기간 최대 (일, 3년, 서버 m_nQueryDayMax 와 같음 → 쿼리 S 달력 최소)
@@ -1129,6 +1129,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const kQueryStopButton	    = document.getElementById("QueryStopButton");	// 쿼리 중단 버튼
 		const kQueryProgress	    = document.getElementById("QueryProgress");	// 쿼리 진행 표시
 		const kStopButton	        = document.getElementById("StopButton");	// 검색 중지 버튼
+		const kFilterTool	        = document.getElementById("FilterTool");	// 기능 버튼 묶음 (타이머 ~ 설정: 1줄 오른쪽 끝, 창 좁음: 2줄 실행·중단 오른쪽, PlaceToolButtons)
+		const kSearchBox	        = document.getElementById("SearchBox");		// 2줄: 입력칸·실행·중단 (기능 버튼 내려오는 곳)
 		const kProgress		        = document.getElementById("SearchProgress");	// 검색 진행 표시
 		const kResultPanel	        = document.getElementById("ResultPanel");	// 서치 1번 창: 검색 결과
 		const kResultTitle	        = document.getElementById("ResultTitle");
@@ -1289,6 +1291,24 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 
 		    return await kResponse.json();
+		}
+
+		function PlaceToolButtons()	// 기능 버튼 자리: 1줄 오른쪽 끝에 두고 재서 1줄에서 내려가면 2줄 실행·중단 오른쪽으로 (3줄 안 생김, 창 크기·탭 바뀔 때)
+		{
+		    if (kFilterPanel.hidden)
+		    {
+		        return;
+		    }
+
+		    if (kFilterTool.parentElement === kSearchBox)	// 2줄에 있음: 1줄로 되돌려 잼
+		    {
+		        kSearchBox.before(kFilterTool);
+		    }
+
+		    if (kFilterTool.offsetTop > kQueryRange.offsetTop)	// 1줄에 못 들어가 내려감
+		    {
+		        kSearchBox.append(kFilterTool);
+		    }
 		}
 
 		function ShowStatus()	// 설정 버튼 툴팁 (지금 탭 설정·상태 요약)
@@ -3255,6 +3275,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 
 		    ShowStatus();	// 설정 버튼 툴팁 (지금 탭 설정)
+		    PlaceToolButtons();	// 기능 버튼 자리 (모드마다 보이는 버튼 다름)
 		    Search.FitResultHeight();	// 서치 1번 창 높이 (쿼리 모드: 기준 높이)
 		    Dump.FitDumpHeight();	// 덤프 1번 창 높이: 브라우저 창에 맞춤
 		}
@@ -3779,6 +3800,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		window.addEventListener("resize", Query.FitLogHeight);	// 브라우저 창 크기: 쿼리 2번 창 로그 표 높이 다시 (맨 아래 페이지 번호까지 한 화면)
 		window.addEventListener("resize", Search.FitViewHeight);	// 브라우저 창 크기: 서치 2번 창 높이 다시
 		window.addEventListener("resize", Dump.FitDumpHeight);	// 브라우저 창 크기: 덤프 1번 창 높이 다시
+		window.addEventListener("resize", PlaceToolButtons);	// 브라우저 창 크기: 기능 버튼 1줄 ↔ 2줄 실행·중단 오른쪽
 		kQueryScroll.addEventListener("scroll", () =>	// 읽은 줄 끝 가까이: 다음 줄 이어서
 		{
 		    if (Query.IsNearRowEnd())
