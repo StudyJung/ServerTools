@@ -1,3 +1,4 @@
+# Server
 ## Server: 로그 관리 웹 서버 (.NET 10 file-based app)
    ### 실행: dotnet run --file Source\Server.cs [포트] [호스트=localhost]  (Server 폴더에서, 상위 폴더 Server.csproj 와 따로: --file 필수)
    ### 서비스 (관리자 cmd, 게시된 Server.exe): -install [포트] [호스트] (서비스 HMXServer 등록·자동 시작·시작, 뒤 인자: 실행 인자 그대로) | -uninstall (정지·제거) | -start | -stop (시작·정지 X초 대기)
@@ -108,7 +109,7 @@
 ## ToolManager 경유 (/proxy/{번호}/): 스크립트에서 넣는 링크·이동 주소 (a.href·iframe.src·location 등) 상대 주소 (예: 운영 탭 모니터 api/manager/monitor, 파일 다운 api/files/download), 루트 기준 /...: fetch·XMLHttpRequest·window.open·HTML 글자만 경유 주소로 바뀜 (규칙: HTB.cs 머리 주석)
 ## 종료: Ctrl+C
 
-**UI/UX Guidelines** (모든 툴 공통 가이드, 기준 구현: HMX)
+# **UI/UX Guidelines (모든 툴 공통 가이드, 기준 구현: HMX)**
    새 툴·기존 툴 고침: 이 가이드대로 (툴마다 다르게 안 함), 예·값·이름: HMX 기준 (HMX 기능 이름: 그 자리 기준 예, 없는 요소: 뺌, 순서·모양: 그대로)
    가이드 고칠 때: HMX 먼저 고침 → 이 가이드 같이 고침 (함수·상수 이름: HMX Web.cs·Tab*.cs 기준)
    UX/UI 수정 때마다 (AI 포함, 필수): 그 내용을 공통 기능으로 이 가이드 해당 섹션에 같이 정리 (HMX 기준 예·값·함수 이름, 흩어진 항목: 한 자리로 모음, 바뀐·없어진 내용: 고침·지움, 툴 고유처럼 쓰지 않음)
