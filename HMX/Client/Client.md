@@ -70,6 +70,7 @@
 | 키 | 설명 |
 |---|---|
 | bLog | 파일 로그 기록 (false: 콘솔만, 최상위, 예전 Base 묶음: 읽을 때 풀어 씀) |
+| sLog | 남길 로그 레벨 (Debug·Info·Warn, 서버와 같음, 없음·틀림: Debug) |
 | sIP | Server 주소 (IP·호스트명) |
 | nPort | Server TCP 포트 (현재 801, 키 없음: 9091) |
 | sMachine | 서버에 보낼 머신 이름 (키 없음: 컴퓨터 이름, 한 PC 여러 클라 테스트: 클라마다 다르게, 예: Client1) |

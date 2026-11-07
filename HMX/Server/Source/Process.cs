@@ -582,7 +582,7 @@ static class ProcessVersion	// 설정 버전: 기준 폴더 하위 data\프로�
 	}
 }
 
-static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log) 에 레벨 뒤 [v.버전] 표시로 기록·조회 (예: [2026/06/18 09:36:17.123] [HMX_][INFO_] [v.1] 등록: ..., [HMX_]: 공통 sTitle 태그), 조회: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만
+static class ProcessLog	// 반영 로그: 공통 Log 파일 (log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log) 에 레벨 뒤 [v.버전] 표시로 기록·조회 (예: [2026/06/18 09:36:17.123] [HMX_][INFO_] [v.1] 등록: ..., [HMX_]: 공통 sTitle 태그), 조회: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만
 {
 	private const int	READ_CHUNK	= 131072;	// 역읽기 조각 (바이트)
 	private const int	READ_BUFFER	= 65536;	// 정방향 읽기 버퍼 (바이트)

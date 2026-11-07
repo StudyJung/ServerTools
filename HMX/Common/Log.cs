@@ -1,4 +1,4 @@
-static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간별 (줄: [yyyy/MM/dd HH:mm:ss.fff] [sTitle_][레벨] 메시지, sTitle 없음: [레벨] 부터) (Server·Client 공통)
+static class Log	// 로그: log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간별 (줄: [yyyy/MM/dd HH:mm:ss.fff] [sTitle_][레벨] 메시지, sTitle 없음: [레벨] 부터, 설정 sLog 레벨 이상만) (Server·Client 공통)
 {
 	public const string	DEBUG	= "DEBUG";	// 로그 레벨: 디버그
 	public const string	INFO_	= "INFO_";	// 로그 레벨: 정보
@@ -6,6 +6,10 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 	public const string	WARN_	= "WARN_";	// 로그 레벨: 경고
 	public const string	ERROR	= "ERROR";	// 로그 레벨: 오류
 	public const string	FATAL	= "FATAL";	// 로그 레벨: 치명
+
+	private static readonly string[]	m_arrLevel	= { DEBUG, INFO_, NOTI_, WARN_, ERROR, FATAL };	// 레벨 순서 (낮음 → 높음)
+
+	public static readonly string[]	m_arrLogSetting	= { "Debug", "Info", "Warn" };	// 설정 sLog 값 (그 레벨 이상만 남김)
 
 	private static readonly object	m_lockWrite		= new object();	// 같은 파일 동시 추가 방지
 	private static readonly bool	m_bConsole		= !WindowsServiceHelpers.IsWindowsService();	// 콘솔 모드 (서비스 아님)
@@ -28,8 +32,13 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 		return sTitle == "" ? "" : $"[{sTitle}_]";
 	}
 
-	public static void Write(string sLevel, string sMessage, bool bFile = true)	// 로그 한 줄 추가 (콘솔 모드: 콘솔도, 파일: bLog true 일 때만, bFile false: 콘솔만)
+	public static void Write(string sLevel, string sMessage, bool bFile = true)	// 로그 한 줄 추가 (콘솔 모드: 콘솔도, 파일: bLog true 일 때만, bFile false: 콘솔만, 설정 sLog 아래 레벨: 안 남김)
 	{
+		if (!IsLevel(sLevel))
+		{
+			return;
+		}
+
 		DateTimeOffset	kNow	= GetNow();
 		string			sFile	= GetFile(kNow.ToString("yyyyMMdd_HH", CultureInfo.InvariantCulture));
 		string sLine = $"[{kNow.ToString("yyyy/MM/dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}] {GetTag()}[{sLevel}] {sMessage.Replace('\r', ' ').Replace('\n', ' ')}";	// 레벨 앞 태그 (설정 sTitle), 줄바꿈 제거 (한 줄 = 로그 1건)
@@ -56,6 +65,19 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 		{
 			Console.WriteLine($"로그 쓰기 실패: {kException.Message}");
 		}
+	}
+
+	private static bool IsLevel(string sLevel)	// 남길 레벨 (설정 sLog: Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: WARN_ 이상 (DEBUG·INFO_·NOTI_ 안 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 설정 로딩 전: 모두)
+	{
+		int	nMin	= Config.GetString("sLog").Trim().ToLowerInvariant() switch	// 남길 최소 레벨 순서
+		{
+			"info"	=> Array.IndexOf(m_arrLevel, INFO_),
+			"warn"	=> Array.IndexOf(m_arrLevel, WARN_),
+			_		=> 0,
+		};
+		int	nLevel	= Array.IndexOf(m_arrLevel, sLevel);	// 이 줄 레벨 순서 (모름: -1 → 남김)
+
+		return nLevel < 0 || nLevel >= nMin;
 	}
 
 	private static void WriteConsole(string sLevel, string sLine)	// 콘솔 한 줄 출력 (레벨별 글자색)

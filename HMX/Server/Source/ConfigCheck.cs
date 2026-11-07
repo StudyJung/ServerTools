@@ -77,7 +77,7 @@ static class ConfigCheck	// 서버 시작 맨 앞: Json 폴더 모든 json 미�
 		return Directory.Exists(sDir) ? Directory.GetFiles(sDir, "*.json").Order(StringComparer.OrdinalIgnoreCase).ToArray() : Array.Empty<string>();
 	}
 
-	private static void CheckTop(IConfiguration kFile, List<string> listFile)	// 최상위·묶음 값: bool·포트·알람 링크 주소·탭 이름
+	private static void CheckTop(IConfiguration kFile, List<string> listFile)	// 최상위·묶음 값: bool·포트·로그 레벨·알람 링크 주소·탭 이름
 	{
 		foreach (string sKey in m_arrBool)
 		{
@@ -93,6 +93,11 @@ static class ConfigCheck	// 서버 시작 맨 앞: Json 폴더 모든 json 미�
 			{
 				listFile.Add($"{sKey.Replace(':', '.')}: 1 ~ 65535 (\"{sValue}\")");
 			}
+		}
+
+		if (kFile["sLog"] is string sLog && !Log.m_arrLogSetting.Contains(sLog.Trim(), StringComparer.OrdinalIgnoreCase))
+		{
+			listFile.Add($"sLog: {string.Join("·", Log.m_arrLogSetting)} 만 (\"{sLog}\")");
 		}
 
 		if (kFile["sUrl"] is string sUrl && sUrl != "" && !(Uri.TryCreate(sUrl, UriKind.Absolute, out Uri? kUri) && (kUri.Scheme == Uri.UriSchemeHttp || kUri.Scheme == Uri.UriSchemeHttps)))
