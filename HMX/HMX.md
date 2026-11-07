@@ -50,7 +50,7 @@
 - 로그 Log\yyyyMMdd\{프로젝트명}_yyyyMMdd_HH.log (레벨 DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, bLog)
 - 공통 클래스 (Common, 같이 씀): Global·Config·Log·AES·Count·Define (프로젝트별 값: 각 Main 상수), 프로젝트별: Timer·TCP (서버 TCPServer·클라 TCPClient)·SearchNode·LineWriter·LineReader (같은 규칙, 코드 다름)
 - 검색어 규칙: 대문자 AND·OR·NOT·괄호, 왼쪽부터 (클라 SearchNode = 서버 SearchNode = 페이지 Key)
-- 계정 관리 (공통 UI, 다른 툴 재사용 단위): Auth.cs + Web.cs 계정 팝업(400 × 550px 고정, 관리 계정 고정 + 10개씩 페이지)·추가/수정 창 + Account.json → 명세: Server.cs 머리 UI/UX 가이드 "# 화면 틀 → ## 계정 관리"
+- 계정 관리 (공통 UI, 다른 툴 재사용 단위): Auth.cs + Web.cs 계정 팝업(400 × 550px 고정, 관리 계정 고정 + 10개씩 페이지)·추가/수정 창 + Account.json → 명세: Server\Source\ReadMe.cs UI/UX 가이드 "# 화면 틀 → ## 계정 관리"
 
 ## 실행·배포
 - 개발: HMX.slnx (Visual Studio 2026) F5, 상위 ServerTools.slnx 의 `/2.HMX/` 폴더에도 포함
@@ -63,4 +63,4 @@
 - 하위: [Client.md](Client/Client.md), [Server.md](Server/Server.md), [Common.md](Common/Common.md)
 - 경유: [ToolManager.md](../ToolManager/ToolManager.md) (Server 프록시 경유 접속 대응)
 - UI 기준: ServerManager·HMX·HTB·DataCompare·DataFinder·ToolManager 가 Server 공통 UI (Primer·로그인·힌트·존 색) 따름
-- UI/UX 가이드: Server.cs 머리 **UI/UX Guidelines** (모든 툴 공통, 기준 구현 HMX: 디자인·존 색·화면 틀·명령 창·상자·표·팝업·입력·글·브라우저 저장·차트·목록 관리 화면), UX/UI 수정 때마다: 공통 기능으로 이 가이드에 같이 정리
+- UI/UX 가이드: Server\Source\ReadMe.cs **UI/UX Guidelines** (모든 툴 공통, 기준 구현 HMX: 디자인·존 색·화면 틀·명령 창·상자·표·팝업·입력·글·브라우저 저장·차트·목록 관리 화면), UX/UI 수정 때마다: 공통 기능으로 이 가이드에 같이 정리

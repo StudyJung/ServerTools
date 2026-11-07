@@ -1,4 +1,4 @@
-class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저장·단어·필드 세그먼트 역색인·쿼리·필드별 통계 (구조: Server.cs 머리, 페이지 쪽: QueryHTML)
+class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저장·단어·필드 세그먼트 역색인·쿼리·필드별 통계 (구조: ReadMe.cs, 페이지 쪽: QueryHTML)
 {
 	public const int						m_nIndexWordMax		= 100;				// 색인 단어 최대 글자 (초과: 색인 안 함, 워커 소문자 버퍼 크기)
 	public const int						m_nFieldValueMax	= 260;				// 필드 값 최대 글자 (초과: 색인 안 함, Folder 경로 길이)
@@ -132,7 +132,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return Web.MakePage("field");
 	}
 
-	private static async Task<IResult> OnQuery(string? sKey, long? nStart, long? nEnd, int? nPage, int? nOffset, int? nCount, int? nLimit, HttpContext kContext)	// 쿼리 (응답: Server.cs 머리, 부하 제한: Gate·GetLimitSource·Yield, 요청 끊김: 응답 없음, 제한 시간 넘음: sError)
+	private static async Task<IResult> OnQuery(string? sKey, long? nStart, long? nEnd, int? nPage, int? nOffset, int? nCount, int? nLimit, HttpContext kContext)	// 쿼리 (응답: ReadMe.cs, 부하 제한: Gate·GetLimitSource·Yield, 요청 끊김: 응답 없음, 제한 시간 넘음: sError)
 	{
 		long			nBegin		= Stopwatch.GetTimestamp();
 		string			sQuery		= (sKey ?? "").Trim();
@@ -295,7 +295,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return Results.Json(new { sError, nElapsedMs = (long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds, arrTime = arrCount.Select((nCount, nIndex) => { DateTime kCell = kFirst.AddSeconds((long)nIndex * nCell); long nMinute = ToHour(kCell) * 100 + kCell.Minute; return new { nTime = nCell == 1 ? nMinute * 100 + kCell.Second : nMinute, nCount }; }) });	// nTime: 초봉 yyyyMMddHHmmss, 분봉 yyyyMMddHHmm
 	}
 
-	private static async Task<IResult> OnStat(string? sKey, long? nStart, long? nEnd, string? sField, int? nLimit, HttpContext kContext)	// 필드별 통계: 쿼리·기간 맞는 줄 ∩ 필드 값 포스팅 → 값마다 건수 (원문 안 읽음, sField: 그 필드 값 전체, 응답: Server.cs 머리, 부하 제한: OnQuery 와 같음)
+	private static async Task<IResult> OnStat(string? sKey, long? nStart, long? nEnd, string? sField, int? nLimit, HttpContext kContext)	// 필드별 통계: 쿼리·기간 맞는 줄 ∩ 필드 값 포스팅 → 값마다 건수 (원문 안 읽음, sField: 그 필드 값 전체, 응답: ReadMe.cs, 부하 제한: OnQuery 와 같음)
 	{
 		long										nBegin		= Stopwatch.GetTimestamp();
 		string										sQuery		= (sKey ?? "").Trim();
@@ -2419,7 +2419,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		}
 	}
 
-	public static void SaveOrigin(IngestWorker kWorker, LogBatch kBatch)	// 로직 스레드: 받은 진행 (Count) 이후 줄만 → 원문 레코드 추가 (형식: Server.cs 머리, 1건 = 쓰기 1번, 줄마다 문자열·JSON 객체 안 만듦) + 시간별 색인 버퍼 (타이머가 m_nFlushSec 초마다 가져감) → 받은 진행 저장, 머신·경로 오류·실패: 출력 후 버림
+	public static void SaveOrigin(IngestWorker kWorker, LogBatch kBatch)	// 로직 스레드: 받은 진행 (Count) 이후 줄만 → 원문 레코드 추가 (형식: ReadMe.cs, 1건 = 쓰기 1번, 줄마다 문자열·JSON 객체 안 만듦) + 시간별 색인 버퍼 (타이머가 m_nFlushSec 초마다 가져감) → 받은 진행 저장, 머신·경로 오류·실패: 출력 후 버림
 	{
 		string sFile = "";	// 원문 파일
 
@@ -3108,7 +3108,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		}
 	}
 
-	class SegmentWriter	// 세그먼트 파일 만들기 (플러시·합침 공통): 단어 (해시 오름차순)·필드 (키 순) 마다 Begin → m_kBlob 에 포스팅 이어 씀 → EndTerm·EndField → Save (.tmp 에 쓰고 .idx 로, 형식: Server.cs 머리, 포스팅: 단어 → 필드 순)
+	class SegmentWriter	// 세그먼트 파일 만들기 (플러시·합침 공통): 단어 (해시 오름차순)·필드 (키 순) 마다 Begin → m_kBlob 에 포스팅 이어 씀 → EndTerm·EndField → Save (.tmp 에 쓰고 .idx 로, 형식: ReadMe.cs, 포스팅: 단어 → 필드 순)
 	{
 		public readonly MemoryStream	m_kBlob		= new MemoryStream();			// 포스팅 (호출 쪽이 바로 씀)
 		private readonly MemoryStream	m_kEntry	= new MemoryStream();			// 단어 사전 (칸 m_nSegEntry 바이트)
