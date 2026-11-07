@@ -1,3 +1,4 @@
+# Client
 ## Client - 로그 감시·실행 (배포·온오프) 클라 (.NET 10 file-based app, 윈도우 서비스 지원)
 ## 실행: dotnet run --file Source\Client.cs (Client 폴더에서, 상위 폴더 Client.csproj 와 따로: --file 필수)
 ## 인자: -install (서비스 HMXClient 등록·시작, 관리자 권한, 게시된 Client.exe 로 실행) | -start·-stop (서비스 시작·정지, X초 대기, 관리자 권한) | -uninstall (서비스 정지·제거, 관리자 권한) | 그 외·없음 (클라 실행: 콘솔 Ctrl+C 종료, 서비스로 실행되면 SCM 연동)
@@ -32,7 +33,7 @@
    ### nLogSend   : 파일마다 감시 주기당 최대 전송 줄 수 (aLogType 줄, 기본 100, 차면 그 줄까지만 본 것으로)
    ### sCode : 로딩 시 AES 복호화 → 같은 위치 sPass 로 조회 (예: "DB:Dev:sCode" → GetString("DB:Dev:sPass"))
       #### AES 키: 마스터 키 (메모리만, 서버에서 받음: 첫 접속부터 X초마다 MasterKey 요청 → 받을 때까지 다른 기능 안 함 → 받으면 설정 다시 로딩)
-   ### sTitle : 이름 → 로그 줄 레벨 앞 [이름_] 태그 (예: HMX → [시각] [HMX_][INFO_] 내용, 실행 에러 리스트 줄도 같음, 없음: 태그 없음)
+   ### sTitle : 이름 → 로그 줄 레벨 앞 [이름_] 태그 (예: 프로젝트 → [시각] [HMX_][INFO_] 내용, 실행 에러 리스트 줄도 같음, 없음: 태그 없음)
    ### sZone : 존 (예: Dev, 서버 Server.json sZone 과 같게 → 실행 기능 Redis 키 존, 없음: 설정 값만)
    ### Redis : 실행 기능 Redis (서버 Server.json Redis 와 같은 서버, sHost 없음: 실행 기능 꺼짐 → 로그 감시만)
       #### sHost·nPort·nDB·sUser·sCode (→ sPass) : 접속 (비밀번호: 출력 안 함)
