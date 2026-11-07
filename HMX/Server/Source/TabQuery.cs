@@ -4675,7 +4675,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        const kButton	= document.getElementById("ResetButton");
 
 		        kButton.disabled	= nBack <= 0;
-		        kButton.title		= `이전 실행으로(M·D·S·E·입력, 돌아갈 수 있음: ${Math.max(0, nBack)}회, 서치·쿼리 따로 최근 ${Query.BACK_MAX}회 기억)`;
+		        kButton.title		= `이전 실행(최대 ${Query.BACK_MAX}회)`;
 		    }
 
 		    static async GoBack()	// 모래시계 버튼: 이전 실행으로 → 지금 실행 기억 지움 (돌아간 뒤 기억 지움) → 앞 기억 M·D·S·E·입력칸 그대로 → 그 S·E 그대로 실행 (D 다시 계산 안 함, 기억 안 넣음)
