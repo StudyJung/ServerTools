@@ -63,4 +63,4 @@
 - 하위: [Client.md](Client/Client.md), [Server.md](Server/Server.md), [Common.md](Common/Common.md)
 - 경유: [ToolManager.md](../ToolManager/ToolManager.md) (Server 프록시 경유 접속 대응)
 - UI 기준: ServerManager·HMX·HTB·DataCompare·DataFinder·ToolManager 가 Server 공통 UI (Primer·로그인·힌트·존 색) 따름
-- UI/UX 가이드: Server.cs 머리 **UI/UX Guidelines** (모든 툴 공통, 기준 구현 HMX: 디자인·존 색·화면 틀·명령 창·상자·표·팝업·입력·글·브라우저 저장·차트·목록 관리 화면)
+- UI/UX 가이드: Server.cs 머리 **UI/UX Guidelines** (모든 툴 공통, 기준 구현 HMX: 디자인·존 색·화면 틀·명령 창·상자·표·팝업·입력·글·브라우저 저장·차트·목록 관리 화면), UX/UI 수정 때마다: 공통 기능으로 이 가이드에 같이 정리
