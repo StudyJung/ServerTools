@@ -2887,7 +2887,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		let arrAccountTab	= [];		// 계정 메뉴 고를 탭 (모든 탭)
 		let arrAccountApi	= [];		// 계정 외부 API 고를 권한 (aAPI: 쿼리·서치·로그)
 		let arrAccountList	= [];		// 계정 목록 { sID, aMenu, aAPI, bMain } (정렬 뒤 전체, 줄 dataset.index = 이 위치)
-		const ACCOUNT_PAGE	= 20;		// 계정 팝업 한 페이지 계정 수
+		const ACCOUNT_PAGE	= 10;		// 계정 팝업 한 페이지 계정 수 (관리 계정 제외)
 		let nAccountPage	= 0;		// 계정 팝업 지금 페이지 (0부터, 열 때 0)
 		let kAccountEdit	= null;		// 수정·삭제할 계정 (추가: null)
 		let sAccountNewKey	= "";		// 수정 창 새 키 (적용 전, 없음: "")
@@ -2929,12 +2929,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		}
 
-		function ShowAccountList(arrAccount, nPage = nAccountPage)	// 계정 목록 그리기 (관리 계정 맨 위 + 아이디 오름차순, ACCOUNT_PAGE 개씩 페이지 (번호 버튼, 1쪽: 숨김), 아이디 | 수정·삭제 (관리 계정 로그인만), 관리 계정 줄: "관리", 지금 로그인: 강조)
+		function ShowAccountList(arrAccount, nPage = nAccountPage)	// 계정 목록 그리기 (관리 계정: 맨 위 고정 (모든 쪽), 나머지 아이디 오름차순 ACCOUNT_PAGE 개씩 페이지 (번호 버튼, 1쪽: 숨김), 아이디 | 수정·삭제 (관리 계정 로그인만), 관리 계정 줄: "관리", 지금 로그인: 강조)
 		{
 		    arrAccountList = [...arrAccount].sort((kLeft, kRight) => Number(kRight.bMain) - Number(kLeft.bMain) || kLeft.sID.localeCompare(kRight.sID, undefined, { numeric: true }));	// 관리 계정 먼저, 그다음 오름차순
 		    arrAccount = arrAccountList;
 
-		    const nPageCount	= Math.max(1, Math.ceil(arrAccount.length / ACCOUNT_PAGE));	// 전체 페이지 수
+		    const nMainCount	= arrAccount.filter(kAccount => kAccount.bMain).length;					// 고정 줄 (관리 계정)
+		    const nPageCount	= Math.max(1, Math.ceil((arrAccount.length - nMainCount) / ACCOUNT_PAGE));	// 나머지 페이지 수
 		    const kPager		= document.getElementById("AccountPager");
 
 		    nAccountPage = Math.min(Math.max(0, nPage), nPageCount - 1);	// 범위 밖 (삭제로 줄어듦): 끝 페이지
@@ -2946,7 +2947,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        kButton.type		= "button";
 		        kButton.textContent	= String(nIndex + 1);
 		        kButton.className	= nIndex === nAccountPage ? "cur" : "";
-		        kButton.title		= `${nIndex * ACCOUNT_PAGE + 1} ~ ${Math.min(arrAccount.length, (nIndex + 1) * ACCOUNT_PAGE)}`;
+		        kButton.title		= `${nIndex * ACCOUNT_PAGE + 1} ~ ${Math.min(arrAccount.length - nMainCount, (nIndex + 1) * ACCOUNT_PAGE)}`;
 
 		        kButton.addEventListener("click", () => ShowAccountList(arrAccountList, nIndex));
 
@@ -2955,10 +2956,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kPager.hidden = nPageCount <= 1;
 
-		    const nFrom		= nAccountPage * ACCOUNT_PAGE;	// 이 페이지 첫 계정 위치
-		    const arrRow	= arrAccount.slice(nFrom, nFrom + ACCOUNT_PAGE).map((kAccount, nOffset) =>
+		    const nFrom		= nMainCount + nAccountPage * ACCOUNT_PAGE;	// 이 페이지 첫 계정 위치 (관리 계정 뒤)
+		    const arrRow	= [...arrAccount.slice(0, nMainCount), ...arrAccount.slice(nFrom, nFrom + ACCOUNT_PAGE)].map((kAccount, nOffset) =>
 		    {
-		        const nIndex = nFrom + nOffset;	// 전체 목록 위치
+		        const nIndex = nOffset < nMainCount ? nOffset : nFrom + nOffset - nMainCount;	// 전체 목록 위치 (관리 계정: 앞, 나머지: 이 페이지)
 		        const kRow	= document.createElement("tr");
 		        const kID	= kRow.insertCell();	// 아이디
 		        const kAct	= kRow.insertCell();	// 수정·삭제
