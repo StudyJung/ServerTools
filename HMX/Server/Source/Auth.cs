@@ -2,6 +2,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 {
 	private const string	CLAIM_STAMP		= "sStamp";		// 인증 쿠키 항목: 계정 해시 (계정 변경: 기존 쿠키 무효)
 	public const string	LOGIN_PATH		= "/api/login";	// 로그인 API (미인증 허용)
+	private const string	LOGIN_ERROR		= "계정 또는 비번 오류";	// 로그인 창 오류 문구 (모든 실패 같음, 사유: 로그만)
 	public const string	LOGOUT_PATH		= "/api/logout";	// 로그아웃 API
 	public const string	ACCOUNT_PATH	= "/api/account";	// 계정 API (계정 팝업 목록·추가·수정·삭제)
 	public const string	MENU_LOG		= "로그";			// 계정 aAPI 로그 수신 권한 (외부 API /api/external/log/키/토큰)
@@ -453,13 +454,13 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 		if (GetMasterKey() == "" && !Unlock(sID, sPass, kForm?["key"].LastOrDefault() ?? ""))	// 첫 접속: 계정 (관리 계정·aAccount) 아이디·비밀번호·마스터 키 (마스터 키·비밀번호 로그 미기록)
 		{
-			string sError = GetMasterError();	// 로그·응답 같은 줄 번호
+			string sError = GetMasterError();	// 줄 번호 (로그만, 응답: LOGIN_ERROR)
 
 			Log.Write(WARN_, sError);
 
 			await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
 
-			return Results.Json(new { success = false, error = sError });
+			return Results.Json(new { success = false, error = LOGIN_ERROR });
 		}
 
 		AccountInfo? kAccount = GetAccountList().FirstOrDefault(kItem => IsSame(sID, kItem.sID) & IsSame(sPass, kItem.sPass));	// 맞는 계정 (& : 둘 다 비교)
@@ -470,7 +471,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 			await Task.Delay(1000);	// 실패 응답 지연 (무차별 대입 완화)
 
-			return Results.Json(new { success = false, error = kAccount == null ? "아이디 또는 비밀번호가 올바르지 않습니다." : "접근할 수 있는 메뉴가 없습니다." });
+			return Results.Json(new { success = false, error = LOGIN_ERROR });
 		}
 
 		ClaimsIdentity kIdentity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, kAccount.sID), new Claim(CLAIM_STAMP, GetStamp(kAccount)) }, CookieAuthenticationDefaults.AuthenticationScheme);	// 아이디 + 계정 표시
@@ -896,7 +897,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	private static string LoginHtml()	// 로그인 페이지 HTML (로그인 주소 = form action: ToolManager 경유 주소 변환 대응, 성공: 새로고침 → 요청 페이지, 마스터 키 입력 전: 마스터 키 칸)
 	{
 		string sTitle	= System.Net.WebUtility.HtmlEncode(Web.GetTitle());
-		string sKeyHtml	= GetMasterKey() != "" ? "" : """<label for="key">마스터 키</label><input id="key" type="password" autocomplete="off"><p class="hint">서버 오픈 뒤 첫 접속: 아이디·비밀번호·마스터 키</p>""";	// 첫 접속만
+		string sKeyHtml	= GetMasterKey() != "" ? "" : """<label for="key">마스터 키</label><input id="key" type="password" autocomplete="off">""";	// 첫 접속만
 
 		return $$"""
 		<!doctype html>
@@ -913,7 +914,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		input:focus{border-color:var(--focus-outlineColor);outline:none;box-shadow:inset 0 0 0 1px var(--focus-outlineColor)}
 		button{box-sizing:border-box;width:100%;height:32px;padding:0 12px;border:1px solid var(--button-primary-borderColor-rest);border-radius:var(--borderRadius-medium);background:var(--zone,var(--bgColor-emphasis));box-shadow:var(--shadow-resting-small);color:var(--button-primary-fgColor-rest);font:500 0.875rem/1 var(--fontStack-sansSerif);cursor:pointer}
 		button:focus-visible{outline:2px solid var(--focus-outlineColor);outline-offset:-2px;box-shadow:inset 0 0 0 3px var(--fgColor-onEmphasis)}button:disabled{opacity:.6;cursor:default}
-		.err{min-height:20px;margin:0 0 8px;color:var(--fgColor-danger)}.hint{margin:-8px 0 8px;color:#59636e;font-size:0.75rem}
+		.err{min-height:20px;margin:0 0 8px;color:var(--fgColor-danger)}
 		</style>
 		</head>
 		<body>
@@ -955,10 +956,9 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 					return;
 				}
 
-				kErr.textContent = kData.error || '로그인 실패';
-				kPass.select();
+				kErr.textContent = '{{LOGIN_ERROR}}';
 			} catch (kError) {
-				kErr.textContent = '오류: ' + kError;
+				kErr.textContent = '{{LOGIN_ERROR}}';
 			}
 
 			kBtn.disabled = false;
