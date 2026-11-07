@@ -321,7 +321,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		--button-danger-fgColor-rest:var(--zone,#d1242f);--button-danger-fgColor-hover:#ffffff;--button-danger-fgColor-disabled:color-mix(in srgb,var(--zone,#d1242f) 50%,transparent);--button-danger-bgColor-hover:var(--zone,#cf222e);--borderColor-muted:#d1d9e0b3;--control-transparent-bgColor-hover:#818b981a;--control-transparent-bgColor-selected:#818b9826;--treeViewItem-leadingVisual-iconColor-rest:#54aeff;--highlight-neutral-bgColor:#fff8c5;
 		--overlay-bgColor:#ffffff;--overlay-backdrop-bgColor:#c8d1da66;--shadow-inset:inset 0 1px 0 0 #1f23280a;--shadow-resting-small:0 1px 1px 0 #1f23280a,0 1px 2px 0 #1f232808;--shadow-floating-small:0 0 0 1px #d1d9e040,0 6px 12px -3px #25292e0a,0 6px 18px 0 #25292e1f;--focus-outlineColor:var(--zone,var(--bgColor-emphasis));--borderRadius-medium:0.375rem;--borderRadius-large:0.75rem;
 		--fontStack-sansSerif:"Mona Sans VF",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Backtick Fix","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";--fontStack-monospace:ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;--zone:__ZONE_COLOR__;--split:var(--bgColor-emphasis);color-scheme:light}
-		body{margin:0;padding:16px;min-width:800px;background:var(--bgColor-default);color:var(--fgColor-default);font:400 0.875rem/1.5 var(--fontStack-sansSerif)}
+		body{margin:0;padding:16px;min-width:500px;background:var(--bgColor-default);color:var(--fgColor-default);font:400 0.875rem/1.5 var(--fontStack-sansSerif)}
 		h1{margin:0 0 16px;padding:8px 16px;border:1px solid var(--zone,var(--borderColor-default));border-radius:var(--borderRadius-medium);background:var(--bgColor-default);font-size:1.25rem;font-weight:600}.panel{padding:16px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:var(--bgColor-default)}
 		p{margin:12px 0 0;color:var(--fgColor-muted)}
 		#ResultPanel.query #ResultTitle,#ResultPanel.query #ResultPager,#ResultPanel.query .scrollwrap,#ResultPanel:not(.query) #QueryTitle,#ResultPanel:not(.query) #QueryChart{display:none}#QueryScroll{height:480px;container-type:inline-size}#QueryPrev,#QueryNext,#QueryDepth,#ViewPrev,#ViewNext,#ViewShift,#FilePrev,#FileNext,#FileShift{width:28px;padding:0}#QueryDepth,#ViewShift,#FileShift{width:auto;min-width:28px;padding:0 6px}#ViewPrev,#ViewNext,#FilePrev,#FileNext{font-size:16px;line-height:1}#ResultTitle .count,#QueryTitle .count{color:var(--zone)}#QueryDepth,#ViewShift,#FileShift{font-variant-numeric:tabular-nums}#QueryDepth{cursor:text}#QueryDepthInput,#ViewShiftInput,#FileShiftInput{box-sizing:border-box;padding:0 4px;text-align:center;font-variant-numeric:tabular-nums}#QueryPrev:focus-visible,#QueryNext:focus-visible,#QueryDepth:focus-visible,#ViewPrev:focus-visible,#ViewNext:focus-visible,#ViewShift:focus-visible,#FilePrev:focus-visible,#FileNext:focus-visible,#FileShift:focus-visible{outline:none;box-shadow:var(--shadow-resting-small)}.chartbars.click>div{cursor:pointer}#FilterPanel:not(.query) .queryonly,#FilterPanel.query .searchonly{display:none}#ResultPanel{position:relative}#QueryRange{min-width:0;width:64px}input[type="date"]{width:calc(10ch + 36px);padding-right:6px}#QueryTable col:not(:last-child){width:1px}#QueryTable th{white-space:nowrap}#QueryBody tr.row>td:not(.log){cursor:pointer}td.fileact{white-space:nowrap}.qdown{display:inline-flex;vertical-align:-3px;cursor:pointer}.qdel{flex:none;display:inline-flex;vertical-align:-3px;width:16px;height:16px;margin-left:4px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--button-danger-fgColor-rest);font-size:0;cursor:pointer;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z'/%3E%3C/svg%3E")}.qdel::before{content:"";flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--icon) center/16px no-repeat;mask:var(--icon) center/16px no-repeat}.qdel:hover:not(:disabled){background:var(--button-danger-bgColor-hover);color:var(--button-danger-fgColor-hover)}.qdown.nozip{color:var(--fgColor-muted)}.qdown:disabled,.qdel:disabled{opacity:0.4;cursor:default}#DumpPanel{position:relative}#QueryBody tr.open{background:var(--bgColor-accent-muted)}#QueryBody tr.detail{cursor:default;background:var(--bgColor-muted)}#QueryBody tr.detail>td{overflow:visible;white-space:normal}#QueryBody tr.detail>td>div{position:sticky;left:9px;box-sizing:border-box;width:calc(100cqw - 18px)}.querymeta,.querytext{font-family:var(--fontStack-monospace);word-break:break-all}.querymeta{padding:4px 0 0;color:var(--fgColor-muted)}.queryfield{display:flex;flex-wrap:wrap;column-gap:6px}.queryfield>span{min-width:0}.queryfield>span:not(:last-child)::after{content:" ·"}.querytext{padding:4px 0;white-space:pre-wrap}
@@ -3177,29 +3177,6 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    window.getSelection().addRange(kRange);
 		}
 
-		function FitFilterWidth()	// 명령 창 1줄 최대 2줄: 페이지 최소 폭 = 앞 묶음 (리셋·M·D·S)·뒤 묶음 (E·타이머·필드·알람·저장·설정) 중 넓은 줄 + 바깥 여백 (필드·알람·저장: 3줄 안 만듦, 더 좁은 창: 가로 스크롤, CSS 최소 폭보다 작음: CSS 그대로)
-		{
-		    const kFilter	= kFilterPanel.querySelector(".filter");
-		    const arrItem	= [...kFilter.children].filter(kItem => !kItem.classList.contains("searchbox") && kItem.getClientRects().length > 0);	// 1줄 항목 (보이는 것)
-		    const nSplit	= arrItem.findIndex(kItem => kItem.contains(kEnd));	// 뒤 묶음 시작: E
-
-		    if (kFilterPanel.hidden || nSplit <= 0)	// 명령 창 숨김 (덤프·파일·운영·반영): 그대로
-		    {
-		        return;
-		    }
-
-		    const nGap		= parseFloat(getComputedStyle(kFilter).columnGap) || 0;	// 항목 사이
-		    const funcWidth	= (arrPart) => arrPart.reduce((nSum, kItem) => nSum + kItem.getBoundingClientRect().width, 0) + nGap * (arrPart.length - 1);	// 한 줄 폭
-		    const nRow		= Math.max(funcWidth(arrItem.slice(0, nSplit)), funcWidth(arrItem.slice(nSplit)));	// 넓은 줄
-
-		    document.body.style.minWidth = "";	// CSS 최소 폭 기준으로 다시
-
-		    const nOuter	= document.body.clientWidth - kFilter.clientWidth;	// 명령 창 바깥 여백 (body·상자 안쪽 여백·테두리)
-		    const nCss		= parseFloat(getComputedStyle(document.body).minWidth) || 0;	// CSS 최소 폭
-
-		    document.body.style.minWidth = `${Math.ceil(Math.max(nCss, nRow + nOuter))}px`;
-		}
-
 		function ShowPanel(sPanel)	// 보이는 창 바꾸기 (log: 서치 1·2번 창, file: 파일 트리, dump: 덤프 표, manager: 운영 창, process: 반영 창 (file·dump·manager·process: 명령 창 숨김), query: 쿼리 창, 숨긴 창 내용 유지)
 		{
 		    const bModeChange = (sPanel === "query") !== kFilterPanel.classList.contains("query");	// 쿼리 모드 들어감·나감
@@ -3220,7 +3197,6 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kFilterSplitter.hidden	= kFilterPanel.hidden;	// 명령 창·결과 창 사이 바
 
 		    ShowTimer();	// 타이머 버튼: 지금 탭 타이머 (서치·쿼리 따로)
-		    FitFilterWidth();	// 명령 창 1줄 최대 2줄 (모드마다 버튼 다름 → 다시)
 		    kResultPanel.hidden	= sPanel !== "log" && sPanel !== "query";
 		    kSplitter.hidden	= sPanel !== "log";
 		    kViewPanel.hidden	= sPanel !== "log";
