@@ -6361,6 +6361,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		            AddCell(kRow, (Query.nPage * Query.nPageSize + nIndex + 1).toLocaleString(), "num");	// 번호 (최신부터 1)
 		            AddCell(kRow, kLine.sMachine, "nowrap");												// 머신
+		            AddFolderCell(kRow, kLine.sFolder || GetLogFolder(kLine.sPath));						// 대상 폴더 (마지막 두 폴더, 예전 줄: 경로에서)
 		            AddFileNameCell(kRow, kLine.sMachine, kLine.sPath, kLine.nLine ?? 0, Query.sQueryKey === "*" ? "" : Query.sQueryKey);	// 파일명 (Ctrl·Alt+클릭: 그 줄 강조, 줄 모름: 마지막 줄부터)
 		            AddCell(kRow, kLine.nLine > 0 ? String(kLine.nLine) : "", "num");						// 클라 파일 줄 번호 (모름: 비움)
 		            Query.AppendMark(AddCell(kRow, "", "log"), kLine.sOrigin ?? kLine.sText);		// 로그: 원문 그대로 (시간·Type 포함, 쿼리 단어 강조)

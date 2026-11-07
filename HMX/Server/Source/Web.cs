@@ -370,7 +370,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		.tree .ticon{color:var(--treeViewItem-leadingVisual-iconColor-rest);--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z'/%3E%3C/svg%3E")}
 		
 		.qdown{flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--fgColor-accent);font-size:0;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z'/%3E%3Cpath d='M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06l1.97 1.969Z'/%3E%3C/svg%3E")}.qdown::before{content:""}.qdown:hover:not(:disabled){background:var(--control-transparent-bgColor-hover)}
-		#ResultTable col:not(:last-child),#DumpTable col:not(:nth-last-child(2)){width:1px}#DumpTable tr>:last-child{position:sticky;right:0;background:var(--bgColor-default);box-shadow:inset 1px 0 0 var(--borderColor-default)}#DumpTable tbody tr:hover>:last-child{background:var(--bgColor-muted)}#DumpTable th:last-child{z-index:2;background:var(--bgColor-muted);box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable th,#DumpTable th{white-space:nowrap}#ResultTable th,#ResultTable td,#QueryTable th,#QueryTable td{border-left:0;border-right:0;box-shadow:inset 1px 0 0 var(--borderColor-default)}#ResultTable th,#QueryTable th{box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable td:first-child,#QueryTable td:first-child{box-shadow:none}#ResultTable th:first-child,#QueryTable th:first-child{box-shadow:inset 0 -1px 0 var(--borderColor-default)}#DumpBody tr{cursor:default}td.act{white-space:nowrap}td.act button{height:20px;padding:0 8px;font-size:0.75rem}td.act button+button{margin-left:4px}
+		#ResultTable col:not(:last-child),#DumpTable col:not(:nth-child(3)){width:1px}#DumpTable tr>:last-child{position:sticky;right:0;background:var(--bgColor-default);box-shadow:inset 1px 0 0 var(--borderColor-default)}#DumpTable tbody tr:hover>:last-child{background:var(--bgColor-muted)}#DumpTable th:last-child{z-index:2;background:var(--bgColor-muted);box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable th,#DumpTable th{white-space:nowrap}#ResultTable th,#ResultTable td,#QueryTable th,#QueryTable td{border-left:0;border-right:0;box-shadow:inset 1px 0 0 var(--borderColor-default)}#ResultTable th,#QueryTable th{box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable td:first-child,#QueryTable td:first-child{box-shadow:none}#ResultTable th:first-child,#QueryTable th:first-child{box-shadow:inset 0 -1px 0 var(--borderColor-default)}#DumpBody tr{cursor:default}td.act{white-space:nowrap}td.act button{height:20px;padding:0 8px;font-size:0.75rem}td.act button+button{margin-left:4px}
 		dialog{top:30%;bottom:auto;margin:0 auto;transform:translateY(-30%);padding:16px;border:0;border-radius:var(--borderRadius-large);background:var(--overlay-bgColor);color:var(--fgColor-default);box-shadow:var(--shadow-floating-small)}dialog::backdrop{background:var(--overlay-backdrop-bgColor)}
 		.setting{display:grid;grid-template-columns:auto 110px auto;align-items:center;gap:8px 12px;margin:16px 0}.setting select{width:100%;min-width:0}.hint{color:var(--fgColor-muted)}#SettingDialog{width:max-content}#SettingDialog .setting{grid-template-columns:max-content 110px max-content}#SettingDialog .setting input,#SettingDialog .setting select{box-sizing:border-box;width:110px}#SettingDialog .toolright{justify-content:flex-end}#SettingDialog.query .srow,#SettingDialog:not(.query) .qrow{display:none}#QuerySettingDialog{width:400px}#QuerySettingDialog[open]{display:flex;flex-direction:column}#QueryEditScroll{flex:0 1 600px;min-height:0;max-height:none}#QuerySettingDialog .toolright{justify-content:flex-end}#AlarmHistoryDialog{width:400px}#AlarmHistoryDialog[open]{display:flex;flex-direction:column}#AlarmHistoryScroll{flex:0 1 600px;min-height:0;max-height:none}#AlarmHistoryTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle;white-space:nowrap}#AlarmHistoryTable td.key{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#AlarmHistoryTable td.key:hover{text-decoration:underline}#AlarmHistoryTable td.fail{color:var(--fgColor-danger)}#AlarmHistoryTable td.empty{color:var(--fgColor-muted);text-align:center}#AlarmHistoryDialog .toolright,#AlarmHistoryViewDialog .toolright{justify-content:flex-end}#AlarmHistoryViewDialog{width:600px}#AlarmHistoryViewInfo{margin:4px 0 0}#AlarmHistoryViewBody.link{cursor:pointer}#AlarmHistoryViewBody hr{margin:4px 0;border:0;border-top:1px solid var(--borderColor-default)}#AlarmHistoryViewBody{max-height:60vh;overflow:auto;margin:12px 0 16px;padding:8px;border:1px solid var(--borderColor-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}#DownDialog{min-width:320px;max-width:600px}#AccountDialog{box-sizing:border-box;width:400px;height:550px}#AccountDialog[open]{display:flex;flex-direction:column}#AccountEditDialog{width:480px}#DownDialog .toolright,#AccountDialog .toolright,#AccountEditDialog .toolright{justify-content:flex-end}#AccountTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle}#AccountDialog .savedlist{flex:0 1 auto;min-height:0;max-height:none;margin-bottom:8px}#AccountPager{flex:none;height:28px;margin:0 0 12px}#AccountDialog .toolright{margin-top:auto}#AccountTable td:first-child{width:100%}#AccountTable td.act{width:1px;color:var(--fgColor-muted);white-space:nowrap}#AccountEditDialog .setting{grid-template-columns:max-content minmax(0,1fr)}#AccountEditDialog .setting input:not([type="checkbox"]){width:100%}#AccountEditMenu,#AccountEditApi{display:flex;flex-wrap:wrap;gap:4px 12px;line-height:28px}#AccountEditMenu label,#AccountEditApi label{display:inline-flex;align-items:center;gap:4px}#AccountEditMenu input,#AccountEditApi input{margin:0}#AccountEditDialog.delete .editrow{display:none}#AccountEditDialog:not(.edit) .keyrow{display:none}#AccountEditDialog .keybox{display:flex;align-items:center;justify-content:space-between;gap:8px;line-height:28px}#AccountEditKey,#AccountEditToken{font-family:var(--fontStack-monospace);word-break:break-all;line-height:28px}#AccountEditKey.pending{color:var(--fgColor-accent);font-weight:600}#AccountEditDialog .adminbox{display:flex;align-items:center;gap:8px}#AccountEditDialog .adminbox input{flex:1;min-width:0}#DownName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DownPath{margin:0 0 16px;word-break:break-all}#DeleteDialog{min-width:320px;max-width:600px}#DeleteDialog .toolright{justify-content:flex-end}#DeleteText{margin:12px 0 16px;color:var(--fgColor-default);word-break:break-all}#DeleteName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DeleteName:empty{display:none}#DeleteName:not(:empty)+#DeleteText{margin-top:0}#HelpDialog{box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px)}#HelpScroll{overflow-y:auto;margin-bottom:12px}#HelpTable{width:100%;margin-bottom:0;border-collapse:collapse;font-size:0.875rem}#HelpTable tbody th{position:static}#HelpTable td:first-child{font-weight:600;white-space:nowrap}#HelpTable tr.group th{text-align:left}#HelpTabs{margin-bottom:8px}#HelpTabs button.cur,#HelpTabs button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#HelpTable[data-help="common"] tr:not([data-help="common"]),#HelpTable[data-help="rule"] tr:not([data-help="rule"]),#HelpTable[data-help="query"] tr:not([data-help="query"]),#HelpTable[data-help="search"] tr:not([data-help="search"]),#HelpTable[data-help="manager"] tr:not([data-help="manager"]),#HelpTable[data-help="process"] tr:not([data-help="process"]){display:none}#HelpTable tr.sep td{border-top:2px solid var(--borderColor-default)}#HelpDialog .toolright{justify-content:flex-end}
 		tbody tr{cursor:pointer}tbody tr:hover{background:var(--bgColor-muted)}tbody tr.sel{background:var(--bgColor-accent-muted)}mark{background:var(--highlight-neutral-bgColor);color:inherit;padding:0}
@@ -447,8 +447,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="scrollwrap">
 		<div class="scroll" id="ResultScroll">
 		<table id="ResultTable">
-		<colgroup><col><col><col><col><col></colgroup>
-		<thead><tr><th>No.</th><th>Machine</th><th>File</th><th>Line</th><th>Log</th></tr></thead>
+		<colgroup><col><col><col><col><col><col></colgroup>
+		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th>Line</th><th>Log</th></tr></thead>
 		<tbody id="ResultBody"></tbody>
 		</table>
 		</div>
@@ -471,8 +471,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="vsplitter" id="QueryFieldSplitter" title="좌우 폭 조절"></div>
 		<div class="scroll" id="QueryScroll">
 		<table id="QueryTable">
-		<colgroup><col><col><col><col><col></colgroup>
-		<thead><tr><th>No.</th><th>Machine</th><th>File</th><th title="파일 줄 번호">Line</th><th title="단어 조건(AND, OR, NOT)">Log</th></tr></thead>
+		<colgroup><col><col><col><col><col><col></colgroup>
+		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th title="파일 줄 번호">Line</th><th title="단어 조건(AND, OR, NOT)">Log</th></tr></thead>
 		<tbody id="QueryBody"></tbody>
 		</table>
 		</div>
@@ -515,9 +515,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		</div>
 		<div class="scroll" id="DumpScroll">
-		<table id="DumpTable" data-rest="5">
+		<table id="DumpTable" data-rest="2">
 		<colgroup><col><col><col><col><col><col><col></colgroup>
-		<thead><tr><th>No.</th><th>Machine</th><th>File</th><th>Date</th><th>Size</th><th>Folder</th><th title="다운, 압축, 삭제(dmp, zip)">Ac.</th></tr></thead>
+		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th>Date</th><th>Size</th><th title="다운, 압축, 삭제(dmp, zip)">Ac.</th></tr></thead>
 		<tbody id="DumpBody"></tbody>
 		</table>
 		</div>
@@ -3427,6 +3427,25 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    {
 		        kCell.textContent = GetFileText(kCell.dataset.name, bNarrow);
 		    }
+		}
+
+		function GetFolderText(sFolder)	// 표 Folder 칸 글자: 마지막 두 폴더 (예: C:\NHNServices\Log1\Server → Log1\Server, 두 단계 이하: 그대로)
+		{
+		    const arrPart = sFolder.split("\\").filter(sPart => sPart !== "");
+
+		    return arrPart.length > 2 ? arrPart.slice(-2).join("\\") : sFolder;
+		}
+
+		function GetLogFolder(sPath)	// 로그 파일 경로 → 대상 폴더 (파일명 뗌, 날짜 폴더 yyyyMMdd 뗌)
+		{
+		    const sDir = sPath.slice(0, Math.max(0, sPath.lastIndexOf("\\")));
+
+		    return /\\\d{8}$/.test(sDir) ? sDir.slice(0, sDir.lastIndexOf("\\")) : sDir;
+		}
+
+		function AddFolderCell(kRow, sFolder)	// 결과 줄 Folder 칸 (서치·쿼리·덤프 공통, Machine 다음·File 앞): 마지막 두 폴더, 전체 폴더: 툴팁
+		{
+		    AddCell(kRow, GetFolderText(sFolder), "nowrap").title = sFolder;
 		}
 
 		function AddFileNameCell(kRow, sMachine, sPath, nLine = 0, sKey = "")	// 결과 줄 File 칸 (서치·쿼리 공통, 파일명만 (확장자 없음, 창 좁음: 앞 절반), Shift+클릭: 다운, Ctrl·Alt+클릭: 파일 보기, nLine 0: 마지막 줄부터, sKey: 강조 검색어)

@@ -389,10 +389,10 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 		            AddCell(kRow, String(nIndex + 1), "num");
 		            AddCell(kRow, kDump.sMachine, "nowrap");
+		            AddFolderCell(kRow, kDump.sPath.slice(0, nSlash));	// 폴더: 마지막 두 폴더 (전체: 툴팁, 공통)
 		            AddCell(kRow, kDump.sPath.slice(nSlash + 1), "nowrap");
 		            AddCell(kRow, kDump.sTime, "nowrap");	// 파일 날짜: 수정 시각 (KST)
 		            AddCell(kRow, `${Math.ceil(kDump.nSize / 1024).toLocaleString()} KB`, "num").title = `${kDump.nSize.toLocaleString()} bytes`;	// 파일 크기: KB (탐색기처럼 올림), 마우스: 바이트
-		            AddCell(kRow, kDump.sPath.slice(0, nSlash), "nowrap");	// 폴더: 전체 경로
 		            const kAction	= AddCell(kRow, "", "fileact");			// Ac.: 다운(압축)·삭제 아이콘 (맨 오른쪽 고정)
 		            const kDown		= document.createElement("button");	// 다운 (zip 없음: 압축, 흐림)
 		            const kDelete	= document.createElement("button");	// 삭제
