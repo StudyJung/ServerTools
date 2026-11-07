@@ -1,0 +1,9 @@
+{
+  "aSearch": [
+    {
+      "sKey": "INFO",
+      "sQuery": "INFO",
+      "nMinute": 10
+    }
+  ]
+}
