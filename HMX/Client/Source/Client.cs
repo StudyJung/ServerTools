@@ -1,4 +1,7 @@
 #!/usr/bin/env dotnet
+
+// **Source.md 반드시 참조**
+
 #:sdk Microsoft.NET.Sdk.Worker
 #:property PublishAot=false
 #:property ServerGarbageCollection=false
@@ -21,8 +24,6 @@
 #:include Process.cs
 #:include TabProcess.cs
 #:include Clean.cs
-
-// Source.md 반드시 참조
 
 global using System.Buffers;
 global using System.Collections.Concurrent;

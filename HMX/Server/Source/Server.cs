@@ -1,4 +1,7 @@
 #!/usr/bin/env dotnet
+
+// **Source.md 반드시 참조**
+
 #:sdk Microsoft.NET.Sdk.Web
 #:property PublishAot=false
 #:property ServerGarbageCollection=true
@@ -29,8 +32,6 @@
 #:include Stat.cs
 #:include Send.cs
 #:include AlarmLog.cs
-
-// Source.md 반드시 참조
 
 global using System.Buffers;
 global using System.Buffers.Binary;
