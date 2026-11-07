@@ -13,8 +13,8 @@
     <File Path="AI/mysql_config.json" />
     <File Path="AI/README.md" />
   </Folder>
-  <Folder Name="/LogManager/">
-    <Project Path="LogManager/LMServer/LMServer.csproj" />
-    <Project Path="LogManager/LMClient/LMClient.csproj" />
+  <Folder Name="/HMX/">
+    <Project Path="HMX/Client/Client.csproj" />
+    <Project Path="HMX/Server/Server.csproj" />
   </Folder>
 </Solution>
