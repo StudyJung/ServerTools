@@ -5481,6 +5481,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    {
 		        Query.nEditID				= kAlarm?.nID ?? 0;
 		        kQuerySaveTitle.textContent	= kAlarm == null ? "알람 추가" : "알람 수정";
+		        kQuerySaveQueryLabel.textContent	= "쿼리";	// 서치 저장 창 뒤 "검색어" 되돌림
 		        kQuerySaveKey.value			= kAlarm?.sKey ?? "";
 		        kQuerySaveQuery.value		= kAlarm?.sQuery ?? "";
 		        kAlarmMinute.value			= String(kAlarm?.nMinute ?? Query.ALARM_MINUTE);

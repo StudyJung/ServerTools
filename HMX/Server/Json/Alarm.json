@@ -7,11 +7,9 @@
       "nMinute": 1,
       "nCount": 100,
       "nDelay": 0,
-      "aMail": [
-      ],
-      "aSMS": [
-      ],
+      "aMail": [],
       "sHook": "",
+      "aSMS": [],
       "bEnable": true
     },
     {
@@ -21,11 +19,21 @@
       "nMinute": 1000,
       "nCount": 10,
       "nDelay": 0,
-      "aMail": [
-      ],
-      "aSMS": [
-      ],
+      "aMail": [],
       "sHook": "",
+      "aSMS": [],
+      "bEnable": true
+    },
+    {
+      "nID": 3,
+      "sKey": "12345678901234567890123456789012345678901234567890",
+      "sQuery": "1",
+      "nMinute": 1,
+      "nCount": 10,
+      "nDelay": 1,
+      "aMail": [],
+      "sHook": "",
+      "aSMS": [],
       "bEnable": true
     }
   ]

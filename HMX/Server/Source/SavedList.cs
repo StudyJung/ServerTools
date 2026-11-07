@@ -1,6 +1,6 @@
 class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 서치 aSearch → Search.json): 항목 {sKey, sQuery, nMinute}, 설정 파일 읽기·저장·API (목록·저장·삭제·순서)
 {
-	public const int	m_nKeyMax		= 50;		// 제목 최대 글자 (알람 제목 공통)
+	public const int	m_nKeyMax		= 100;		// 제목 최대 글자 (알람 제목 공통, 페이지 QuerySaveKey maxlength)
 	public const int	m_nQueryMax		= 1000;		// 쿼리·검색어 최대 글자 (알람 쿼리 공통)
 	public const int	m_nMinuteMax	= 129600;	// 간격 최대 (분, 페이지 SAVED_MINUTE_MAX)
 	public const int	m_nMinute		= 10;		// 간격 기본 (분, 페이지 SAVED_MINUTE)

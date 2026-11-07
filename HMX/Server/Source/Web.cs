@@ -697,7 +697,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<dialog id="QuerySaveDialog">
 		<div class="title" id="QuerySaveTitle">쿼리 추가</div>
 		<div class="setting">
-		<label for="QuerySaveKey">제목</label><input type="text" id="QuerySaveKey" maxlength="50" autocomplete="off" autofocus>
+		<label for="QuerySaveKey">제목</label><input type="text" id="QuerySaveKey" maxlength="100" autocomplete="off" autofocus>
 		<label for="QuerySaveQuery" id="QuerySaveQueryLabel">쿼리</label><textarea id="QuerySaveQuery" rows="10" maxlength="1000" spellcheck="false"></textarea>
 		<label for="QuerySaveMinute" class="queryrow">간격</label><span class="queryrow"><input type="number" id="QuerySaveMinute" min="1" max="129600" step="1"> 분</span>
 		<label for="AlarmMinute" class="alarmrow">간격</label><span class="alarmrow"><input type="number" id="AlarmMinute" min="1" max="1440" step="1"> 분 동안 <input type="number" id="AlarmCount" min="1" step="1"> 건 이상 <label for="AlarmDelay" class="delay">억제</label><input type="number" id="AlarmDelay" min="0" max="1440" step="1"> 분</span>
