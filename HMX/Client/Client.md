@@ -19,7 +19,6 @@
 | Json/Client.json | 설정 (예전 위치 Client 폴더에만 있음: 그 파일 + 경고) |
 | On.bat / Off.bat | 콘솔 실행·종료 |
 | .gitignore | .vs·.user·bin·obj·log·Properties 제외 |
-| dotnet-runtime-10.0.13-win-x64.exe | .NET 런타임 설치 파일 (분석 제외, Client.exe 실행: 설치 불필요 → On.bat 개발 실행 등 참고용) |
 | bin/, obj/ | 게시 출력 (bin\Release\net10.0\Client.exe)·빌드 중간 출력 |
 | (실행 시) Log/, Data\Count/ | 시간별 로그, 전송 진행 상태 |
 

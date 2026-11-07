@@ -57,7 +57,7 @@
 - 개발: HMX.slnx (Visual Studio 2026) F5, 상위 ServerTools.slnx 의 `/2.HMX/` 폴더에도 포함
 - Server: On.bat·Off.bat (콘솔) / IIS (web.config, HttpPlatformHandler) / 윈도우 서비스
 - Client: 각 게임 서버 머신 On.bat·Off.bat (콘솔) / 윈도우 서비스
-- 런타임 설치 파일 동봉 (Server\Tool: dotnet·aspnetcore 10.0.13·httpPlatformHandler_amd64.msi, Client: dotnet 10.0.13 → Client.exe 실행은 설치 불필요, 참고용)
+- 런타임 설치 파일 동봉: Server\Tool (dotnet·aspnetcore 10.0.13·httpPlatformHandler_amd64.msi), Client: 없음 (Client.exe 에 런타임 포함)
 
 ## 연관
 - 상위: [ServerTools.md](../ServerTools.md)
