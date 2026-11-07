@@ -11,8 +11,8 @@
 ## 구조
 | 경로 | 설명 |
 |---|---|
-| Source/Client.cs | 진입 소스: `#:` 지시문 (`#:include` 로 같은 폴더 클래스별 .cs·../../Common 포함)·`// ReadMe.cs 반드시 참조`·global using·진입 `return Main.Run(args);`·Main |
-| Source/ReadMe.cs | 명세 주석만 (실행·설정·TCP·탭 동작, Client.cs 머리에서 옮김, 컴파일 영향 없음) |
+| Source/Client.cs | 진입 소스: `#:` 지시문 (`#:include` 로 같은 폴더 클래스별 .cs·../../Common 포함)·`// Source.md 반드시 참조`·global using·진입 `return Main.Run(args);`·Main |
+| Source/Source.md | 명세 (마크다운: 실행·설정·TCP·탭 동작, Client.cs 머리에서 옮김) |
 | Source/{클래스}.cs | 클래스별 소스 (코드 구성 참고) |
 | ../Common/*.cs | 서버와 같이 쓰는 공통 클래스 → [Common.md](../Common/Common.md) |
 | Client.csproj | Worker SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시, Json\Client.json 출력 복사 안 함·Json 폴더 보존 |

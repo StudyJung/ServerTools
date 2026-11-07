@@ -30,7 +30,7 @@
 #:include Send.cs
 #:include AlarmLog.cs
 
-// ReadMe.cs 반드시 참조
+// Source.md 반드시 참조
 
 global using System.Buffers;
 global using System.Buffers.Binary;
@@ -62,42 +62,43 @@ return Main.Run(args);	// 진입 (클래스 Main 안에 진입 함수 Main 불�
 class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 공통 API·탭)
 {
 	public const int	m_nDefaultPort	= 800;				// 기본 웹 포트 (공통 Global.GetDefaultPort)
-	public const string	m_sPeerOff		= "Client Off";	// 상대 (클라) 끊김 표시 (공통 Global.GetErrorText)
+	public const string	m_sPeerOff		= "Client Off";		// 상대 (클라) 끊김 표시 (공통 Global.GetErrorText)
 	public const string	m_sSelfError	= "Server Error";	// 그 밖 오류 표시 (공통 Global.GetErrorText)
-	public const string	TAB_QUERY	= "쿼리";	// 탭 이름 (설정 aMenu 값 = 페이지 탭 버튼 이름)
-	public const string	TAB_SEARCH	= "서치";
-	public const string	TAB_FILE	= "파일";
-	public const string	TAB_DUMP	= "덤프";
-	public const string	TAB_MANAGER	= "운영";
-	public const string	TAB_PROCESS	= "반영";
-	public static readonly string[]	m_arrTab	= { TAB_QUERY, TAB_SEARCH, TAB_FILE, TAB_DUMP, TAB_MANAGER, TAB_PROCESS };	// 모든 탭 (페이지 순서)
+	public const string	TAB_QUERY		= "쿼리";			// 탭 이름 (설정 aMenu 값 = 페이지 탭 버튼 이름)
+	public const string	TAB_SEARCH		= "서치";
+	public const string	TAB_FILE		= "파일";
+	public const string	TAB_DUMP		= "덤프";
+	public const string	TAB_MANAGER		= "운영";
+	public const string	TAB_PROCESS		= "반영";
+
+	public static readonly string[]							m_arrTab			= { TAB_QUERY, TAB_SEARCH, TAB_FILE, TAB_DUMP, TAB_MANAGER, TAB_PROCESS };	// 모든 탭 (페이지 순서)
 	public static readonly (string sKey, string sFile)[]	m_arrConfigSplit	= { ("aQuery", "Query.json"), ("aSearch", "Search.json"), ("aAlarm", "Alarm.json"), ("aField", "Field.json"), ("Manager", "Manager.json"), ("aAccount", "Account.json"), ("sKey", "Account.json"), ("sRand", "Account.json"), ("sToken", "Account.json") };	// 따로 관리 설정 (웹에서 고침: 저장 쿼리·저장 서치·알람·필드 → 키별 json, 운영 탭 서버 목록, 계정·관리 계정 외부 API 토큰 sToken·키 sKey: Account.json, 공통 Config)
 
 	private const int	m_nStartFailWaitSec	= 10;	// 시작 실패 시 콘솔 종료 대기 (초, 더블클릭 실행에서 사유 확인)
 	private const int	m_nShutdownSec		= 300;	// 종료 정리 최대 대기 (초, 호스트 ShutdownTimeout → 서비스: 이 동안 중지 대기 상태 유지, 밀린 적재·색인 많을 때)
 
-	private static int	m_nShutdown;				// 데이터 정리 함 (1번만)
-	private static int	m_nRunStart;				// 기능 시작함 (1번만, 마스터 키 뒤)
+	private static int	m_nShutdown;	// 데이터 정리 함 (1번만)
+	private static int	m_nRunStart;	// 기능 시작함 (1번만, 마스터 키 뒤)
 
 	private static CancellationToken	m_kWebStop;	// 웹 서버 종료 (TCP 수신·탭 타이머 중지)
-	private static string[]?	m_arrMenu;			// 켜진 탭 (설정 aMenu 순서, 처음 GetMenu 때 정함)
+	private static string[]?			m_arrMenu;	// 켜진 탭 (설정 aMenu 순서, 처음 GetMenu 때 정함)
 
 	private static TCPServer?		m_kListener;	// Client TCP 수신 (웹 사용 때만)
 	private static API?				m_kAPI;			// 공통 API
-	private static TabSearch?	m_kSearch;		// 서치 탭
-	private static TabDump?	m_kDump;		// 덤프 탭
-	private static TabFile?	m_kFile;		// 파일 탭
-	private static TabQuery?	m_kQuery;		// 쿼리 탭
+	private static TabSearch?		m_kSearch;		// 서치 탭
+	private static TabDump?			m_kDump;		// 덤프 탭
+	private static TabFile?			m_kFile;		// 파일 탭
+	private static TabQuery?		m_kQuery;		// 쿼리 탭
 	private static TabOperation?	m_kManager;		// 운영 탭
-	private static TabProcess?	m_kProcess;		// 반영 탭
+	private static TabProcess?		m_kProcess;		// 반영 탭
 
 	private const string	m_sServiceName			= "HMXServer";	// 서비스 이름 (표시 이름 같음, -install·-uninstall·-start·-stop)
 	private const string	m_sServiceDescription	= "로그 쿼리·서치·덤프·파일·운영·반영 웹 서버 (HMX Server)";	// 서비스 설명
-	private const int		m_nServiceStopSec		= 60;		// 서비스 시작·정지 대기 (초)
+	private const int		m_nServiceStopSec		= 60;			// 서비스 시작·정지 대기 (초)
 
 	static int Install(string[] arrArg)	// 서비스 등록 (자동 시작, 실행 인자: -install 뒤 인자 그대로, 예: 포트 호스트) → 설명 → 시작 (0: 등록 완료, 1: 실패)
 	{
-		string sExe = Environment.ProcessPath ?? "";	// 등록할 실행 파일 (현재 exe)
+		string	sExe	= Environment.ProcessPath ?? "";	// 등록할 실행 파일 (현재 exe)
 
 		if (!string.Equals(Path.GetFileNameWithoutExtension(sExe), GetProjectName(), StringComparison.OrdinalIgnoreCase))	// dotnet 등 다른 실행 파일: 조기 반환
 		{
@@ -205,7 +206,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 	static int RunSc(params string[] arrArg)	// sc.exe 실행 (출력: 콘솔 그대로) → 종료 코드 (5: 관리자 권한 필요)
 	{
-		ProcessStartInfo kInfo = new ProcessStartInfo("sc.exe") { UseShellExecute = false };
+		ProcessStartInfo	kInfo	= new ProcessStartInfo("sc.exe") { UseShellExecute = false };
 
 		foreach (string sArg in arrArg)
 		{
@@ -247,7 +248,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			}
 		}
 
-		string sArg = args.Length > 0 ? args[0].ToLowerInvariant() : "";	// 1번 인자: 서비스 명령 (-install·-uninstall·-start·-stop, 그 외: 포트)
+		string	sArg	= args.Length > 0 ? args[0].ToLowerInvariant() : "";	// 1번 인자: 서비스 명령 (-install·-uninstall·-start·-stop, 그 외: 포트)
 
 		if (sArg == "-install")
 		{
@@ -269,19 +270,19 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			return StopService();
 		}
 
-		string[] arrOff = m_arrTab.Except(GetMenu()).ToArray();	// 꺼진 탭 (aMenu 에 없음)
+		string[]	arrOff	= m_arrTab.Except(GetMenu()).ToArray();	// 꺼진 탭 (aMenu 에 없음)
 
 		Log.Write(arrOff.Length == 0 ? INFO_ : NOTI_, $"탭: {string.Join("·", GetMenu())}{(arrOff.Length == 0 ? "" : $" (꺼짐: {string.Join("·", arrOff)} → 서버 동작 안 함, 설정 aMenu)")}");
 
 		MoveDataDir();	// 예전 File 폴더 → Data (색인·원문·알람 읽기 전)
 
-		Web? kWeb = null;	// 웹 서버 (설정 bWeb 가 false·키 없음: null)
+		Web?	kWeb	= null;	// 웹 서버 (설정 bWeb 가 false·키 없음: null)
 
 		if (Config.GetBool("bWeb"))	// bWeb true 일 때만
 		{
 			Log.Write(INFO_, "웹: 실행 (설정 bWeb 가 true)");
 
-			int nPort = GetDefaultPort();	// 포트 (1번 인자)
+			int	nPort	= GetDefaultPort();	// 포트 (1번 인자)
 
 			if (args.Length > 0 && (!int.TryParse(args[0], out nPort) || nPort <= 0 || nPort > 65535))
 			{
@@ -290,7 +291,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 				return 1;
 			}
 
-			string sHost = args.Length > 1 ? args[1] : "localhost";	// 호스트 (2번 인자)
+			string	sHost	= args.Length > 1 ? args[1] : "localhost";	// 호스트 (2번 인자)
 
 			kWeb = new Web(nPort, sHost);
 
@@ -337,7 +338,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			return;
 		}
 
-		long nBegin = Stopwatch.GetTimestamp();	// 정리 시작
+		long	nBegin	= Stopwatch.GetTimestamp();	// 정리 시작
 
 		Log.Write(INFO_, "종료 정리: 시작 (타이머 → 적재 원문·받은 진행 → 색인 → 알람)");
 
@@ -360,7 +361,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 	{
 		if (m_arrMenu == null)
 		{
-			string[] arrMenu = Config.GetArray("aMenu").Select(sName => sName.Trim()).Where(sName => m_arrTab.Contains(sName)).Distinct().ToArray();
+			string[]	arrMenu	= Config.GetArray("aMenu").Select(sName => sName.Trim()).Where(sName => m_arrTab.Contains(sName)).Distinct().ToArray();
 
 			m_arrMenu = arrMenu.Length == 0 ? m_arrTab : arrMenu;
 		}
@@ -375,8 +376,8 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 	static void Create()	// 웹 사용 때만: TCP 수신 (설정 nPort)·공통 API·탭 생성 (탭: TCP 수신으로 클라 요청, aMenu 빠진 탭: 안 만듦)
 	{
-		bool bSearch	= IsTab(TAB_SEARCH);
-		bool bFile		= IsTab(TAB_FILE);
+		bool	bSearch	= IsTab(TAB_SEARCH);
+		bool	bFile	= IsTab(TAB_FILE);
 
 		if (IsTab(TAB_QUERY) || bSearch || bFile || IsTab(TAB_DUMP))	// 클라 쓰는 탭 있음: TCP 수신 (없음: 포트 안 엶)
 		{
@@ -436,19 +437,19 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 		}
 	}
 
-	public static readonly Comparer<string> m_kNaturalOrder = Comparer<string>.Create(CompareNatural);	// 오름차순 (숫자: 크기 순, 페이지 localeCompare numeric 과 같게, 알람 받는 계정·Account.json 계정)
+	public static readonly Comparer<string>	m_kNaturalOrder	= Comparer<string>.Create(CompareNatural);	// 오름차순 (숫자: 크기 순, 페이지 localeCompare numeric 과 같게, 알람 받는 계정·Account.json 계정)
 
 	public static int CompareNatural(string sLeft, string sRight)	// 자연 정렬 비교 (숫자 덩어리: 크기, 그 외 글자: 대소문자 무시, 예: ne9 < ne10)
 	{
-		int nLeft	= 0;	// 왼쪽 위치
-		int nRight	= 0;	// 오른쪽 위치
+		int	nLeft	= 0;	// 왼쪽 위치
+		int	nRight	= 0;	// 오른쪽 위치
 
 		while (nLeft < sLeft.Length && nRight < sRight.Length)
 		{
 			if (char.IsAsciiDigit(sLeft[nLeft]) && char.IsAsciiDigit(sRight[nRight]))	// 숫자 덩어리: 앞 0 뺀 길이 → 글자 순
 			{
-				int nLeftEnd	= nLeft;
-				int nRightEnd	= nRight;
+				int	nLeftEnd	= nLeft;
+				int	nRightEnd	= nRight;
 
 				while (nLeftEnd < sLeft.Length && char.IsAsciiDigit(sLeft[nLeftEnd]))
 				{
@@ -475,7 +476,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 				continue;
 			}
 
-			int nChar = char.ToLowerInvariant(sLeft[nLeft]).CompareTo(char.ToLowerInvariant(sRight[nRight]));
+			int	nChar	= char.ToLowerInvariant(sLeft[nLeft]).CompareTo(char.ToLowerInvariant(sRight[nRight]));
 
 			if (nChar != 0)
 			{
@@ -510,7 +511,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 		Execute();
 
-		bool bListen = m_kListener?.Start(m_kWebStop) ?? false;	// TCP 수신 (클라 접속·로그, 웹 서버 종료 시 함께 중지, false: 설정 nPort 없음·클라 쓰는 탭 없음)
+		bool	bListen	= m_kListener?.Start(m_kWebStop) ?? false;	// TCP 수신 (클라 접속·로그, 웹 서버 종료 시 함께 중지, false: 설정 nPort 없음·클라 쓰는 탭 없음)
 
 		Log.Write(INFO_, $"TCP 수신: {(bListen ? GetTCPPort().ToString() : "없음")}");
 
@@ -542,8 +543,8 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 	static void MoveDataDir()	// 예전 데이터 폴더 (기준 폴더 하위 File) → Data 이름 변경 (Data 있음: 그대로 + 경고, 실패: 경고 후 새 Data 로 시작)
 	{
-		string sOld	= Path.Combine(GetBaseDir(), "File");	// 예전 이름
-		string sNew	= Path.Combine(GetBaseDir(), "Data");
+		string	sOld	= Path.Combine(GetBaseDir(), "File");	// 예전 이름
+		string	sNew	= Path.Combine(GetBaseDir(), "Data");
 
 		if (!Directory.Exists(sOld))
 		{
@@ -571,7 +572,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 	static string GetStartError(Exception kException)	// 시작 실패 사유 (포트 사용 중: 이미 실행 중인 같은 exe PID 포함, 그 외: 예외 메시지)
 	{
-		bool bInUse = false;	// 포트 사용 중
+		bool	bInUse	= false;	// 포트 사용 중
 
 		for (Exception? kItem = kException; kItem != null; kItem = kItem.InnerException)
 		{
@@ -588,7 +589,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 			return kException.Message;
 		}
 
-		string sRunning = string.Join("·", System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName).Where(kProcess => kProcess.Id != Environment.ProcessId).Select(kProcess => kProcess.Id));	// 이미 실행 중인 같은 이름 프로세스
+		string	sRunning	= string.Join("·", System.Diagnostics.Process.GetProcessesByName(System.Diagnostics.Process.GetCurrentProcess().ProcessName).Where(kProcess => kProcess.Id != Environment.ProcessId).Select(kProcess => kProcess.Id));	// 이미 실행 중인 같은 이름 프로세스
 
 		return $"웹 포트 사용 중 ({kException.Message}{(sRunning == "" ? ", 다른 프로그램이 사용 중" : $", 이미 실행 중인 {System.Diagnostics.Process.GetCurrentProcess().ProcessName} PID {sRunning}")})";
 	}

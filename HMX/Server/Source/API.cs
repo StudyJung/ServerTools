@@ -1,8 +1,8 @@
 class API	// 공통 API (서버 정보·에코·접속 클라) + 외부 API (로그 수신·쿼리·서치) + 클라 요청 조각 읽기·응답 조립 (탭 공용)
 {
-	public const string	EXTERNAL_PATH	= "/api/external/";			// 외부 API 앞 (로그인 대신 경로 뒤 토큰 = 그 API 권한 계정 토큰 (sCode 를 sRand 키로 암호화, Auth.GetToken), 로그인해도 필요)
-	public const string	LOG_PATH		= EXTERNAL_PATH + "log/";	// 외부 API: 로그 수신 앞
-	public const string	QUERY_PATH		= EXTERNAL_PATH + "query/";	// 외부 API: 쿼리 앞
+	public const string	EXTERNAL_PATH	= "/api/external/";				// 외부 API 앞 (로그인 대신 경로 뒤 토큰 = 그 API 권한 계정 토큰 (sCode 를 sRand 키로 암호화, Auth.GetToken), 로그인해도 필요)
+	public const string	LOG_PATH		= EXTERNAL_PATH + "log/";		// 외부 API: 로그 수신 앞
+	public const string	QUERY_PATH		= EXTERNAL_PATH + "query/";		// 외부 API: 쿼리 앞
 	public const string	SEARCH_PATH		= EXTERNAL_PATH + "search/";	// 외부 API: 서치 앞
 
 	public static readonly (string sPath, string sMenu)[]	m_arrExternal	=	// 외부 API 목록 (경로 앞 → 권한 메뉴: 계정 aMenu, Auth 토큰 검사·요청 로그 토큰 가림, 추가: 여기 + MapRoute)
@@ -12,8 +12,8 @@ class API	// 공통 API (서버 정보·에코·접속 클라) + 외부 API (로
 		(SEARCH_PATH, Auth.API_SEARCH),	// 서치 (서치 탭 켜짐만 등록, 권한: aAPI 서치, TabSearch.MapRoute)
 	};
 
-	private const int	m_nReadRetry		= 5;				// 클라 바쁨 거절 시 재요청 횟수
-	private const int	m_nReadRetryMs		= 1000;				// 재요청 전 대기 (ms)
+	private const int		m_nReadRetry	= 5;							// 클라 바쁨 거절 시 재요청 횟수
+	private const int		m_nReadRetryMs	= 1000;							// 재요청 전 대기 (ms)
 	private const string	m_sClientBusy	= "요청이 많음 (잠시 후 다시)";	// 클라 바쁨 거절 문구 (Client 동시 처리 초과 sError 와 같음)
 
 	private static readonly byte[]	m_arrResultKey	= Encoding.UTF8.GetBytes(",\"kResult\":");	// 응답 조립: kResult 키
@@ -21,8 +21,8 @@ class API	// 공통 API (서버 정보·에코·접속 클라) + 외부 API (로
 	private static readonly byte[]	m_arrClose		= Encoding.UTF8.GetBytes("}");				// 응답 조립: 끝
 	private static readonly byte[]	m_arrNewLine	= Encoding.UTF8.GetBytes("\n");				// 검색 응답: 머신 1대 결과 끝
 
-	private readonly DateTimeOffset		m_kStartTime;		// 서버 시작 시각 (KST)
-	private readonly TCPServer?				m_kListener;		// Client TCP 수신 (Main 이 넘김, null: 클라 쓰는 탭 없음)
+	private readonly DateTimeOffset	m_kStartTime;	// 서버 시작 시각 (KST)
+	private readonly TCPServer?		m_kListener;	// Client TCP 수신 (Main 이 넘김, null: 클라 쓰는 탭 없음)
 
 	public API(TCPServer? kListener)
 	{
@@ -76,7 +76,7 @@ class API	// 공통 API (서버 정보·에코·접속 클라) + 외부 API (로
 	{
 		for (int nTry = 0; ; ++nTry)
 		{
-			(byte[]? arrData, long nSize, string sError) kChunk = await RequestReadOnce(kListener, sType, sMachine, sPath, nOffset, nCount);
+			(byte[]? arrData, long nSize, string sError)	kChunk	= await RequestReadOnce(kListener, sType, sMachine, sPath, nOffset, nCount);
 
 			if (kChunk.arrData != null || kChunk.sError != m_sClientBusy || nTry >= m_nReadRetry)	// 받음·다른 오류·재요청 다 씀
 			{
@@ -138,7 +138,7 @@ class API	// 공통 API (서버 정보·에코·접속 클라) + 외부 API (로
 
 	public static async Task WriteResult(Stream kBody, object kHead, byte[]? arrResult)	// {kHead…, "kResult": 클라 결과 바이트 그대로} (큰 결과 재파싱·직렬화 안 함)
 	{
-		byte[] arrHead = JsonSerializer.SerializeToUtf8Bytes(kHead, Define.m_kJsonOption);
+		byte[]	arrHead	= JsonSerializer.SerializeToUtf8Bytes(kHead, Define.m_kJsonOption);
 
 		await kBody.WriteAsync(arrHead.AsMemory(0, arrHead.Length - 1));	// 끝 '}' 빼고
 		await kBody.WriteAsync(m_arrResultKey);
@@ -148,7 +148,7 @@ class API	// 공통 API (서버 정보·에코·접속 클라) + 외부 API (로
 
 	private static IResult OnEcho(HttpRequest kRequest)	// ? 뒤 문구 그대로 반환 (%XX 복원)
 	{
-		string sQuery = kRequest.QueryString.HasValue ? kRequest.QueryString.Value!.Substring(1) : "";	// '?' 제외
+		string	sQuery	= kRequest.QueryString.HasValue ? kRequest.QueryString.Value!.Substring(1) : "";	// '?' 제외
 
 		return Results.Text(Uri.UnescapeDataString(sQuery), "text/plain; charset=utf-8");
 	}

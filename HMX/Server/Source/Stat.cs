@@ -1,17 +1,19 @@
 static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 카운터 합산 → 알람별 nMinute 분 구간 (KST 자정부터 X분마다, 하루 안 넘김) 끝에 판정 (합 ≥ nCount, 구간이 억제와 안 겹침) → 채널마다 발송 작업 (분당 X건 한도, 넘음·실패: 펜딩 → 여유 생기면 재전송)
 {
-	private const int		m_nSendMax		= 100;		// 분당 발송 한도 (새 발송 + 재전송)
-	private const int		m_nDayMinute	= 1440;		// 하루 (분, 알람 구간: KST 자정 안 넘김)
-	public const string		MAIL_LINE		= "──────────────────────────────";	// 메일·훅 구분 줄 표시 (원문·필드 위·Type 아래, 내용·펜딩: 이 줄 그대로, 보낼 때: 메일 <hr>·훅 마크다운 ---)
-	private const int		m_nPendingMax	= 10000;	// 펜딩 최대 (넘음: 오래된 것 포기)
-	private const int		m_nPendingMin	= 60;		// 펜딩 유효 (분, 지남: 포기)
-	private const int		m_nTryMax		= 3;		// 최대 보내기 횟수 (넘음: 포기)
+	private const int	m_nSendMax		= 100;	// 분당 발송 한도 (새 발송 + 재전송)
+	private const int	m_nDayMinute	= 1440;	// 하루 (분, 알람 구간: KST 자정 안 넘김)
 
-	private static Thread?											m_kThread;										// 통계 스레드
-	private static CancellationTokenSource							m_kStop		= new CancellationTokenSource();	// 중지 요청 (대기 즉시 깸)
+	public const string	MAIL_LINE	= "──────────────────────────────";	// 메일·훅 구분 줄 표시 (원문·필드 위·Type 아래, 내용·펜딩: 이 줄 그대로, 보낼 때: 메일 <hr>·훅 마크다운 ---)
+
+	private const int	m_nPendingMax	= 10000;	// 펜딩 최대 (넘음: 오래된 것 포기)
+	private const int	m_nPendingMin	= 60;		// 펜딩 유효 (분, 지남: 포기)
+	private const int	m_nTryMax		= 3;		// 최대 보내기 횟수 (넘음: 포기)
+
+	private static Thread?					m_kThread;											// 통계 스레드
+	private static CancellationTokenSource	m_kStop			= new CancellationTokenSource();	// 중지 요청 (대기 즉시 깸)
 	private static readonly Dictionary<int, (AlarmItem kAlarm, int nSum, long nDelayEnd, AlarmHit kLast)>	m_hmapState	= new Dictionary<int, (AlarmItem kAlarm, int nSum, long nDelayEnd, AlarmHit kLast)>();	// 알람 ID → 상태 (kLast: 구간 마지막 맞은 줄) (알람 바뀜: 처음부터, 이 스레드만)
-	private static List<AlarmJob>									m_listPending	= new List<AlarmJob>();			// 펜딩 (오래된 순, 이 스레드만)
-	private static readonly object									m_kSaveLock	= new object();						// pending.json 쓰기 1건씩
+	private static List<AlarmJob>			m_listPending	= new List<AlarmJob>();				// 펜딩 (오래된 순, 이 스레드만)
+	private static readonly object			m_kSaveLock		= new object();						// pending.json 쓰기 1건씩
 
 	public static void Start()	// 펜딩 읽기 → 통계 스레드 시작
 	{
@@ -42,11 +44,11 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 	private static void Run()	// 분 경계마다 처리 (예외: 출력 후 다음 분)
 	{
-		long nMinute = GetMinute() + 1;	// 다음 분 경계 (유닉스 분)
+		long	nMinute	= GetMinute() + 1;	// 다음 분 경계 (유닉스 분)
 
 		while (!m_kStop.IsCancellationRequested)
 		{
-			long nWait = nMinute * 60000 - GetNow().ToUnixTimeMilliseconds();	// 분 경계까지 (ms)
+			long	nWait	= nMinute * 60000 - GetNow().ToUnixTimeMilliseconds();	// 분 경계까지 (ms)
 
 			if (nWait > 0 && m_kStop.Token.WaitHandle.WaitOne((int)Math.Min(nWait, int.MaxValue)))
 			{
@@ -84,7 +86,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 			{
 				if (kCount.m_arrCount[nAlarm] > 0)
 				{
-					int nID = kMatcher.m_arrAlarm[nAlarm].nID;
+					int	nID	= kMatcher.m_arrAlarm[nAlarm].nID;
 
 					hmapCount[nID] = hmapCount.GetValueOrDefault(nID) + kCount.m_arrCount[nAlarm];
 
@@ -97,12 +99,12 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 		}
 
 		AlarmItem[]		arrAlarm	= Alarm.m_kMatcher?.m_arrAlarm ?? Array.Empty<AlarmItem>();	// 사용 알람
-		List<AlarmJob>	listJob		= new List<AlarmJob>();											// 새 발송 작업
-		bool			bChanged	= false;														// 펜딩 바뀜
+		List<AlarmJob>	listJob		= new List<AlarmJob>();	// 새 발송 작업
+		bool			bChanged	= false;				// 펜딩 바뀜
 
-		HashSet<int> setID = arrAlarm.Select(kAlarm => kAlarm.nID).ToHashSet();	// 사용 알람 ID
-		long nDayMinute	= ((nMinute + (long)GetNow().Offset.TotalMinutes) % m_nDayMinute + m_nDayMinute) % m_nDayMinute;	// 분 경계의 KST 하루 안 분 (0: 자정)
-		long nDayEnd	= nDayMinute == 0 ? m_nDayMinute : nDayMinute;															// 자정: 그날 끝 (하루 분)
+		HashSet<int>	setID		= arrAlarm.Select(kAlarm => kAlarm.nID).ToHashSet();	// 사용 알람 ID
+		long			nDayMinute	= ((nMinute + (long)GetNow().Offset.TotalMinutes) % m_nDayMinute + m_nDayMinute) % m_nDayMinute;	// 분 경계의 KST 하루 안 분 (0: 자정)
+		long			nDayEnd		= nDayMinute == 0 ? m_nDayMinute : nDayMinute;			// 자정: 그날 끝 (하루 분)
 
 		foreach (int nID in m_hmapState.Keys.Where(nID => !setID.Contains(nID)).ToList())	// 없어진·꺼진 알람
 		{
@@ -122,7 +124,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 			if (nDayEnd % kAlarm.nMinute == 0 || nDayMinute == 0)	// 구간 끝: KST 자정부터 X분마다 + 자정 (하루 안 넘김, 하루에 안 나눠떨어지는 간격: 그날 마지막 구간 짧음)
 			{
-				int nLength = (int)(nDayEnd - (nDayEnd - 1) / kAlarm.nMinute * kAlarm.nMinute);	// 이 구간 길이 (분, 보통: 간격, 그날 마지막 짧은 구간: 자정까지)
+				int	nLength	= (int)(nDayEnd - (nDayEnd - 1) / kAlarm.nMinute * kAlarm.nMinute);	// 이 구간 길이 (분, 보통: 간격, 그날 마지막 짧은 구간: 자정까지)
 
 				if (nSum >= kAlarm.nCount && nMinute - nLength >= nDelayEnd)	// 발생: 구간 시작이 억제 끝 뒤 (억제와 겹친 구간: 안 봄, 예: 간격 X분·억제 X분 → 발송 다음 구간 건너뜀 → 그다음 구간 판정)
 				{
@@ -152,8 +154,8 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 			bChanged = true;
 		}
 
-		int nQuota		= Math.Max(0, m_nSendMax - Send.GetQueueCount());	// 이번 분 남은 한도 (못 보낸 큐만큼 줄임: 발송 느림·실패 계속에도 큐 상한)
-		int nDeferred	= 0;			// 한도 넘어 펜딩
+		int	nQuota		= Math.Max(0, m_nSendMax - Send.GetQueueCount());	// 이번 분 남은 한도 (못 보낸 큐만큼 줄임: 발송 느림·실패 계속에도 큐 상한)
+		int	nDeferred	= 0;	// 한도 넘어 펜딩
 
 		foreach (AlarmJob kJob in listJob)
 		{
@@ -199,7 +201,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 		while (nQuota > 0 && m_listPending.Count > 0)	// 남은 한도: 펜딩 재전송 (오래된 것부터)
 		{
-			AlarmJob kJob = m_listPending[0];
+			AlarmJob	kJob	= m_listPending[0];
 
 			m_listPending.RemoveAt(0);
 
@@ -221,10 +223,10 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 	private static IEnumerable<AlarmJob> MakeJob(AlarmItem kAlarm, long nMinute, int nLength, int nSum, AlarmHit kLast)	// 알람 발생 → 받는 곳마다 작업 (메일: 받는 계정마다 1건 (링크: 그 계정 키/토큰), 훅 1건 (링크: 관리 계정 키/토큰), SMS: 나중에)
 	{
 		DateTimeOffset	kEnd	= DateTimeOffset.FromUnixTimeMilliseconds(nMinute * 60000).ToOffset(GetNow().Offset);	// 구간 끝 (KST)
-		DateTimeOffset	kStart	= kEnd.AddMinutes(-nLength);															// 구간 시작 (nLength: 이 구간 길이, 자정에서 끊긴 구간: 짧음)
+		DateTimeOffset	kStart	= kEnd.AddMinutes(-nLength);	// 구간 시작 (nLength: 이 구간 길이, 자정에서 끊긴 구간: 짧음)
 		string			sTitle	= $"{GetTitleTag()}:{kAlarm.sKey} - [{nSum}]";	// [HMX][존]:알람 제목 - [횟수]
-		string			sLink	= Web.GetQueryLink(kAlarm.sQuery, kStart, kEnd);	// 쿼리 탭 바로 실행 주소
-		string			sText	= GetMailText(kAlarm.sQuery, kStart, kEnd, nSum, kLast.kRecord.sText ?? "", GetHitField(kLast));
+		string	sLink	= Web.GetQueryLink(kAlarm.sQuery, kStart, kEnd);	// 쿼리 탭 바로 실행 주소
+		string	sText	= GetMailText(kAlarm.sQuery, kStart, kEnd, nSum, kLast.kRecord.sText ?? "", GetHitField(kLast));
 
 		foreach ((string sChannel, string[] arrTarget, string sPath) in GetChannel(kAlarm))
 		{
@@ -255,8 +257,8 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 		DateTimeOffset	kStart	= kEnd.AddMinutes(-kAlarm.nMinute);	// 구간 시작
 		string			sTime	= kEnd.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 		string			sLine	= $"[{kEnd.ToString("yyyy/MM/dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}] [ERROR] TEST";	// 가상 마지막 원문
-		string			sField	= "Machine: TEST\nFolder: TEST\nFile: TEST\nType: ERROR\n" + MAIL_LINE;	// Type 아래 구분 줄 (실제 알람과 같게)	// 가상 필드
-		string			sLink	= Web.GetQueryLink(kAlarm.sQuery, kStart, kEnd);	// 쿼리 탭 바로 실행 주소
+		string	sField	= "Machine: TEST\nFolder: TEST\nFile: TEST\nType: ERROR\n" + MAIL_LINE;	// Type 아래 구분 줄 (실제 알람과 같게)	// 가상 필드
+		string	sLink	= Web.GetQueryLink(kAlarm.sQuery, kStart, kEnd);						// 쿼리 탭 바로 실행 주소
 
 		return GetChannel(kAlarm).Select(kChannel => new AlarmJob
 		{
@@ -302,8 +304,8 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 			return "";
 		}
 
-		string			sFolder	= kHit.sFolder.TrimEnd('\\', '/');																	// 대상 폴더
-		string			sPath	= TabQuery.GetFilePath(kHit.nFileId);																	// 클라 경로
+		string			sFolder	= kHit.sFolder.TrimEnd('\\', '/');		// 대상 폴더
+		string			sPath	= TabQuery.GetFilePath(kHit.nFileId);	// 클라 경로
 		string			sFile	= sFolder != "" && sPath.Length > sFolder.Length && sPath.StartsWith(sFolder, StringComparison.OrdinalIgnoreCase) ? sPath[(sFolder.Length + 1)..] : sPath;	// Folder 아래 경로 (화면 File 칸과 같음)
 		StringBuilder	kText	= new StringBuilder();
 
@@ -321,14 +323,14 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 	private static string GetTitleTag()	// 메일·훅 제목 앞: [HMX] 고정 + [존] (설정 sZone, 예: [HMX][Real], 존 없음: [HMX])
 	{
-		string sZone = Config.GetString("sZone").Trim();
+		string	sZone	= Config.GetString("sZone").Trim();
 
 		return sZone == "" ? "[HMX]" : $"[HMX][{sZone}]";
 	}
 
 	private static (string sChannel, string[] arrTarget, string sPath)[] GetChannel(AlarmItem kAlarm)	// 받는 곳 (메일: aMail 계정마다 1건 → 그 계정 sMail·키/토큰 (예전 메일 주소: 그대로·경로 ""), 메일 없는 계정·없는 계정·같은 주소: 뺌, 훅 1건 (관리 계정 키/토큰), SMS: 나중에)
 	{
-		List<(string sChannel, string[] arrTarget, string sPath)> listChannel = new List<(string sChannel, string[] arrTarget, string sPath)>();
+		List<(string sChannel, string[] arrTarget, string sPath)>	listChannel	= new List<(string sChannel, string[] arrTarget, string sPath)>();
 
 		foreach (string sTarget in kAlarm.aMail)
 		{
@@ -355,7 +357,7 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 	private static List<AlarmJob> LoadPending()	// 펜딩 읽기 (없음·오류: 빈 목록, 오류: 출력)
 	{
-		string sFile = GetPendingFile();
+		string	sFile	= GetPendingFile();
 
 		try
 		{
@@ -371,13 +373,13 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 
 	public static void SavePending(IEnumerable<AlarmJob> listMore)	// 펜딩 저장 (임시 파일 후 교체, listMore: 종료 때 못 보낸 작업 함께)
 	{
-		string sFile = GetPendingFile();
+		string	sFile	= GetPendingFile();
 
 		lock (m_kSaveLock)
 		{
 			try
 			{
-				List<AlarmJob> listSave = m_listPending.Concat(listMore).ToList();	// 저장할 작업
+				List<AlarmJob>	listSave	= m_listPending.Concat(listMore).ToList();	// 저장할 작업
 
 				Directory.CreateDirectory(Path.GetDirectoryName(sFile)!);
 				File.WriteAllText(sFile + ".tmp", JsonSerializer.Serialize(listSave));

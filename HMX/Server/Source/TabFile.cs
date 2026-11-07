@@ -1,11 +1,14 @@
 class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각마다 UTF-8 변환 후 브라우저로) API (페이지 쪽: FileHTML)
 {
-	private const int				m_nDownLineMax		= 4 * Define.m_nDumpChunk;		// 다운 줄 끝 기다림 최대 (바이트, 넘음: 줄 중간이라도 변환)
-	private static readonly byte[]	m_arrUtf8Bom		= { 0xEF, 0xBB, 0xBF };			// 다운 앞 UTF-8 BOM (편집기 인코딩 판별)
-	private static Encoding?		m_kCp949;											// CP949 (처음 쓸 때 생성 → Main 의 코드 페이지 등록 뒤)
-	private const int				m_nDownConcurrent	= 2;							// 동시 파일 다운 (전체, 세션마다 1건)
-	private static readonly Gate	m_kGate				= new Gate(m_nDownConcurrent);	// 파일 다운 자리
-	private readonly TCPServer		m_kListener;										// Client TCP 수신 (Main 이 넘김)
+	private const int	m_nDownLineMax	= 4 * Define.m_nDumpChunk;	// 다운 줄 끝 기다림 최대 (바이트, 넘음: 줄 중간이라도 변환)
+
+	private static readonly byte[]	m_arrUtf8Bom	= { 0xEF, 0xBB, 0xBF };	// 다운 앞 UTF-8 BOM (편집기 인코딩 판별)
+	private static Encoding?		m_kCp949;	// CP949 (처음 쓸 때 생성 → Main 의 코드 페이지 등록 뒤)
+
+	private const int	m_nDownConcurrent	= 2;	// 동시 파일 다운 (전체, 세션마다 1건)
+
+	private static readonly Gate	m_kGate	= new Gate(m_nDownConcurrent);	// 파일 다운 자리
+	private readonly TCPServer		m_kListener;	// Client TCP 수신 (Main 이 넘김)
 
 	public TabFile(TCPServer kListener)
 	{
@@ -35,8 +38,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 			return;
 		}
 
-		string											sAddr	= Web.GetAddr(kResponse.HttpContext);					// 요청자 IP
-		CancellationToken								kAbort	= kResponse.HttpContext.RequestAborted;					// 브라우저 다운 취소
+		string				sAddr	= Web.GetAddr(kResponse.HttpContext);	// 요청자 IP
+		CancellationToken	kAbort	= kResponse.HttpContext.RequestAborted;	// 브라우저 다운 취소
 		using IDisposable?								kGate	= await m_kGate.TryEnterAsync(kResponse.HttpContext);	// 세션 1건 → 전체 X건 (기다리는 중 취소: null)
 
 		if (kGate == null)
@@ -57,7 +60,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 			return;
 		}
 
-		Microsoft.Net.Http.Headers.ContentDispositionHeaderValue kDisposition = new Microsoft.Net.Http.Headers.ContentDispositionHeaderValue("attachment");	// 첨부 파일 (한글 파일명은 filename* 로)
+		Microsoft.Net.Http.Headers.ContentDispositionHeaderValue	kDisposition	= new Microsoft.Net.Http.Headers.ContentDispositionHeaderValue("attachment");	// 첨부 파일 (한글 파일명은 filename* 로)
 
 		kDisposition.SetHttpFileName(Path.GetFileName(sPath));
 
@@ -71,8 +74,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		Log.Write(INFO_, $"파일 다운: {sMachine} {sPath} ({kChunk.nSize:N0} bytes{(bUtf16 ? ", UTF-16" : "")}, {sAddr})");
 
-		long nSize		= kChunk.nSize;	// 보낼 전체 크기 (원본)
-		long nOffset	= 0;			// 보낸 크기 (원본)
+		long	nSize	= kChunk.nSize;	// 보낼 전체 크기 (원본)
+		long	nOffset	= 0;			// 보낸 크기 (원본)
 
 		try
 		{
@@ -83,7 +86,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 			while (true)
 			{
-				bool bFirst = nOffset == 0;	// 첫 조각 (원본 UTF-8 BOM 건너뜀)
+				bool	bFirst	= nOffset == 0;	// 첫 조각 (원본 UTF-8 BOM 건너뜀)
 
 				nOffset += kChunk.arrData.Length;
 
@@ -93,8 +96,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 				}
 				else
 				{
-					byte[]	arrData	= arrRest.Length == 0 ? kChunk.arrData : [.. arrRest, .. kChunk.arrData];							// 남은 줄 + 이번 조각
-					int		nStart	= bFirst && arrData.AsSpan().StartsWith(m_arrUtf8Bom) ? m_arrUtf8Bom.Length : 0;						// 원본 BOM 건너뜀
+					byte[]	arrData	= arrRest.Length == 0 ? kChunk.arrData : [.. arrRest, .. kChunk.arrData];			// 남은 줄 + 이번 조각
+					int		nStart	= bFirst && arrData.AsSpan().StartsWith(m_arrUtf8Bom) ? m_arrUtf8Bom.Length : 0;	// 원본 BOM 건너뜀
 					int		nEnd	= nOffset >= nSize || arrData.Length >= m_nDownLineMax ? arrData.Length : Array.LastIndexOf(arrData, (byte)'\n') + 1;	// 변환 끝 (마지막 줄 끝, 파일 끝·아주 긴 줄: 전부)
 
 					nEnd = Math.Max(nEnd, nStart);
@@ -138,7 +141,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		Encoding		kCp949	= m_kCp949 ??= Encoding.GetEncoding(949);
 		MemoryStream	kOut	= new MemoryStream(kBytes.Length + kBytes.Length / 2);	// 한글 2바이트 → 3바이트
-		int				nPos	= 0;													// 다음 줄 시작
+		int				nPos	= 0;	// 다음 줄 시작
 
 		while (nPos < kBytes.Length)
 		{
@@ -178,23 +181,23 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 		return """
 		class File	// 파일 탭: 1번 창 클라 감시 폴더 트리 (펼치기·파일 보기·다운, this 없음 → 메서드를 이벤트 처리기로 바로 넘김)
 		{
-		    static FILE_VIEW_COUNT	= 300;		// 파일 1번 창 파일 보기 한 번에 읽는 줄 수
-		    static FILE_VIEW_EXT	= /\.(log|txt|json|ini|bat|xml|config|md|lua)$/i;	// 볼 수 있는 파일 (Client IsViewFile 과 같음, 트리: 이 형식만)
-		    static FILE_DATE_NAME	= /(?<!\d)(19|20)\d{2}[-_.]?(0[1-9]|1[0-2])[-_.]?(0[1-9]|[12]\d|3[01])/;	// 년월일 들어 있는 이름 (예: XLobby_20261022_09.log, 앞에 숫자 이어지면 아님) → 트리 내림차순
-		    static FILE_SPLIT_MIN	= 120;		// 파일 1번 창 좌우 최소 폭 (px, 세로선 드래그)
-		    static FILE_VIEW_MAX	= 20000;	// 파일 1번 창 파일 보기 최대 줄 수 (넘음: 반대쪽 지움, 빈 높이로 위치 유지)
-		    static kFileView		= null;		// 보는 파일 { sMachine, sPath, nFirst: 읽은 첫 줄 (0: 아직, 1: 처음까지 읽음), nLast: 읽은 마지막 줄, nTotal: 전체 줄, bLoading }
-		    static bFileLoaded		= false;	// 트리 한 번 만듦 (다른 탭에서 돌아오면 그대로, 파일 탭에서 다시 누르면 새로)
-		    static FILE_VIEW_HINT	= kFileViewTitle.textContent;	// 파일 1번 창 오른쪽 처음 안내 (보는 파일 없음)
-		    static FILE_POS			= { kScroll: kFileViewScroll, kBody: kFileViewBody, kPrev: kFilePrev, kShift: kFileShift, kNext: kFileNext, sInput: "FileShiftInput", nStep: File.FILE_VIEW_COUNT, funcState: () => File.kFileView };	// 파일 보기 포지션 버튼 (공통 ShowPos 등, 포지션 0: 파일 맨 아래)
+		    static	FILE_VIEW_COUNT	= 300;																		// 파일 1번 창 파일 보기 한 번에 읽는 줄 수
+		    static	FILE_VIEW_EXT	= /\.(log|txt|json|ini|bat|xml|config|md|lua)$/i;							// 볼 수 있는 파일 (Client IsViewFile 과 같음, 트리: 이 형식만)
+		    static	FILE_DATE_NAME	= /(?<!\d)(19|20)\d{2}[-_.]?(0[1-9]|1[0-2])[-_.]?(0[1-9]|[12]\d|3[01])/;	// 년월일 들어 있는 이름 (예: XLobby_20261022_09.log, 앞에 숫자 이어지면 아님) → 트리 내림차순
+		    static	FILE_SPLIT_MIN	= 120;																		// 파일 1번 창 좌우 최소 폭 (px, 세로선 드래그)
+		    static	FILE_VIEW_MAX	= 20000;																	// 파일 1번 창 파일 보기 최대 줄 수 (넘음: 반대쪽 지움, 빈 높이로 위치 유지)
+		    static	kFileView		= null;																		// 보는 파일 { sMachine, sPath, nFirst: 읽은 첫 줄 (0: 아직, 1: 처음까지 읽음), nLast: 읽은 마지막 줄, nTotal: 전체 줄, bLoading }
+		    static	bFileLoaded		= false;																	// 트리 한 번 만듦 (다른 탭에서 돌아오면 그대로, 파일 탭에서 다시 누르면 새로)
+		    static	FILE_VIEW_HINT	= kFileViewTitle.textContent;												// 파일 1번 창 오른쪽 처음 안내 (보는 파일 없음)
+		    static	FILE_POS		= { kScroll: kFileViewScroll, kBody: kFileViewBody, kPrev: kFilePrev, kShift: kFileShift, kNext: kFileNext, sInput: "FileShiftInput", nStep: File.FILE_VIEW_COUNT, funcState: () => File.kFileView };	// 파일 보기 포지션 버튼 (공통 ShowPos 등, 포지션 0: 파일 맨 아래)
 
 		    static MakeFileNode(sKind, sMachine, sPath, sName, sInfo)	// 트리 한 줄 <li> (sKind: machine·dir·file, sPath: 전체 경로 (머신: ""), sInfo: 이름 뒤 회색 글자)
 		    {
-		        const kItem		= document.createElement("li");
-		        const kNode		= document.createElement("div");								// 누르는 줄
-		        const kToggle	= document.createElement("span");	// [+]·[-] (파일: 비움 → 안 보이고 자리만, 이름 줄 맞춤)
-		        const kLabel	= document.createElement("span");	// 아이콘 (머신·폴더만, CSS Octicons)·이름·정보
-		        const kName		= document.createElement("span");
+		        const	kItem	= document.createElement("li");
+		        const	kNode	= document.createElement("div");	// 누르는 줄
+		        const	kToggle	= document.createElement("span");	// [+]·[-] (파일: 비움 → 안 보이고 자리만, 이름 줄 맞춤)
+		        const	kLabel	= document.createElement("span");	// 아이콘 (머신·폴더만, CSS Octicons)·이름·정보
+		        const	kName	= document.createElement("span");
 
 		        kNode.className			= sKind === "file" && File.FILE_VIEW_EXT.test(sName) ? "node view" : "node";	// view: 누르면 오른쪽에 내용
 		        kNode.dataset.kind		= sKind;
@@ -214,7 +217,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		        if (sInfo !== "")
 		        {
-		            const kInfo = document.createElement("span");
+		            const	kInfo	= document.createElement("span");
 
 		            kInfo.className		= "info";
 		            kInfo.textContent	= sInfo;
@@ -230,7 +233,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		    static MakeFileMessage(sText)	// 파일 1번 창 트리 안내 한 줄 <li> (오류·빈 폴더·일부만)
 		    {
-		        const kItem = document.createElement("li");
+		        const	kItem	= document.createElement("li");
 
 		        kItem.className		= "msg";
 		        kItem.textContent	= sText;
@@ -240,17 +243,17 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		    static SortTreeNames(arrItem, funcName)	// 트리 순서: 이름 오름차순 (클라 순서), 년월일 든 것만 그 자리들 안에서 내림차순
 		    {
-		        const arrDate	= arrItem.filter(kItem => File.FILE_DATE_NAME.test(funcName(kItem))).reverse();	// 년월일 들어 있는 것 (내림차순)
-		        let nDate		= 0;																				// 다음에 채울 순서
+		        const	arrDate	= arrItem.filter(kItem => File.FILE_DATE_NAME.test(funcName(kItem))).reverse();	// 년월일 들어 있는 것 (내림차순)
+		        let		nDate	= 0;	// 다음에 채울 순서
 
 		        return arrItem.map(kItem => File.FILE_DATE_NAME.test(funcName(kItem)) ? arrDate[nDate++] : kItem);
 		    }
 
 		    static async ToggleFileNode(kNode)	// 트리 펼치기·접기 (펼칠 때마다 클라에 폴더 보기 요청 → 갱신, 머신: aLogFolder 목록, 접음: 하위 지움)
 		    {
-		        const kItem		= kNode.parentElement;
-		        const kToggle	= kNode.querySelector(".tog");
-		        let kChild		= kItem.querySelector(":scope > ul");	// 하위 목록 (null: 접힘)
+		        const	kItem	= kNode.parentElement;
+		        const	kToggle	= kNode.querySelector(".tog");
+		        let		kChild	= kItem.querySelector(":scope > ul");	// 하위 목록 (null: 접힘)
 
 		        if (kNode.dataset.kind === "file" || kNode.dataset.loading === "1")	// 파일·읽는 중
 		        {
@@ -266,8 +269,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 		            return;
 		        }
 
-		        const sMachine	= kNode.dataset.machine;
-		        const sPath		= kNode.dataset.path;
+		        const	sMachine	= kNode.dataset.machine;
+		        const	sPath		= kNode.dataset.path;
 
 		        kNode.dataset.loading	= "1";
 		        kToggle.textContent		= "…";
@@ -275,16 +278,16 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/files?" + new URLSearchParams({ sMachine: sMachine, sPath: sPath }), { cache: "no-store" });
+		            const	kResponse	= await fetch("/api/files?" + new URLSearchParams({ sMachine: sMachine, sPath: sPath }), { cache: "no-store" });
 
 		            if (!kResponse.ok)	// 경유 실패 등 (JSON 아님)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            const kData		= await kResponse.json();
-		            const kResult	= kData.kResult;
-		            const sError	= kData.sError !== "" ? kData.sError : (kResult == null ? "결과 없음" : kResult.sError);
+		            const	kData	= await kResponse.json();
+		            const	kResult	= kData.kResult;
+		            const	sError	= kData.sError !== "" ? kData.sError : (kResult == null ? "결과 없음" : kResult.sError);
 
 		            if (sError !== "")
 		            {
@@ -296,7 +299,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 		                kChild.append(File.MakeFileNode("dir", sMachine, sPath === "" ? sDir : `${sPath}\\${sDir}`, sDir, ""));
 		            }
 
-		            const arrFile = kResult.arrFile.filter(kFile => File.FILE_VIEW_EXT.test(kFile.sName));	// 볼 수 있는 형식 파일만
+		            const	arrFile	= kResult.arrFile.filter(kFile => File.FILE_VIEW_EXT.test(kFile.sName));	// 볼 수 있는 형식 파일만
 
 		            for (const kFile of File.SortTreeNames(arrFile, kItem => kItem.sName))	// 파일 (시간별 로그: 최신부터, 수정 시각·크기)
 		            {
@@ -344,8 +347,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 		            return;
 		        }
 
-		        const sMachine		= GetMachineText();	// 머신 표시 글자
-		        const arrMachine	= GetMachines();		// 보여줄 머신 (목록 순서)
+		        const	sMachine	= GetMachineText();	// 머신 표시 글자
+		        const	arrMachine	= GetMachines();	// 보여줄 머신 (목록 순서)
 
 		        if (arrMachine.length === 0)	// 접속 머신 없음
 		        {
@@ -354,7 +357,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 		            return;
 		        }
 
-		        const arrNode		= arrMachine.map(sItem => File.MakeFileNode("machine", sItem, "", sItem, ""));			// 맨 위: 머신 목록
+		        const	arrNode	= arrMachine.map(sItem => File.MakeFileNode("machine", sItem, "", sItem, ""));	// 맨 위: 머신 목록
 
 		        kFileTree.replaceChildren(...arrNode);
 		        File.ResetFileView();	// 오른쪽 파일 보기도 처음으로 (다른 탭에 다녀와도 초기화)
@@ -369,7 +372,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		    static OnFileTreeClick(kEvent)	// 트리 클릭 (트리 하나에서 처리): 머신·폴더 펼치기·접기, 보기 파일: 오른쪽에 내용 (Shift·Ctrl·Alt+클릭: OnShiftFileClick·OnOpenClick 이 먼저)
 		    {
-		        const kNode = kEvent.target.closest("div.node");	// 누른 줄
+		        const	kNode	= kEvent.target.closest("div.node");	// 누른 줄
 
 		        if (kNode == null)
 		        {
@@ -429,7 +432,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		    static async LoadFileView(nStart, nCount, nDirection)	// 오른쪽 nStart 줄부터 nCount 줄 읽기 (nStart 0: 마지막, nDirection 0: 새로·-1: 위에 붙임·1: 아래에 붙임·2: 그 위치로 바꿈, 그 사이 다른 파일: 버림)
 		    {
-		        const kTarget = File.kFileView;	// 요청한 파일
+		        const	kTarget	= File.kFileView;	// 요청한 파일
 
 		        if (kTarget == null || kTarget.bLoading)
 		        {
@@ -445,36 +448,36 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		        try
 		        {
-		            const kParam	= new URLSearchParams({ sMachine: kTarget.sMachine, sPath: kTarget.sPath, nStart: nStart, nCount: nCount });
-		            const kResponse	= await fetch("/api/view?" + kParam, { cache: "no-store" });
+		            const	kParam		= new URLSearchParams({ sMachine: kTarget.sMachine, sPath: kTarget.sPath, nStart: nStart, nCount: nCount });
+		            const	kResponse	= await fetch("/api/view?" + kParam, { cache: "no-store" });
 
 		            if (!kResponse.ok)	// 경유 실패 등 (JSON 아님)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            const kData = await kResponse.json();
+		            const	kData	= await kResponse.json();
 
 		            if (kTarget !== File.kFileView)	// 그 사이 다른 파일을 엶
 		            {
 		                return;
 		            }
 
-		            const kResult	= kData.kResult;
-		            const sError	= kData.sError !== "" ? kData.sError : (kResult == null ? "결과 없음" : kResult.sError);
+		            const	kResult	= kData.kResult;
+		            const	sError	= kData.sError !== "" ? kData.sError : (kResult == null ? "결과 없음" : kResult.sError);
 
 		            if (sError !== "")
 		            {
 		                throw new Error(sError);
 		            }
 
-		            const kFragment		= document.createDocumentFragment();	// 붙일 줄
-		            const nCountRead	= kResult.arrText.length;				// 읽은 줄 수
+		            const	kFragment	= document.createDocumentFragment();	// 붙일 줄
+		            const	nCountRead	= kResult.arrText.length;				// 읽은 줄 수
 
 		            kResult.arrText.forEach((sText, nIndex) =>
 		            {
-		                const kLine	= document.createElement("span");
-		                const kNo	= document.createElement("span");
+		                const	kLine	= document.createElement("span");
+		                const	kNo		= document.createElement("span");
 
 		                kLine.className	= "line";
 		                kNo.className	= "lno";
@@ -514,7 +517,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		            if (nDirection === 0)	// 새로: 맨 아래로, 트리의 수정 시각·크기 갱신
 		            {
-		                const kInfo = kTarget.kNode?.querySelector(".info");	// 트리 줄 정보 (트리를 다시 만들었으면 화면에 없음 → 무시)
+		                const	kInfo	= kTarget.kNode?.querySelector(".info");	// 트리 줄 정보 (트리를 다시 만들었으면 화면에 없음 → 무시)
 
 		                kFileViewScroll.scrollTop = kFileViewScroll.scrollHeight;
 

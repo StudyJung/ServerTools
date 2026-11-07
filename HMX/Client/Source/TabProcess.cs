@@ -7,8 +7,10 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 	private const int	m_nAliveSec		= 100;	// 동작 확인 로그 주기 (초, 대략)
 	private const int	m_nSaveWaitMs	= 1000;	// 값 저장 뒤 대기 (ms, On·True·PID 0 이하 각각)
 
-	public static bool		m_bEnable;			// 실행 기능 켜짐 (Redis:sHost 있음, 없음: 꺼짐 → 로그 클라만)
-	private const int		m_nMinThread		= 64;	// 스레드 풀 최소 작업 스레드 (실행 기능 켜짐)
+	public static bool	m_bEnable;	// 실행 기능 켜짐 (Redis:sHost 있음, 없음: 꺼짐 → 로그 클라만)
+
+	private const int	m_nMinThread	= 64;	// 스레드 풀 최소 작업 스레드 (실행 기능 켜짐)
+
 	private static string	m_sMachine	= "";	// 이 머신 이름 (값 머신 파트와 대소문자 무시 비교)
 
 	public static void Init()	// 설정 → 켜짐·머신 (Main.Create)
@@ -61,7 +63,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 
 	private static async Task Tick(CancellationToken kStop)	// 1회 처리: 목록 로딩 → Ready → Start
 	{
-		SortedDictionary<string, string[]> hmapList;	// 이 머신 항목 (필드 → 값 파트, 필드 이름순 = 그룹 순서)
+		SortedDictionary<string, string[]>	hmapList;	// 이 머신 항목 (필드 → 값 파트, 필드 이름순 = 그룹 순서)
 
 		try
 		{
@@ -102,18 +104,18 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 		RedisKey[]		arrKey		= hsetKey.ToArray();
 		RedisValue[]	arrValue	= arrKey.Length == 0 ? Array.Empty<RedisValue>() : await Redis.GetDb().StringGetAsync(arrKey);	// MGET 일괄 조회 (String 아닌 키·조회 사이 삭제된 키: null)
 
-		SortedDictionary<string, string[]> hmapList = new SortedDictionary<string, string[]>(StringComparer.Ordinal);
+		SortedDictionary<string, string[]>	hmapList	= new SortedDictionary<string, string[]>(StringComparer.Ordinal);
 
 		for (int nIndex = 0; nIndex < arrKey.Length; ++nIndex)
 		{
-			string sField = arrKey[nIndex].ToString().Substring(sPrefix.Length);	// 키에서 접두사 제거
+			string	sField	= arrKey[nIndex].ToString().Substring(sPrefix.Length);	// 키에서 접두사 제거
 
 			if (sField == "" || arrValue[nIndex].IsNull)	// 접두사만 있는 키·String 아닌 키·삭제된 키
 			{
 				continue;
 			}
 
-			string[] arrPart = ProcessValue.Parse(arrValue[nIndex].ToString());
+			string[]	arrPart	= ProcessValue.Parse(arrValue[nIndex].ToString());
 
 			if (string.Equals(arrPart[ProcessValue.MACHINE], m_sMachine, StringComparison.OrdinalIgnoreCase))	// 이 머신 항목만
 			{
@@ -126,7 +128,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 
 	private static async Task Ready(SortedDictionary<string, string[]> hmapList, CancellationToken kStop)	// Git 동기화: 최대 m_nReadyMax 개 동시 (1개 끝: 다음 1개), 실패 항목: Off·False·PID -1 저장 후 이번 Start 대상에서 제외
 	{
-		List<string> listFail = new List<string>();	// 동기화 실패 필드
+		List<string>	listFail	= new List<string>();	// 동기화 실패 필드
 
 		await Parallel.ForEachAsync(hmapList.ToArray(), new ParallelOptions { MaxDegreeOfParallelism = m_nReadyMax }, async (KeyValuePair<string, string[]> kPair, CancellationToken kUnused) =>
 		{
@@ -168,11 +170,11 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 
 	private static async Task<bool> Execute(string sField, string[] arrValue)	// 상태 반영 (반환: 값이 바뀌어 저장 필요 여부)
 	{
-		string sOnOff	= arrValue[ProcessValue.ONOFF];
-		string sCheck	= arrValue[ProcessValue.CHECK];
-		string sPID		= arrValue[ProcessValue.PID];
-		string sExecute	= arrValue[ProcessValue.EXECUTE];
-		string sWorkDir	= arrValue[ProcessValue.FOLDER] + "\\" + arrValue[ProcessValue.GITHUB];	// 실제 실행 위치 (로그 표시)
+		string	sOnOff		= arrValue[ProcessValue.ONOFF];
+		string	sCheck		= arrValue[ProcessValue.CHECK];
+		string	sPID		= arrValue[ProcessValue.PID];
+		string	sExecute	= arrValue[ProcessValue.EXECUTE];
+		string	sWorkDir	= arrValue[ProcessValue.FOLDER] + "\\" + arrValue[ProcessValue.GITHUB];	// 실제 실행 위치 (로그 표시)
 
 		if (sOnOff == "Down")	// Down: Ready 의 Git 동기화만 하고 프로세스는 그대로
 		{
@@ -195,7 +197,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 
 		if (sOnOff == "On")
 		{
-			int nPID = Process.Check(arrValue, ProcessValue.ToInt(sPID));
+			int	nPID	= Process.Check(arrValue, ProcessValue.ToInt(sPID));
 
 			if (nPID < 0)
 			{
@@ -254,7 +256,7 @@ static class TabProcess	// 반영 탭: X초마다 Redis 목록 중 이 머신 �
 			return false;
 		}
 
-		int nFini = Process.Fini(sField, arrValue);	// Off·False: 종료
+		int	nFini	= Process.Fini(sField, arrValue);	// Off·False: 종료
 
 		if (nFini < 0)
 		{

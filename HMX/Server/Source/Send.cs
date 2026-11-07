@@ -1,13 +1,14 @@
 static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레드 Add) 를 한가한 스레드가 꺼내 채널별 발송 (메일·훅) → 알람 로그 + 실패: 결과 큐 (통계 스레드가 매분 꺼내 펜딩)
 {
-	private const int													m_nThreadCount	= 5;	// 발송 스레드 수
-	private const int													m_nTimeoutMs	= 10000;	// 발송 1건 제한 (ms)
-	private const int													m_nStopWaitMs	= 5000;	// 종료 때 남은 큐 처리 대기 (ms)
+	private const int	m_nThreadCount	= 5;		// 발송 스레드 수
+	private const int	m_nTimeoutMs	= 10000;	// 발송 1건 제한 (ms)
+	private const int	m_nStopWaitMs	= 5000;		// 종료 때 남은 큐 처리 대기 (ms)
 
 	public static readonly ConcurrentQueue<(AlarmJob kJob, string sError)>	m_kResult	= new ConcurrentQueue<(AlarmJob kJob, string sError)>();	// 실패 작업 (통계 스레드가 매분 꺼냄)
-	private static BlockingCollection<AlarmJob>							m_kQueue	= new BlockingCollection<AlarmJob>();	// 발송 큐 (공유)
-	private static Thread[]												m_arrThread	= Array.Empty<Thread>();				// 발송 스레드
-	private static readonly HttpClient									m_kHttp		= new HttpClient { Timeout = TimeSpan.FromMilliseconds(m_nTimeoutMs) };	// 훅 (1개 공유)
+
+	private static BlockingCollection<AlarmJob>	m_kQueue	= new BlockingCollection<AlarmJob>();	// 발송 큐 (공유)
+	private static Thread[]						m_arrThread	= Array.Empty<Thread>();				// 발송 스레드
+	private static readonly HttpClient			m_kHttp		= new HttpClient { Timeout = TimeSpan.FromMilliseconds(m_nTimeoutMs) };	// 훅 (1개 공유)
 
 	public static void Start()	// 발송 스레드 시작
 	{
@@ -29,7 +30,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 	{
 		m_kQueue.CompleteAdding();
 
-		long nEnd = Environment.TickCount64 + m_nStopWaitMs;	// 대기 끝
+		long	nEnd	= Environment.TickCount64 + m_nStopWaitMs;	// 대기 끝
 
 		foreach (Thread kThread in m_arrThread)
 		{
@@ -38,7 +39,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 
 		m_arrThread = Array.Empty<Thread>();
 
-		List<AlarmJob> listLeft = new List<AlarmJob>();	// 못 보낸 작업
+		List<AlarmJob>	listLeft	= new List<AlarmJob>();	// 못 보낸 작업
 
 		while (m_kQueue.TryTake(out AlarmJob? kJob))
 		{
@@ -62,7 +63,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 	{
 		foreach (AlarmJob kJob in m_kQueue.GetConsumingEnumerable())
 		{
-			string sError = "";	// 실패 사유 (성공: "")
+			string	sError	= "";	// 실패 사유 (성공: "")
 
 			++kJob.nTry;
 
@@ -75,7 +76,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 				sError = GetErrorText(kException, $"알람 발송 #{kJob.nID} {kJob.sChannel}");
 			}
 
-			string sResult = sError != "" ? "Failed" : (kJob.nRetryOf != 0 ? "Resent" : "Sent");	// 발송 결과
+			string	sResult	= sError != "" ? "Failed" : (kJob.nRetryOf != 0 ? "Resent" : "Sent");	// 발송 결과
 
 			AlarmLog.Write(kJob, sResult, sError);
 			AlarmLog.WriteHistory(kJob, sResult, sError);	// 알람 기록 (날짜·제목·내용·결과, Data\Alarm\history.jsonl 최신 X건)
@@ -94,7 +95,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 
 	public static string SendNow(AlarmJob kJob)	// 바로 보냄 (테스트 발송, 요청 스레드, 알람 기록, 반환: 실패 사유·성공 "")
 	{
-		string sError = "";	// 실패 사유 (성공: "")
+		string	sError	= "";	// 실패 사유 (성공: "")
 
 		try
 		{
@@ -129,7 +130,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 
 	private static string GetMailFrom()	// 보내는 주소 (Mail:sFrom, 없음: 로그인 계정 Mail:sID)
 	{
-		string sFrom = Config.GetString("Mail:sFrom");
+		string	sFrom	= Config.GetString("Mail:sFrom");
 
 		return sFrom != "" ? sFrom : Config.GetString("Mail:sID");
 	}
@@ -178,7 +179,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 
 	private static string GetText(AlarmJob kJob)	// 보낼 내용: 알람 내용 + 빈 줄 2개 + 쿼리 링크 (링크 없음: 내용만, 예전 펜딩: 끝 페이지 주소 뺀 뒤 붙임, 알람 기록: 링크 따로)
 	{
-		string sText = kJob.sLink != "" && kJob.sText.EndsWith(kJob.sLink, StringComparison.Ordinal) ? kJob.sText[..^kJob.sLink.Length].TrimEnd('\n') : kJob.sText;	// 알람 내용 (링크 없음)
+		string	sText	= kJob.sLink != "" && kJob.sText.EndsWith(kJob.sLink, StringComparison.Ordinal) ? kJob.sText[..^kJob.sLink.Length].TrimEnd('\n') : kJob.sText;	// 알람 내용 (링크 없음)
 
 		return GetLink(kJob) == "" ? sText : sText + "\n\n\n" + GetLink(kJob);
 	}
@@ -190,7 +191,7 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 
 		for (int nIndex = 0; nIndex < arrLine.Length; ++nIndex)
 		{
-			string sLine = arrLine[nIndex];
+			string	sLine	= arrLine[nIndex];
 
 			if (sLine == Stat.MAIL_LINE)	// 구분 줄: 가로줄 (앞뒤 <br> 없음)
 			{
@@ -212,9 +213,9 @@ static class Send	// 알람 발송 스레드 풀 X개: 공유 큐 (통계 스레
 
 	private static void SendHook(AlarmJob kJob)	// 훅: POST {"botName", "text": 메일 제목, "attachments": [{"text": 메일 내용 (구분 줄: 마크다운 가로줄, 마지막 쿼리 주소: 마크다운 링크)}]} (두레이·슬랙 수신 훅 형식, 2xx: 성공, 길이 있는 본문: chunked 못 받는 곳 대비)
 	{
-		string sText = string.Join('\n', GetText(kJob).Split('\n').Select(sLine => sLine == Stat.MAIL_LINE ? "\n---" : sLine));	// 구분 줄 → 빈 줄 + --- (빈 줄 없음: 윗줄이 제목으로 바뀜)
+		string	sText	= string.Join('\n', GetText(kJob).Split('\n').Select(sLine => sLine == Stat.MAIL_LINE ? "\n---" : sLine));	// 구분 줄 → 빈 줄 + --- (빈 줄 없음: 윗줄이 제목으로 바뀜)
 
-		string sLink = GetLink(kJob);	// 보낼 쿼리 링크
+		string	sLink	= GetLink(kJob);	// 보낼 쿼리 링크
 
 		sText = sLink != "" && sText.EndsWith(sLink, StringComparison.Ordinal) ? sText[..^sLink.Length] + $"[{sLink}]({sLink})" : sText;	// 본문 마지막 쿼리 주소: 누르면 외부 API 쿼리 (주소 괄호·대괄호: 인코딩됨)
 

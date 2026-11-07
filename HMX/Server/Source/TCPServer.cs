@@ -1,22 +1,22 @@
 class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록·필드 순서, File: 콘솔 출력, Log: 원문 저장, Ping: 수신 시각 갱신, *Result: 요청 결과), 접속 목록 관리, 클라 요청(검색·보기)
 {
-	private readonly int									m_nPort;		// 수신 포트 (0: 사용 안 함)
+	private readonly int	m_nPort;								// 수신 포트 (0: 사용 안 함)
 	private readonly ConcurrentDictionary<long, ClientInfo>	m_hmapClient;	// 접속 클라 (접속 번호 → 정보)
-	private long											m_nClientSeq;	// 접속 번호 발급
-	private long											m_nReqSeq;		// 요청 번호 발급
-	private Task											m_kAcceptTask	= Task.CompletedTask;	// 접속 대기 (종료 때 끝 대기)
-	private readonly ConcurrentDictionary<string, ConcurrentDictionary<long, SearchTrack>>	m_hmapTrack = new ConcurrentDictionary<string, ConcurrentDictionary<long, SearchTrack>>();	// 진행 중인 검색 (페이지 sToken → 머신별 진행 (요청 번호 → 진행))
+	private long			m_nClientSeq;							// 접속 번호 발급
+	private long			m_nReqSeq;								// 요청 번호 발급
+	private Task			m_kAcceptTask	= Task.CompletedTask;	// 접속 대기 (종료 때 끝 대기)
+	private readonly ConcurrentDictionary<string, ConcurrentDictionary<long, SearchTrack>>	m_hmapTrack	= new ConcurrentDictionary<string, ConcurrentDictionary<long, SearchTrack>>();	// 진행 중인 검색 (페이지 sToken → 머신별 진행 (요청 번호 → 진행))
 
-	private const int	m_nIdleSec	= 90;					// 클라 무수신 제한 (초, 클라 Ping 주기 × 3, 초과: 연결 종료)
-	private const int	m_nSendWaitSec	= 10;				// 알림 한 줄 (Pause·Resume·Count 답) 전송 제한 (초, 넘음: 수신 안 하는 클라 → 연결 정리)
-	private const int	m_nStopWaitMs	= 50;				// 종료 때 클라 수신 끝 확인 간격 (ms)
-	private const int	m_nStopLogSec	= 10;				// 종료 대기 로그 간격 (초)
-	private const int	m_nLineMax	= 1536 * 1024 * 1024;	// 수신 한 줄 최대 바이트 (클라가 글자 수 합 m_nSearchTextTotal 에서 끊음 → 한글 3바이트도 안쪽, 초과: 연결 종료)
+	private const int	m_nIdleSec		= 90;					// 클라 무수신 제한 (초, 클라 Ping 주기 × 3, 초과: 연결 종료)
+	private const int	m_nSendWaitSec	= 10;					// 알림 한 줄 (Pause·Resume·Count 답) 전송 제한 (초, 넘음: 수신 안 하는 클라 → 연결 정리)
+	private const int	m_nStopWaitMs	= 50;					// 종료 때 클라 수신 끝 확인 간격 (ms)
+	private const int	m_nStopLogSec	= 10;					// 종료 대기 로그 간격 (초)
+	private const int	m_nLineMax		= 1536 * 1024 * 1024;	// 수신 한 줄 최대 바이트 (클라가 글자 수 합 m_nSearchTextTotal 에서 끊음 → 한글 3바이트도 안쪽, 초과: 연결 종료)
 
 	private static readonly (string sLine, string sNo, string sField)	m_kTcpKey	= ("arrLine", "arrNo", "arrField");	// TCP Log 줄·번호·필드 배열 키 (Client 프로토콜, 변경 금지)
 	private static readonly (string sLine, string sNo, string sField)	m_kHttpKey	= ("aLine", "aNo", "aField");		// HTTP Log 줄·번호·필드 배열 키 (/api/external/log)
 
-	private static TCPServer?	m_kInstance;	// 수신 1개 (TabQuery 적재 부하 → 분당 상위 클라 Pause·모든 클라 Resume, 타이머 → 클라 분당 교체)
+	private static TCPServer?	m_kInstance;		// 수신 1개 (TabQuery 적재 부하 → 분당 상위 클라 Pause·모든 클라 Resume, 타이머 → 클라 분당 교체)
 	private static bool			m_bQuery	= true;	// 쿼리 탭 켜짐 (aMenu, 꺼짐: 접속 때 Pause·Log·받은 진행 안 받음 → TabQuery 안 건드림)
 
 	public TCPServer(int nPort, bool bQuery)
@@ -34,7 +34,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			return;
 		}
 
-		List<KeyValuePair<long, ClientInfo>> listClient = m_kInstance.m_hmapClient.OrderBy(kPair => kPair.Key).ToList();	// 접속 번호 순 스냅샷
+		List<KeyValuePair<long, ClientInfo>>	listClient	= m_kInstance.m_hmapClient.OrderBy(kPair => kPair.Key).ToList();	// 접속 번호 순 스냅샷
 
 		if (listClient.Count == 0)
 		{
@@ -46,9 +46,9 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			kPair.Value.TakeMinute();
 		}
 
-		long nMsg	= listClient.Sum(kPair => Interlocked.Read(ref kPair.Value.m_nLastMinMsg));
-		long nLine	= listClient.Sum(kPair => Interlocked.Read(ref kPair.Value.m_nLastMinLine));
-		long nByte	= listClient.Sum(kPair => Interlocked.Read(ref kPair.Value.m_nLastMinByte));
+		long	nMsg	= listClient.Sum(kPair => Interlocked.Read(ref kPair.Value.m_nLastMinMsg));
+		long	nLine	= listClient.Sum(kPair => Interlocked.Read(ref kPair.Value.m_nLastMinLine));
+		long	nByte	= listClient.Sum(kPair => Interlocked.Read(ref kPair.Value.m_nLastMinByte));
 
 		Log.Write(INFO_, $"클라 분당: 접속 {listClient.Count}개, 메시지 {nMsg:N0}건 · Log {nLine:N0}줄 · {nByte / 1048576.0:N1} MB (멈춤 {listClient.Count(kPair => Volatile.Read(ref kPair.Value.m_nPaused) != 0)}대)");
 	}
@@ -56,8 +56,8 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 	public static (int nPause, int nSending, int nTotal) PauseTop(int nPercent)	// 상한 넘침: 전송 중 (안 멈춘) 클라 중 분당 Log 줄 (지난 1분 + 이번 분) 많은 순 상위 X% 더 Pause (전송 중 수 기준 올림 → 남은 1대: 그것도, 반환: 이번에 멈춘 수·멈추기 전 전송 중 수·접속 수)
 	{
 		List<ClientInfo>	listClient	= m_kInstance?.m_hmapClient.Values.Where(kInfo => kInfo.m_kWriter != null).ToList() ?? new List<ClientInfo>();	// 접속 클라
-		List<ClientInfo>	listSending	= listClient.Where(kInfo => Volatile.Read(ref kInfo.m_nPaused) == 0).ToList();									// 전송 중 (안 멈춘) 클라
-		int					nTop		= (int)Math.Ceiling(listSending.Count * nPercent / 100.0);															// 이번에 멈출 수
+		List<ClientInfo>	listSending	= listClient.Where(kInfo => Volatile.Read(ref kInfo.m_nPaused) == 0).ToList();	// 전송 중 (안 멈춘) 클라
+		int					nTop		= (int)Math.Ceiling(listSending.Count * nPercent / 100.0);						// 이번에 멈출 수
 		int					nPause		= 0;
 
 		foreach (ClientInfo kInfo in listSending.Select(kInfo => (kInfo, nLoad: kInfo.GetLoad())).OrderByDescending(kItem => kItem.nLoad).Take(nTop).Select(kItem => kItem.kInfo))
@@ -75,7 +75,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	public static int ResumeAll()	// 밀림 풀림: 모든 클라에 Resume (클라: 멈춘 상태만 재개, 이미 전송 중: 무시), 멈춤 표시 지움 (반환: 보낸 수)
 	{
-		int nCount = 0;	// 보낸 수
+		int	nCount	= 0;	// 보낸 수
 
 		foreach (ClientInfo kInfo in m_kInstance?.m_hmapClient.Values ?? Enumerable.Empty<ClientInfo>())
 		{
@@ -102,7 +102,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 	public static int SendAliveAll()	// 필드 정의 바뀜 (필드 버튼): 접속 클라 모두에 얼라이브 답 바로 (클라 1분 얼라이브 안 기다림 → 클라: 바뀜만 다음 Log 부터 새 정의, 예전 클라: 무시, 반환: 보낸 수)
 	{
 		string	sLine	= GetAliveLine();	// 얼라이브 답
-		int		nCount	= 0;																												// 보낸 수
+		int		nCount	= 0;				// 보낸 수
 
 		foreach (ClientInfo kInfo in m_kInstance?.m_hmapClient.Values ?? Enumerable.Empty<ClientInfo>())
 		{
@@ -155,7 +155,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			return false;
 		}
 
-		TcpListener kListener = new TcpListener(IPAddress.Any, m_nPort);
+		TcpListener	kListener	= new TcpListener(IPAddress.Any, m_nPort);
 
 		try
 		{
@@ -179,7 +179,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 	{
 		await m_kAcceptTask;
 
-		long nLogTick = Environment.TickCount64;	// 마지막 대기 로그
+		long	nLogTick	= Environment.TickCount64;	// 마지막 대기 로그
 
 		while (!m_hmapClient.IsEmpty)
 		{
@@ -223,20 +223,20 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	public async Task<(byte[]? arrResult, string sError)> Request(string sMachine, Dictionary<string, object> hmapRequest, int nWaitSec, ConcurrentDictionary<long, SearchTrack>? hmapTrack = null)	// 머신에 요청 → 결과 대기 (같은 머신 여러 접속: 최근 접속, 미접속·시간 초과·끊김: sError, hmapTrack: 진행 조회·중지)
 	{
-		ClientInfo? kInfo = m_hmapClient.Where(kPair => kPair.Value.m_kWriter != null && string.Equals(kPair.Value.m_sMachine, sMachine, StringComparison.OrdinalIgnoreCase)).OrderByDescending(kPair => kPair.Key).Select(kPair => kPair.Value).FirstOrDefault();
+		ClientInfo?	kInfo	= m_hmapClient.Where(kPair => kPair.Value.m_kWriter != null && string.Equals(kPair.Value.m_sMachine, sMachine, StringComparison.OrdinalIgnoreCase)).OrderByDescending(kPair => kPair.Key).Select(kPair => kPair.Value).FirstOrDefault();
 
 		if (kInfo == null || kInfo.m_kWriter == null)	// 접속 안 된 머신
 		{
 			return (null, "접속 안 된 머신");
 		}
 
-		long								nReqId	= Interlocked.Increment(ref m_nReqSeq);	// 요청 번호
-		TaskCompletionSource<byte[]>		kWait	= new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);	// 결과 대기 (클라 결과 JSON 바이트)
+		long							nReqId	= Interlocked.Increment(ref m_nReqSeq);	// 요청 번호
+		TaskCompletionSource<byte[]>	kWait	= new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);	// 결과 대기 (클라 결과 JSON 바이트)
 
 		kInfo.m_hmapPending[nReqId]	= kWait;
 		hmapRequest["nReqId"]		= nReqId;
 
-		SearchTrack? kTrack = hmapTrack == null ? null : new SearchTrack(kInfo, nReqId);	// 진행 조회·중지 (페이지 sToken 의 머신별 진행)
+		SearchTrack?	kTrack	= hmapTrack == null ? null : new SearchTrack(kInfo, nReqId);	// 진행 조회·중지 (페이지 sToken 의 머신별 진행)
 
 		if (kTrack != null)
 		{
@@ -246,7 +246,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		using CancellationTokenSource kTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(nWaitSec));	// 전송 + 결과 대기 시간 제한
 
-		bool bSent = false;	// 요청 전송 완료
+		bool	bSent	= false;	// 요청 전송 완료
 
 		try
 		{
@@ -254,7 +254,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 			bSent = true;
 
-			byte[] arrResult = await kWait.Task.WaitAsync(kTimeout.Token);
+			byte[]	arrResult	= await kWait.Task.WaitAsync(kTimeout.Token);
 
 			return (arrResult, "");
 		}
@@ -290,7 +290,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			return null;
 		}
 
-		ConcurrentDictionary<long, SearchTrack> hmapTrack = new ConcurrentDictionary<long, SearchTrack>();	// 머신별 진행 (요청 번호 → 진행)
+		ConcurrentDictionary<long, SearchTrack>	hmapTrack	= new ConcurrentDictionary<long, SearchTrack>();	// 머신별 진행 (요청 번호 → 진행)
 
 		m_hmapTrack[sToken] = hmapTrack;
 
@@ -312,7 +312,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	public async Task<bool> Stop(string? sToken)	// 검색 중지: 진행 중인 머신마다 Stop 전송 (false: 진행 중인 검색 없음·전송 모두 실패)
 	{
-		bool[] arrSent = await Task.WhenAll(GetTrackList(sToken).Select(StopTrack));	// 머신별 전송 결과
+		bool[]	arrSent	= await Task.WhenAll(GetTrackList(sToken).Select(StopTrack));	// 머신별 전송 결과
 
 		return arrSent.Contains(true);
 	}
@@ -344,7 +344,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 	{
 		while (!kStop.IsCancellationRequested)
 		{
-			TcpClient kClient;	// 접속 클라
+			TcpClient	kClient;	// 접속 클라
 
 			try
 			{
@@ -376,7 +376,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	private async Task ReadLoop(TcpClient kClient, CancellationToken kStop)	// 클라 한 명 수신: 줄 단위 처리 (끊김·m_nIdleSec 초 무수신·줄 길이 초과 시 종료 → 목록에서 제거)
 	{
-		long		nId		= Interlocked.Increment(ref m_nClientSeq);								// 접속 번호
+		long		nId		= Interlocked.Increment(ref m_nClientSeq);							// 접속 번호
 		ClientInfo	kInfo	= new ClientInfo(kClient.Client.RemoteEndPoint?.ToString() ?? "");	// 접속 정보
 
 		m_hmapClient[nId] = kInfo;
@@ -389,8 +389,8 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			{
 				SetKeepAlive(kClient.Client);	// 클라가 FIN 없이 사라진 경우 감지
 
-				NetworkStream				kStream	= kClient.GetStream();
-				LineReader					kReader	= new LineReader(kStream, m_nLineMax);	// 줄 길이 제한 수신 (비정상 클라 메모리 고갈 방지)
+				NetworkStream	kStream	= kClient.GetStream();
+				LineReader		kReader	= new LineReader(kStream, m_nLineMax);	// 줄 길이 제한 수신 (비정상 클라 메모리 고갈 방지)
 				using CancellationTokenSource	kIdle	= CancellationTokenSource.CreateLinkedTokenSource(kStop);	// 무수신 시간 제한 (수신마다 다시 계산)
 
 				kInfo.m_kClient	= kClient;
@@ -404,7 +404,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 					kInfo.AddRecv(kLine.Length + 1);	// 클라별 받은 메시지·바이트 (원자)
 
-					LogBatch? kBatch = OnMessage(nId, kInfo, kLine);	// Log 건: 적재 라이트 큐로 (가득: 비워질 때까지 기다림 → 이 클라 수신만 늦어짐)
+					LogBatch?	kBatch	= OnMessage(nId, kInfo, kLine);	// Log 건: 적재 라이트 큐로 (가득: 비워질 때까지 기다림 → 이 클라 수신만 늦어짐)
 
 					if (kBatch != null)
 					{
@@ -494,7 +494,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		try
 		{
-			Utf8JsonReader kReader = new Utf8JsonReader(kLine);	// 읽기 (형식 오류: JsonException)
+			Utf8JsonReader	kReader	= new Utf8JsonReader(kLine);	// 읽기 (형식 오류: JsonException)
 
 			if (!kReader.Read() || kReader.TokenType != JsonTokenType.StartObject)	// 객체 아님
 			{
@@ -532,7 +532,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	private static List<string> GetFolderList(JsonElement kRoot)	// 클라 Count·CountAdd 폴더 목록 (arrFolder 문자열, 빈 값 뺌)
 	{
-		List<string> listFolder = new List<string>();
+		List<string>	listFolder	= new List<string>();
 
 		if (kRoot.TryGetProperty("arrFolder", out JsonElement kFolders) && kFolders.ValueKind == JsonValueKind.Array)
 		{
@@ -550,7 +550,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	private static List<object> GetCountReply(List<string> listFolder, List<Count> listCount)	// 폴더마다 받은 진행 (Data\Count 파일 읽기, 있는 폴더만) → 답 arrCount [{sFolder, sRel, nLine}]
 	{
-		List<object> listReply = new List<object>();
+		List<object>	listReply	= new List<object>();
 
 		for (int nIndex = 0; nIndex < listFolder.Count; ++nIndex)
 		{
@@ -565,7 +565,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	private static LogBatch? ReadLog(string sMachine, JsonElement kRoot, HashSet<string>? setCount, (string sLine, string sNo, string sField) kKey)	// Log 메시지 → Log 건 (TCP·HTTP 공통, setCount: 받은 진행 관리 폴더 (HTTP: 없음 → 관리 안 함), kKey: 배열 키 (TCP arr*, HTTP a*), 받은 줄 없음: null)
 	{
-		List<string> listLine = new List<string>();	// 받은 줄
+		List<string>	listLine	= new List<string>();	// 받은 줄
 
 		if (kRoot.TryGetProperty(kKey.sLine, out JsonElement kLines) && kLines.ValueKind == JsonValueKind.Array)
 		{
@@ -578,7 +578,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			}
 		}
 
-		List<long> listNo = new List<long>();	// 받은 줄 번호 (arrLine 과 같은 순서, 예전 클라: 없음)
+		List<long>	listNo	= new List<long>();	// 받은 줄 번호 (arrLine 과 같은 순서, 예전 클라: 없음)
 
 		if (kRoot.TryGetProperty(kKey.sNo, out JsonElement kNos) && kNos.ValueKind == JsonValueKind.Array)
 		{
@@ -588,7 +588,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			}
 		}
 
-		List<(string sKey, string sValue)[]> listField = new List<(string sKey, string sValue)[]>();	// 받은 줄 추가 필드 (arrLine 과 같은 순서, 설정 aField 키만, 예전 클라·aField 없음: 없음)
+		List<(string sKey, string sValue)[]>	listField	= new List<(string sKey, string sValue)[]>();	// 받은 줄 추가 필드 (arrLine 과 같은 순서, 설정 aField 키만, 예전 클라·aField 없음: 없음)
 
 		if (kRoot.TryGetProperty(kKey.sField, out JsonElement kFields) && kFields.ValueKind == JsonValueKind.Array)
 		{
@@ -598,19 +598,19 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 			}
 		}
 
-		string sFolder = GetText(kRoot, "sFolder");	// 클라 대상 폴더 (예전 클라: 없음)
+		string	sFolder	= GetText(kRoot, "sFolder");	// 클라 대상 폴더 (예전 클라: 없음)
 
 		return listLine.Count == 0 ? null : new LogBatch(sMachine, GetText(kRoot, "sPath"), sFolder, GetText(kRoot, "sZone"), listLine, listNo.Count == listLine.Count ? listNo : null, listField.Count == listLine.Count ? listField : null, setCount != null && setCount.Contains(sFolder));	// sZone: 예전 클라 Base:sZone (원문 파일 번호 구분만, 지금 클라: 없음 → 존은 aField 추가 필드), arrField: 설정 aField 값 (예전 클라: 없음), 받은 진행: 클라 Count 목록 폴더만
 	}
 
 	private static JsonObject GetLogQuery(IQueryCollection kQuery)	// 쿼리 문자열 → Log 메시지 (본문 JSON 과 같은 이름, aLine·aNo: 반복, 그 밖 키: 모든 줄 추가 필드)
 	{
-		JsonObject kRoot	= new JsonObject();	// Log 메시지
-		JsonObject kField	= new JsonObject();	// 추가 필드 (모든 줄 같음)
+		JsonObject	kRoot	= new JsonObject();	// Log 메시지
+		JsonObject	kField	= new JsonObject();	// 추가 필드 (모든 줄 같음)
 
 		foreach (string sKey in kQuery.Keys)
 		{
-			string[] arrValue = kQuery[sKey].Select(sValue => sValue ?? "").ToArray();	// 같은 키 값들 (반복 순서)
+			string[]	arrValue	= kQuery[sKey].Select(sValue => sValue ?? "").ToArray();	// 같은 키 값들 (반복 순서)
 
 			if (sKey == "sMachine" || sKey == "sPath" || sKey == "sFolder" || sKey == "sZone")
 			{
@@ -640,7 +640,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	public static async Task<IResult> OnLog(HttpRequest kRequest)	// HTTP 로그 수신: 쿼리 문자열 (있음, GET 링크) 또는 본문 JSON {sMachine, sPath, sFolder, aLine, aNo, aField} (TCP Log 의 arr* → a* + sMachine, 추가 필드: 설정 aField 키·고정값만 → 그 밖: 400) → TCP 와 같은 처리 (ReadLog → 적재 큐, 원문 시간: 받은 시각), 받은 진행 관리 안 함
 	{
-		CancellationToken	kStop		= kRequest.HttpContext.RequestAborted;													// 요청 끊김
+		CancellationToken	kStop		= kRequest.HttpContext.RequestAborted;	// 요청 끊김
 		string				sRecvTime	= GetNow().ToString("[yyyy/MM/dd HH:mm:ss.fff]", CultureInfo.InvariantCulture);	// 받은 시각 (KST, 이 요청 모든 줄 원문 시간)
 
 		if (TabQuery.IsIngestPaused())	// 적재 밀림: TCP 우선 (HTTP 거절, 잠시 후 다시)
@@ -650,7 +650,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		try
 		{
-			LogBatch? kBatch;	// Log 건
+			LogBatch?	kBatch;	// Log 건
 
 			using (JsonDocument kDoc = kRequest.Query.Count > 0 ? JsonDocument.Parse(GetLogQuery(kRequest.Query).ToJsonString()) : await JsonDocument.ParseAsync(kRequest.Body, cancellationToken: kStop))	// 쿼리 문자열 있음: 쿼리, 없음: 본문 JSON (적재 대기 전 해제)
 			{
@@ -667,7 +667,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 					return Results.Json(new { sError = "경로 오류", nLine = 0 }, statusCode: StatusCodes.Status400BadRequest);
 				}
 
-				string sFieldError = TabQuery.FindFieldError(kRoot, m_kHttpKey.sField);	// 정의에 안 맞는 추가 필드 (설정 aField 에 없는 키 (쿼리 문자열 그 밖 키 포함)·고정값 다름)
+				string	sFieldError	= TabQuery.FindFieldError(kRoot, m_kHttpKey.sField);	// 정의에 안 맞는 추가 필드 (설정 aField 에 없는 키 (쿼리 문자열 그 밖 키 포함)·고정값 다름)
 
 				if (sFieldError != "")	// 정해진 필드·고정값만 받음 (추가 필드 이름 늘어남 방지)
 				{
@@ -708,7 +708,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 	private static LogBatch? OnMessage(long nId, ClientInfo kInfo, JsonElement kRoot)	// 작은 메시지 종류별 처리 (kRoot 는 호출 끝나면 해제됨, 반환: Log 건 → 적재 큐, 그 외: null)
 	{
-		string sType = GetText(kRoot, "sType");	// 메시지 종류 (Hello·Count·Alive·File·Log·Ping)
+		string	sType	= GetText(kRoot, "sType");	// 메시지 종류 (Hello·Count·Alive·File·Log·Ping)
 
 		if (sType == "Hello")	// 접속 직후 머신 등록 (예전 클라 arrField: 무시 → 필드 순서는 설정 aField)
 		{
@@ -739,15 +739,15 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		if (sType == "Count")	// 클라 관리 목록 (접속 때 1번, Hello 뒤, 한 패킷) → 목록 밖 이 머신 Count 지움 + 목록 폴더마다 받은 진행·설정 aField 한 패킷으로 답 (클라: aField 로 줄 필드, 그 위치부터 보정 후 로그 전송, 답에 없는 폴더: 클라 로직대로)
 		{
-			List<string>	listFolder	= GetFolderList(kRoot);																// 클라 로그 감시 대상 폴더
-			List<Count>	listCount	= listFolder.Select(sFolder => new Count(kInfo.m_sMachine, sFolder)).ToList();	// 폴더마다 상태 (읽기만)
+			List<string>	listFolder	= GetFolderList(kRoot);	// 클라 로그 감시 대상 폴더
+			List<Count>		listCount	= listFolder.Select(sFolder => new Count(kInfo.m_sMachine, sFolder)).ToList();	// 폴더마다 상태 (읽기만)
 
 			kInfo.m_setCount.Clear();
 			kInfo.m_setCount.UnionWith(listFolder);																				// 이 접속: 목록 폴더만 관리 (Log bCount)
 			TabQuery.PruneCount(kInfo.m_sMachine, listFolder);																	// 메모리: 목록 밖 뺌 (워커, 앞 Log 처리 뒤)
 			Count.DeleteUnused(kInfo.m_sMachine, listCount.Select(kCount => kCount.m_sFile).Where(sFile => sFile != ""));	// 파일: 목록 밖 지움
 
-			List<object> listReply = GetCountReply(listFolder, listCount);	// 받은 진행 있는 폴더만
+			List<object>	listReply	= GetCountReply(listFolder, listCount);	// 받은 진행 있는 폴더만
 
 			SendLine(kInfo, JsonSerializer.Serialize(new { sType = "Count", arrCount = listReply, aField = TabQuery.GetFieldRule() }, Define.m_kJsonOption));
 
@@ -758,12 +758,12 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		if (sType == "Alive")	// 클라 얼라이브 (1분마다, Count 뒤 한 패킷 {"sType":"Alive","arrFolder":[""]}: 관리 목록) → 관리 폴더와 다름: Count 처럼 맞춤 (목록 밖: 메모리·파일 정리, 새 폴더: 관리) + 답: 필드 정의 (받은 진행 안 보냄 → 클라 보정 안 함)
 		{
-			List<string> listFolder = GetFolderList(kRoot);	// 클라 관리 목록 (지금)
+			List<string>	listFolder	= GetFolderList(kRoot);	// 클라 관리 목록 (지금)
 
 			if (!kInfo.m_setCount.SetEquals(listFolder))
 			{
-				int nAdd	= listFolder.Count(sFolder => !kInfo.m_setCount.Contains(sFolder));	// 새로 관리
-				int nDel	= kInfo.m_setCount.Count(sFolder => !listFolder.Contains(sFolder, StringComparer.OrdinalIgnoreCase));	// 관리 끝
+				int	nAdd	= listFolder.Count(sFolder => !kInfo.m_setCount.Contains(sFolder));	// 새로 관리
+				int	nDel	= kInfo.m_setCount.Count(sFolder => !listFolder.Contains(sFolder, StringComparer.OrdinalIgnoreCase));	// 관리 끝
 
 				kInfo.m_setCount.Clear();
 				kInfo.m_setCount.UnionWith(listFolder);																										// 이 접속: 목록 폴더만 관리 (Log bCount)
@@ -780,7 +780,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		if (sType == "CountAdd")	// 클라 새 폴더 등록 (접속 뒤 발견, 한 패킷) → 관리 목록에 더함 (지우기 없음) + 그 폴더 받은 진행 한 패킷으로 답 (클라: 답 받은 뒤 그 폴더도 로그 전송)
 		{
-			List<string>	listFolder	= GetFolderList(kRoot);																// 새로 발견한 폴더
+			List<string>	listFolder	= GetFolderList(kRoot);	// 새로 발견한 폴더
 			List<object>	listReply	= GetCountReply(listFolder, listFolder.Select(sFolder => new Count(kInfo.m_sMachine, sFolder)).ToList());	// 받은 진행 있는 폴더만 (보통 없음)
 
 			kInfo.m_setCount.UnionWith(listFolder);	// 이 접속: 관리 폴더 추가 (Log bCount)
@@ -794,7 +794,7 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		if (sType == "CountDel")	// 클라 감시 폴더 사라짐 (폴더 삭제, 한 패킷) → 관리 목록에서 뺌 + 받은 진행 정리 (메모리·파일, Count 목록 밖과 같음, 답 없음)
 		{
-			List<string> listFolder = GetFolderList(kRoot);	// 사라진 폴더
+			List<string>	listFolder	= GetFolderList(kRoot);	// 사라진 폴더
 
 			kInfo.m_setCount.ExceptWith(listFolder);																										// 이 접속: 관리 폴더 뺌 (Log bCount)
 			TabQuery.PruneCount(kInfo.m_sMachine, kInfo.m_setCount);																						// 메모리: 목록 밖 뺌 (워커, 앞 Log 처리 뒤)
@@ -812,9 +812,9 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 		if (sType == "File")	// 파일 이벤트 (Changed: 로그 쓰기마다 → 출력 안 함 (폭주 방지), 건수·마지막 이벤트만 갱신)
 		{
-			string sEvent	= GetText(kRoot, "sEvent");		// 이벤트 종류
-			string sOldPath	= GetText(kRoot, "sOldPath");	// 이름 변경 전 경로
-			string sMessage	= GetText(kRoot, "sMessage");	// 오류 메시지
+			string	sEvent		= GetText(kRoot, "sEvent");		// 이벤트 종류
+			string	sOldPath	= GetText(kRoot, "sOldPath");	// 이름 변경 전 경로
+			string	sMessage	= GetText(kRoot, "sMessage");	// 오류 메시지
 
 			kInfo.m_nEventCount++;
 			kInfo.m_sLastEvent = $"{sEvent} {GetText(kRoot, "sPath")}";
@@ -853,31 +853,31 @@ class TCPServer	// Client TCP 수신: 한 줄 = JSON 1건 (Hello: 머신 등록�
 
 class ClientInfo	// 접속 클라 정보 (ReadLoop 1개만 갱신, /api/client 조회)
 {
-	public readonly string			m_sEndPoint;		// 접속 주소 (아이피:포트)
-	public readonly DateTimeOffset	m_kConnectTime;		// 접속 시각 (KST)
-	public DateTimeOffset			m_kLastTime;		// 마지막 수신 시각 (KST)
+	public readonly string			m_sEndPoint;			// 접속 주소 (아이피:포트)
+	public readonly DateTimeOffset	m_kConnectTime;			// 접속 시각 (KST)
+	public DateTimeOffset			m_kLastTime;			// 마지막 수신 시각 (KST)
 	public string					m_sMachine		= "";	// 머신명 (Hello)
 	public string					m_sDir			= "";	// 클라 aLogFolder 목록 (Hello, "|" 구분)
 	public readonly HashSet<string>	m_setCount		= new HashSet<string>(StringComparer.OrdinalIgnoreCase);	// 받은 진행 관리 폴더 (클라 Count 목록, 수신 스레드만, 목록 밖·예전 클라: 관리 안 함)
-	public long						m_nEventCount;		// 파일 이벤트 수
+	public long						m_nEventCount;			// 파일 이벤트 수
 	public string					m_sLastEvent	= "";	// 마지막 파일 이벤트
-	public LineWriter?				m_kWriter;			// 요청 전송 (접속 직후 설정)
-	public TcpClient?				m_kClient;			// 연결 (요청 전송이 막히면 닫음)
+	public LineWriter?				m_kWriter;				// 요청 전송 (접속 직후 설정)
+	public TcpClient?				m_kClient;				// 연결 (요청 전송이 막히면 닫음)
 
-	public long						m_nRecvMsg;			// 받은 메시지 누적 (모든 종류, Interlocked: 수신 스레드 더함 ↔ 웹·타이머 읽음)
-	public long						m_nRecvByte;		// 받은 바이트 누적 (줄 + '\n')
-	public long						m_nRecvLine;		// 받은 Log 줄 누적
-	public long						m_nMinMsg;			// 이번 분 메시지 (1분마다 0 과 원자 교체 → m_nLastMinMsg)
-	public long						m_nMinByte;			// 이번 분 바이트
-	public long						m_nMinLine;			// 이번 분 Log 줄
-	public long						m_nLastMinMsg;		// 지난 1분 메시지 (분당)
-	public long						m_nLastMinByte;		// 지난 1분 바이트 (분당)
-	public long						m_nLastMinLine;		// 지난 1분 Log 줄 (분당)
-	public int						m_nPaused;			// 밀림 Pause 보냄 (1, Resume 보낼 때 0, Interlocked)
+	public long	m_nRecvMsg;		// 받은 메시지 누적 (모든 종류, Interlocked: 수신 스레드 더함 ↔ 웹·타이머 읽음)
+	public long	m_nRecvByte;	// 받은 바이트 누적 (줄 + '\n')
+	public long	m_nRecvLine;	// 받은 Log 줄 누적
+	public long	m_nMinMsg;		// 이번 분 메시지 (1분마다 0 과 원자 교체 → m_nLastMinMsg)
+	public long	m_nMinByte;		// 이번 분 바이트
+	public long	m_nMinLine;		// 이번 분 Log 줄
+	public long	m_nLastMinMsg;	// 지난 1분 메시지 (분당)
+	public long	m_nLastMinByte;	// 지난 1분 바이트 (분당)
+	public long	m_nLastMinLine;	// 지난 1분 Log 줄 (분당)
+	public int	m_nPaused;		// 밀림 Pause 보냄 (1, Resume 보낼 때 0, Interlocked)
 
-	public readonly ConcurrentDictionary<long, SearchTrack>	m_hmapTrack = new ConcurrentDictionary<long, SearchTrack>();	// 진행 중인 검색 (요청 번호 → 진행)
+	public readonly ConcurrentDictionary<long, SearchTrack>	m_hmapTrack	= new ConcurrentDictionary<long, SearchTrack>();	// 진행 중인 검색 (요청 번호 → 진행)
 
-	public readonly ConcurrentDictionary<long, TaskCompletionSource<byte[]>>	m_hmapPending = new ConcurrentDictionary<long, TaskCompletionSource<byte[]>>();	// 결과 대기 중인 요청 (요청 번호 → 결과 JSON 바이트 대기)
+	public readonly ConcurrentDictionary<long, TaskCompletionSource<byte[]>>	m_hmapPending	= new ConcurrentDictionary<long, TaskCompletionSource<byte[]>>();	// 결과 대기 중인 요청 (요청 번호 → 결과 JSON 바이트 대기)
 
 	public ClientInfo(string sEndPoint)
 	{
@@ -979,11 +979,11 @@ class LineReader	// 줄 단위 수신 ('\n' 구분, 한 줄 최대 바이트 제
 
 		while (true)
 		{
-			int nIndex = m_arrBuffer.AsSpan(m_nStart, m_nEnd - m_nStart).IndexOf((byte)'\n');	// 줄 끝 (처리 안 한 시작 기준)
+			int	nIndex	= m_arrBuffer.AsSpan(m_nStart, m_nEnd - m_nStart).IndexOf((byte)'\n');	// 줄 끝 (처리 안 한 시작 기준)
 
 			if (nIndex >= 0)
 			{
-				ReadOnlyMemory<byte> kLine;	// 이번 줄
+				ReadOnlyMemory<byte>	kLine;	// 이번 줄
 
 				if (m_kLine.Length == 0)	// 버퍼 안에 다 있음: 복사 없이
 				{
@@ -1020,7 +1020,7 @@ class LineReader	// 줄 단위 수신 ('\n' 구분, 한 줄 최대 바이트 제
 				throw new InvalidDataException($"수신 줄 길이 초과 ({m_nMaxBytes} bytes)");
 			}
 
-			int nRead = await m_kStream.ReadAsync(m_arrBuffer.AsMemory(), kStop);
+			int	nRead	= await m_kStream.ReadAsync(m_arrBuffer.AsMemory(), kStop);
 
 			if (nRead == 0)	// 연결 종료
 			{

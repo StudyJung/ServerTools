@@ -1,10 +1,12 @@
 class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service 호스트와 함께 시작·중지): 미들웨어·기본 페이지 (로그인: Auth, 라우트·TCP 수신: Main 연결)
 {
 
-	private readonly string				m_sUrl;				// 바인딩 주소
-	public static string				m_sLinkUrl	= "";	// 알람 쿼리 링크 주소 (메일·훅 본문 끝, 알람 기록 내용 클릭, 설정 sUrl, 없음: 바인딩 주소 (localhost·모든 주소: 이 머신 내부 IP, IIS: 포트만 첫 요청 포트), 웹 없음: "")
-	private static int					m_nLinkWait;		// IIS 실행·sUrl 없음: 첫 요청 포트 기다림 (1, Interlocked)
-	private WebApplication?				m_kWebApp;			// 웹 앱
+	private readonly string	m_sUrl;	// 바인딩 주소
+
+	public static string	m_sLinkUrl	= "";	// 알람 쿼리 링크 주소 (메일·훅 본문 끝, 알람 기록 내용 클릭, 설정 sUrl, 없음: 바인딩 주소 (localhost·모든 주소: 이 머신 내부 IP, IIS: 포트만 첫 요청 포트), 웹 없음: "")
+
+	private static int		m_nLinkWait;	// IIS 실행·sUrl 없음: 첫 요청 포트 기다림 (1, Interlocked)
+	private WebApplication?	m_kWebApp;		// 웹 앱
 
 	public Web(int nPort, string sHost)
 	{
@@ -23,14 +25,14 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		kBuilder.WebHost.UseUrls(m_sUrl);
 		kBuilder.Logging.SetMinimumLevel(LogLevel.Warning);	// 기본 로그 최소화 (요청 로그: UseRequestLog)
 
-		bool bAuth = Config.GetBool("bAuth");	// false·키 없음: 모두 허용
+		bool	bAuth	= Config.GetBool("bAuth");	// false·키 없음: 모두 허용
 
 		if (bAuth)
 		{
 			Auth.AddService(kBuilder);	// 쿠키 암호화 키·쿠키 인증
 		}
 
-		WebApplication WebApp = kBuilder.Build();
+		WebApplication	WebApp	= kBuilder.Build();
 
 		WebApp.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor });	// IIS 실행: X-Forwarded-For → 실제 IP (신뢰 프록시: 루프백만 → 헤더 위조 무시)
 
@@ -42,7 +44,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 			Auth.Use(WebApp);	// 절반 지난 쿠키 연장 + 로그인 검사
 		}
 
-		bool bStatic = UseStaticFile(WebApp);
+		bool	bStatic	= UseStaticFile(WebApp);
 
 		WebApp.UseRouting();
 
@@ -98,7 +100,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 			if (Volatile.Read(ref m_nLinkWait) == 1 && Interlocked.Exchange(ref m_nLinkWait, 0) == 1)	// 첫 요청만
 			{
-				int nPort = kContext.Request.Host.Port ?? 80;	// Host 포트 없음: 기본 X
+				int	nPort	= kContext.Request.Host.Port ?? 80;	// Host 포트 없음: 기본 X
 
 				m_sLinkUrl = $"{m_sLinkUrl[..m_sLinkUrl.LastIndexOf(':')]}:{nPort}";	// 호스트 (내부 IP) 그대로, 포트만
 
@@ -113,7 +115,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 	{
 		WebApp.Use(async (HttpContext kContext, RequestDelegate funcNext) =>
 		{
-			long nBegin = Stopwatch.GetTimestamp();
+			long	nBegin	= Stopwatch.GetTimestamp();
 
 			await funcNext(kContext);
 
@@ -149,7 +151,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	public static IResult MakePage(string sMode, string[]? arrMenu = null, string sUI = "")	// 페이지 HTML (sMode: main 기본, view 파일 보기 새 창, field 필드 값 목록 새 창, arrMenu: 보일 탭 (없음: 켜진 탭 전체), sUI: Auth.GetUI (account·user·""))
 	{
-		string sHtml = IndexHtml();
+		string	sHtml	= IndexHtml();
 
 		sHtml = sHtml.Replace("__YESTERDAY__", GetNow().AddDays(-1).ToString("yyyy-MM-dd"));	// 시작일 기본값 = 어제 (KST)
 		sHtml = sHtml.Replace("__TODAY__", GetNow().ToString("yyyy-MM-dd"));	// 종료일 기본값 = 오늘 (KST)
@@ -175,7 +177,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	private static bool IsPublicIp(IPAddress kIp)	// 공인 IPv4 (사설 10·172.16~31·192.168, 공유 100.64~127, 루프백 127, 자동 사설 169.254, 0·멀티캐스트·예약 224~ 제외)
 	{
-		byte[] arrIp = kIp.GetAddressBytes();
+		byte[]	arrIp	= kIp.GetAddressBytes();
 
 		return kIp.AddressFamily == AddressFamily.InterNetwork && !(arrIp[0] is 0 or 10 or 127 or >= 224 || (arrIp[0] == 172 && arrIp[1] >= 16 && arrIp[1] <= 31) || (arrIp[0] == 192 && arrIp[1] == 168) || (arrIp[0] == 100 && arrIp[1] >= 64 && arrIp[1] <= 127) || (arrIp[0] == 169 && arrIp[1] == 254));
 	}
@@ -192,12 +194,12 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 				continue;
 			}
 
-			System.Net.NetworkInformation.IPInterfaceProperties	kProp		= kNic.GetIPProperties();
-			bool												bGateway	= kProp.GatewayAddresses.Any(kGate => kGate.Address.AddressFamily == AddressFamily.InterNetwork && !kGate.Address.Equals(IPAddress.Any));	// 기본 게이트웨이 (실제 랜)
+			System.Net.NetworkInformation.IPInterfaceProperties	kProp	= kNic.GetIPProperties();
+			bool	bGateway	= kProp.GatewayAddresses.Any(kGate => kGate.Address.AddressFamily == AddressFamily.InterNetwork && !kGate.Address.Equals(IPAddress.Any));	// 기본 게이트웨이 (실제 랜)
 
 			foreach (System.Net.NetworkInformation.UnicastIPAddressInformation kAddr in kProp.UnicastAddresses)
 			{
-				byte[] arrIp = kAddr.Address.GetAddressBytes();
+				byte[]	arrIp	= kAddr.Address.GetAddressBytes();
 
 				if (kAddr.Address.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(kAddr.Address) || (arrIp[0] == 169 && arrIp[1] == 254) || (bPublic && !IsPublicIp(kAddr.Address)))
 				{
@@ -256,7 +258,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	public static string GetTitle()	// 제목: 설정 sTitle (없음: HMX) + 설정 sZone (예: HMX Alpha, sZone 없음: 이름만)
 	{
-		string sTitle = Config.GetString("sTitle").Trim();	// 이름 (로그 태그 [이름_] 과 같음)
+		string	sTitle	= Config.GetString("sTitle").Trim();	// 이름 (로그 태그 [이름_] 과 같음)
 
 		return $"{(sTitle == "" ? "HMX" : sTitle)} {Config.GetString("sZone")}".Trim();
 	}
@@ -283,8 +285,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	public static string GetFavicon()	// 탭 아이콘 (SVG data URI): 도구 한 글자 흰 글자 + 존 색 바탕
 	{
-		string sText	= "X";	// 탭 아이콘 글자 (도구마다 한 글자: HMX X·SM S·HTB B·ToolManager T·DataCompare C·DataFinder F)
-		string sColor	= GetTitleColor().StartsWith('#') ? GetTitleColor() : "#25292e";	// 존 없음: 검정
+		string	sText	= "X";	// 탭 아이콘 글자 (도구마다 한 글자: HMX X·SM S·HTB B·ToolManager T·DataCompare C·DataFinder F)
+		string	sColor	= GetTitleColor().StartsWith('#') ? GetTitleColor() : "#25292e";	// 존 없음: 검정
 		string sFit		= (sText.Length > 1) ? $" textLength='{((sText.Length > 2) ? 30 : 29)}' lengthAdjust='spacingAndGlyphs'" : "";	// 칸 폭 꽉 채움 (16px 탭 가독성)
 		string sSvg		= $"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='{sColor}'/><text x='16' y='24.5' text-anchor='middle' font-family='Arial,Segoe UI,sans-serif' font-size='24' font-weight='900' fill='#fff'{sFit}>{sText}</text></svg>";
 
@@ -293,7 +295,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	public static string GetAddr(HttpContext kContext)	// 접속 IP (IIS: X-Forwarded-For 반영, IPv4 매핑 → IPv4)
 	{
-		IPAddress? kAddr = kContext.Connection.RemoteIpAddress;
+		IPAddress?	kAddr	= kContext.Connection.RemoteIpAddress;
 
 		if (kAddr == null)
 		{
@@ -882,18 +884,18 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		</dialog>
 		<script>
-		const funcFetch = window.fetch.bind(window);	// 원래 fetch
+		const	funcFetch	= window.fetch.bind(window);	// 원래 fetch
 
-		const OFFLINE_RETRY_MS	= 1000;									// 서버 연결 끊김 재시도 주기 (ms)
-		const kOffText			= document.getElementById("OffText");	// 제목 옆 연결 끊김 글 (재시도 N초, 오류 글: 툴팁)
+		const	OFFLINE_RETRY_MS	= 1000;	// 서버 연결 끊김 재시도 주기 (ms)
+		const	kOffText			= document.getElementById("OffText");	// 제목 옆 연결 끊김 글 (재시도 N초, 오류 글: 툴팁)
 
-		let nOnlineTime		= Date.now();	// 마지막 서버 응답 시각 (끊김 경과 초)
-		let nOfflineTimer	= 0;			// 끊김 재시도 타이머 (0: 연결됨)
-		let bRetrying		= false;		// 재시도 요청 중 (응답 늦음: 겹쳐 보내지 않음)
+		let	nOnlineTime		= Date.now();	// 마지막 서버 응답 시각 (끊김 경과 초)
+		let	nOfflineTimer	= 0;			// 끊김 재시도 타이머 (0: 연결됨)
+		let	bRetrying		= false;		// 재시도 요청 중 (응답 늦음: 겹쳐 보내지 않음)
 
 		window.fetch = async (...arrArg) =>	// 401 (쿠키 만료·계정 변경·캐시 페이지) → 새로고침 → 로그인 페이지, 접속 안 됨 (경유 서버 502 포함) → 제목 옆 끊김 + 초당 재시도
 		{
-		    let kResponse;	// 응답
+		    let	kResponse;	// 응답
 
 		    try
 		    {
@@ -988,12 +990,12 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		}
 
-		const sZoneName = document.getElementById("TitleText").textContent.split(" ").slice(1).join(" ").toLowerCase();	// 존: 제목 HMX 뒤 (예: HMX Alpha → alpha)
+		const	sZoneName	= document.getElementById("TitleText").textContent.split(" ").slice(1).join(" ").toLowerCase();	// 존: 제목 HMX 뒤 (예: HMX Alpha → alpha)
 
-		const kTitleText		= document.getElementById("TitleText");	// 제목 글자
-		const kTitleBox			= kTitleText.parentElement;				// 제목 상자 (h1)
-		const sSiteTitleColor	= kTitleBox.style.color;					// 사이트 제목 색
-		const MENU_LIST			= __MENU__;								// 보일 탭 (설정 aMenu: 탭 버튼 이름, 그 순서대로, 없음·맞는 이름 없음: 전체)
+		const	kTitleText		= document.getElementById("TitleText");	// 제목 글자
+		const	kTitleBox		= kTitleText.parentElement;				// 제목 상자 (h1)
+		const	sSiteTitleColor	= kTitleBox.style.color;				// 사이트 제목 색
+		const	MENU_LIST		= __MENU__;								// 보일 탭 (설정 aMenu: 탭 버튼 이름, 그 순서대로, 없음·맞는 이름 없음: 전체)
 
 		function GetSplitColor(sZone)	// 창 사이 바·칸 경계 색: SM 존 색 (존 이름 포함 여부, 제목 색과 별개)
 		{
@@ -1002,10 +1004,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function SetTabZone(kButton)	// 탭 존 (탭 버튼 data-zone·data-zonecolor, 예: 운영 탭 Manager:sZone): 사이트 존과 다름 → 존 색만 탭 존 (제목 색 포함 페이지 전체, 제목 글자: 그대로), 그 외: 사이트 존 색
 		{
-		    const sZone		= kButton?.dataset.zone ?? "";		// 탭 존 (없음: "")
-		    const sColor	= kButton?.dataset.zonecolor ?? "";	// 탭 존 색 (서버 GetZoneColor)
-		    const bTab		= sZone !== "" && sZone.toLowerCase() !== sZoneName && sColor.startsWith("#");
-		    const kRoot		= document.documentElement.style;	// 루트: --zone 바꿈 → :root 존 파생 변수 (버튼·포커스 색) 다시 계산
+		    const	sZone	= kButton?.dataset.zone ?? "";		// 탭 존 (없음: "")
+		    const	sColor	= kButton?.dataset.zonecolor ?? "";	// 탭 존 색 (서버 GetZoneColor)
+		    const	bTab	= sZone !== "" && sZone.toLowerCase() !== sZoneName && sColor.startsWith("#");
+		    const	kRoot	= document.documentElement.style;	// 루트: --zone 바꿈 → :root 존 파생 변수 (버튼·포커스 색) 다시 계산
 
 		    if (bTab)
 		    {
@@ -1023,11 +1025,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ApplyMenu()	// 탭 메뉴: aMenu 이름 탭만 그 순서대로 (계정·힌트 버튼: 늘 끝, 없는 이름: 무시, 맞는 이름 없음: 전체)
 		{
-		    const kTabBar	= document.getElementById("TabBar");
-		    const kHelp		= document.getElementById("HelpButton");
-		    const kAccount	= document.getElementById("AccountButton");	// 계정 버튼 (힌트 왼쪽)
-		    const arrTab		= [...kTabBar.querySelectorAll("button")].filter(kButton => kButton !== kHelp && kButton !== kAccount);	// 탭 버튼 (계정·힌트 제외)
-		    const arrShow	= MENU_LIST.map(sName => arrTab.find(kButton => kButton.textContent === sName)).filter(kButton => kButton != null);	// 보일 탭 (aMenu 순서)
+		    const	kTabBar		= document.getElementById("TabBar");
+		    const	kHelp		= document.getElementById("HelpButton");
+		    const	kAccount	= document.getElementById("AccountButton");																			// 계정 버튼 (힌트 왼쪽)
+		    const	arrTab		= [...kTabBar.querySelectorAll("button")].filter(kButton => kButton !== kHelp && kButton !== kAccount);				// 탭 버튼 (계정·힌트 제외)
+		    const	arrShow		= MENU_LIST.map(sName => arrTab.find(kButton => kButton.textContent === sName)).filter(kButton => kButton != null);	// 보일 탭 (aMenu 순서)
 
 		    if (arrShow.length === 0)	// aMenu 없음·맞는 이름 없음: 전체
 		    {
@@ -1052,196 +1054,196 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		document.documentElement.style.setProperty("--split", GetSplitColor(sZoneName));	// 창 사이 바·칸 경계 = SM 존 색 (제목 색과 별개)
 
-		const kFilterPanel	        = document.getElementById("FilterPanel");	// 명령 창: 검색 조건 (덤프·파일 모드 숨김)
-		const kMachinePick	        = document.getElementById("MachinePick");	// 머신 드롭 박스 묶음 (밖 클릭: 목록 닫음)
-		const kMachineBox	        = document.getElementById("MachineBox");		// 머신 드롭 박스 (전체·고른 머신 표시)
-		const kMachineMenu	        = document.getElementById("MachineMenu");	// 펼친 목록 (왼쪽 체크 박스)
-		const kMachineList	        = document.getElementById("MachineList");
-		const kMachineAll	        = document.getElementById("MachineAll");		// 전체 (체크: 모든 머신)
-		const kStart		        = document.getElementById("StartDate");		// 시작일 (기본: 어제 KST)
-		const kStartHour	        = document.getElementById("StartHour");		// 시작 시 (00~23, 기본 00)
-		const kEnd			        = document.getElementById("EndDate");		// 종료일 (기본: 오늘 KST)
-		const kEndHour		        = document.getElementById("EndHour");		// 종료 시 (00~24, 기본 24 = 그날 23시 파일까지)
-		const kStartMinute	        = document.getElementById("StartMinute");	// 시작 분 (00~59, 서치·쿼리)
-		const kEndMinute	        = document.getElementById("EndMinute");		// 종료 분 (00~59, 서치·쿼리)
-		const kStartSecond	        = document.getElementById("StartSecond");	// 시작 초 (00~59, 서치·쿼리, 포함)
-		const kEndSecond	        = document.getElementById("EndSecond");		// 종료 초 (00~59, 서치·쿼리, 미포함)
-		const kQueryRange	        = document.getElementById("QueryRange");	// D: 쿼리 최근 기간 (분, 첫 칸 선택: D 해제)
-		const kQuerySaveDialog	    = document.getElementById("QuerySaveDialog");	// 쿼리·알람 추가·수정 창 (알람: class alarm → 알람 칸)
-		const kQuerySaveKey	        = document.getElementById("QuerySaveKey");		// 쿼리 추가·수정 제목
-		const kQuerySaveQuery	    = document.getElementById("QuerySaveQuery");	// 쿼리 추가·수정 쿼리 (줄바꿈: 빈칸으로 저장)
-		const kQuerySaveQueryLabel  = document.getElementById("QuerySaveQueryLabel");	// 쿼리 칸 이름 (저장 서치: 검색어)
-		const kQuerySaveTitle	    = document.getElementById("QuerySaveTitle");	// 쿼리 추가·수정 창 제목
-		const kQuerySaveMinute	    = document.getElementById("QuerySaveMinute");	// 쿼리 추가·수정 간격 (분)
-		const kAlarmMinute	        = document.getElementById("AlarmMinute");		// 알람 간격 (분)
-		const kAlarmCount	        = document.getElementById("AlarmCount");		// 알람 건수
-		const kAlarmDelay	        = document.getElementById("AlarmDelay");		// 알람 억제 (분)
-		const kAlarmMail	        = document.getElementById("AlarmMail");			// 알람 메일 받는 계정 고르기 (추가 → 밑 목록)
-		const kAlarmMailList	    = document.getElementById("AlarmMailList");		// 알람 메일 받는 계정 목록
-		const kAlarmHook	        = document.getElementById("AlarmHook");			// 알람 훅 주소
-		const kAlarmSMS		        = document.getElementById("AlarmSMS");			// 알람 SMS 받는 계정 고르기 (추가 → 밑 목록)
-		const kAlarmSMSList	        = document.getElementById("AlarmSMSList");		// 알람 SMS 목록
-		const kAlarmEnable	        = document.getElementById("AlarmEnable");		// 알람 사용
-		const kQuerySettingTitle    = document.getElementById("QuerySettingTitle");	// 설정 창 제목 (누른 버튼: 저장·알람·필드)
-		const kQueryEditAdd		    = document.getElementById("QueryEditAdd");		// 설정 창 추가 버튼
-		const kAlarmHistoryDialog	= document.getElementById("AlarmHistoryDialog");	// 알람 기록 창 (날짜·제목·채널·결과, 전체 스크롤)
-		const kAlarmHistoryScroll	= document.getElementById("AlarmHistoryScroll");	// 알람 기록 줄 상자
-		const kAlarmHistoryList	    = document.getElementById("AlarmHistoryList");	// 알람 기록 줄
-		const kAlarmHistoryViewDialog	= document.getElementById("AlarmHistoryViewDialog");	// 알람 기록 내용 창 (제목 클릭)
-		const kAlarmHistoryViewTitle	= document.getElementById("AlarmHistoryViewTitle");	// 알람 기록 내용 창 제목
-		const kAlarmHistoryViewInfo	    = document.getElementById("AlarmHistoryViewInfo");	// 알람 기록 내용 창 날짜·채널·결과
-		const kAlarmHistoryViewBody	    = document.getElementById("AlarmHistoryViewBody");	// 알람 기록 내용
-		const kQueryEditScroll	    = document.getElementById("QueryEditScroll");	// 설정 창 줄 상자 (높이 고정, 넘침: 스크롤)
-		const kQueryEditList	    = document.getElementById("QueryEditList");		// 설정 창 줄 (저장 쿼리·알람)
-		const kSettingButton	    = document.getElementById("SettingButton");		// 설정 버튼 (서치·쿼리 공통, 맨 오른쪽: 서치 최대 건수·제한 시간·정렬, 쿼리 제한 시간)
-		const kSearchSavedButton    = document.getElementById("SearchSavedButton");	// 저장 버튼 (서치 모드: 저장 서치, 타이머 오른쪽)
-		const kQuerySavedButton	    = document.getElementById("QuerySavedButton");	// 저장 버튼 (쿼리 모드: 쿼리 설정 저장 탭, 실행·중단 위)
-		const kQueryAlarmButton	    = document.getElementById("QueryAlarmButton");	// 알람 버튼 (쿼리 모드: 쿼리 설정 알람 탭, 실행·중단 위)
-		const kQueryHistoryButton	= document.getElementById("QueryHistoryButton");	// 기록 버튼 (쿼리 모드: 알람 기록 창, 알람 버튼 오른쪽)
-		const kQueryRuleButton	    = document.getElementById("QueryRuleButton");	// 필드 버튼 (쿼리 모드: 쿼리 설정 필드 탭 = 설정 aField, 실행·중단 위)
-		const kFieldRuleDialog	    = document.getElementById("FieldRuleDialog");	// 필드 추가·수정 창
-		const kFieldRuleTitle	    = document.getElementById("FieldRuleTitle");	// 필드 추가·수정 창 제목
-		const kFieldRuleKey	        = document.getElementById("FieldRuleKey");		// 필드 이름
-		const kFieldRuleRegex	    = document.getElementById("FieldRuleRegex");	// 필드 정규식 (첫 () 값)
-		const kFieldRuleValue	    = document.getElementById("FieldRuleValue");	// 필드 고정값 (있음: 정규식 안 씀)
-		const kSettingDialog	    = document.getElementById("SettingDialog");	// 설정 창 (class query: 쿼리 줄만, 아니면 서치 줄만)
-		const kQuerySettingDialog	= document.getElementById("QuerySettingDialog");	// 쿼리 설정 창
-		const kDownDialog	        = document.getElementById("DownDialog");	// 다운 확인 팝업 (File 칸·파일 트리·덤프 zip 공통)
-		let funcDownYes		        = null;		// 다운 확인 예 동작 (null: 확인 중 아님)
-		let funcDeleteYes		    = null;		// 삭제 확인 동작 (null: 확인 중 아님)
-		const kMachineMaxInput	    = document.getElementById("MachineMaxInput");
-		const kResultMaxInput	    = document.getElementById("ResultMaxInput");
-		const kSearchLimitInput	    = document.getElementById("SearchLimitInput");	// 설정 창 서치 제한 시간 (초)
-		const kQueryLimitInput	    = document.getElementById("QueryLimitInput");	// 설정 창 쿼리 제한 시간 (초)
-		const kSortSelect		    = document.getElementById("SortSelect");	// 설정 창 결과 정렬
-		const kColGuide			    = document.getElementById("ColGuide");		// 칸 너비 드래그 위치 세로선 (표는 놓을 때 한 번만 배치)
-		const kKey			        = document.getElementById("SearchKey");		// 검색어 (서치만)
-		const kSearchButton	        = document.getElementById("SearchButton");	// 검색 버튼
-		const kQueryKey		        = document.getElementById("QueryKey");		// 쿼리 입력칸
-		const kQueryRunButton	    = document.getElementById("QueryRunButton");	// 쿼리 버튼
-		const kTimerButton	        = document.getElementById("TimerButton");	// 타이머 버튼 (기능 버튼 맨 앞: 쿼리 알람·서치 저장 왼쪽, 초 입력 → 초 줄여 감 → 0: 실행 → 다시, 지금 탭 타이머 표시)
-		const kTimer	            = { kSearch: { sName: "서치", kRun: kSearchButton, nSec: 10, nDue: 0, nId: 0, kFrom: null, kTo: null, nLast: 0, sPick: "" }, kQuery: { sName: "쿼리", kRun: kQueryRunButton, nSec: 10, nDue: 0, nId: 0, kFrom: null, kTo: null, nLast: 0, sPick: "" } };	// 서치·쿼리 타이머 따로 (실행 버튼, 주기 초 (기본 X초), 다음 실행 시각 ms, 1초 setInterval: 0 = 꺼짐, 실행 기간 (초 포함), 마지막 실행 시각 ms, 마지막으로 넣은 S·E 표시)
-		const TIMER_SEC_DEFAULT	    = 10;		// 타이머 기본 주기 (초, 리셋 때)
-		const QUERY_DAY_MAX	        = 1096;		// 쿼리 기간 최대 (일, 3년, 서버 m_nQueryDayMax 와 같음 → 쿼리 S 달력 최소)
-		const TIMER_SEC_MIN	        = 1;		// 타이머 최소 주기 (초)
-		const TIMER_SEC_MAX	        = 86400;	// 타이머 최대 주기 (초, 1일)
-		const PROGRESS_DELAY_MS	    = 2000;		// 진행 팝업 지연 (ms, 로딩 인디케이터 형식 모든 팝업: 이보다 빨리 끝남 → 안 띄움, 깜빡임 방지)
-		const kQueryStopButton	    = document.getElementById("QueryStopButton");	// 쿼리 중단 버튼
-		const kQueryProgress	    = document.getElementById("QueryProgress");	// 쿼리 진행 표시
-		const kStopButton	        = document.getElementById("StopButton");	// 검색 중지 버튼
-		const kFilterTool	        = document.getElementById("FilterTool");	// 기능 버튼 묶음 (타이머 ~ 설정: 1줄 오른쪽 끝, 창 좁음: 2줄 실행·중단 오른쪽, PlaceToolButtons)
-		const kSearchBox	        = document.getElementById("SearchBox");		// 2줄: 입력칸·실행·중단 (기능 버튼 내려오는 곳)
-		const TOOL_GAP		        = 6;		// 명령 창 줄 요소 최소 간격 (px, 공통 규칙: 평소 12·안 8 → 창 좁으면 이 값까지 줄여 버팀 (.filter.tight), 기능 버튼도 E "미만" 과 이 간격까지, 그보다 좁으면 내려감)
-		const kProgress		        = document.getElementById("SearchProgress");	// 검색 진행 표시
-		const kResultPanel	        = document.getElementById("ResultPanel");	// 서치 1번 창: 검색 결과
-		const kResultTitle	        = document.getElementById("ResultTitle");
-		const kResultPager	        = document.getElementById("ResultPager");	// 페이지 번호
-		const kResultScroll	        = document.getElementById("ResultScroll");
-		const kResultTable	        = document.getElementById("ResultTable");	// 서치 1번 창 표
-		const kResultBody	        = document.getElementById("ResultBody");
-		const kQueryTitle	        = document.getElementById("QueryTitle");	// 쿼리 1번 창 제목
-		const kQueryPager	        = document.getElementById("QueryPager");	// 쿼리 1번 창 페이지 번호
-		const kQueryBody	        = document.getElementById("QueryBody");		// 쿼리 1번 창 결과 줄
-		const kQueryChart	        = document.getElementById("QueryChart");	// 쿼리 1번 창 시간별 건수 막대
-		const kQueryPrev	        = document.getElementById("QueryPrev");		// ← 이전 단계
-		const kQueryDepth	        = document.getElementById("QueryDepth");	// 지금 단계 (0: 최초, 누름: 숫자 입력)
-		const kQueryNext	        = document.getElementById("QueryNext");		// → 다음 단계
-		const kQueryLens	        = document.getElementById("QueryLens");		// 쿼리 막대 렌즈 (막대 왼쪽 ↑·스텝·↓)
-		const kLensUp		        = document.getElementById("LensUp");		// 렌즈 ↑ 큰 단위 (스텝 0: 기간 넓혀 쿼리)
-		const kLensStep		        = document.getElementById("LensStep");		// 렌즈 숫자 (넓힌 깊이 - 스텝: 0 처음 기간 기본 단위, ↓ -1·↑ +1, 툴팁: 지금 단위)
-		const kLensDown		        = document.getElementById("LensDown");		// 렌즈 ↓ 작은 단위 (초봉까지)
-		const kQueryPanel	        = document.getElementById("QueryPanel");	// 쿼리 2번 창: 로그
-		const kQueryLogTitle	    = document.getElementById("QueryLogTitle");	// 쿼리 2번 창 제목
-		const kQueryScroll	        = document.getElementById("QueryScroll");
-		const kQuerySplitter	        = document.getElementById("QuerySplitter");	// 쿼리 1·2번 창 사이 바
-		const kFilterSplitter	        = document.getElementById("FilterSplitter");	// 명령 창·결과 창 사이 바 (쿼리·서치)
-		const kQuerySplit	        = document.getElementById("QuerySplit");		// 쿼리 2번 창 필드 + 로그 (--fieldWidth: 필드 폭)
-		const kQueryField	        = document.getElementById("QueryField");		// 쿼리 2번 창 필드 상자
-		const kQueryFieldSplitter	= document.getElementById("QueryFieldSplitter");	// 필드·로그 사이 세로선
-		const kQueryFieldList	    = document.getElementById("QueryFieldList");	// 쿼리 2번 창 필드 목록
-		const kQueryFieldPanel	    = document.getElementById("QueryFieldPanel");	// 필드 값 목록 새 창 (필드 모드만)
-		const kQueryFieldTitle	    = document.getElementById("QueryFieldTitle");	// 필드 새 창 제목
-		const kQueryFieldColumn	    = document.getElementById("QueryFieldColumn");	// 필드 새 창 값 칸 이름
-		const kQueryFieldScroll	    = document.getElementById("QueryFieldScroll");
-		const kQueryFieldBody	    = document.getElementById("QueryFieldBody");	// 필드 새 창 값 줄
-		const kQueryFieldPager	    = document.getElementById("QueryFieldPager");	// 필드 새 창 아래 페이지 번호
-		const kViewPanel	        = document.getElementById("ViewPanel");		// 서치 2번 창: 파일 보기
-		const kViewTitle	        = document.getElementById("ViewTitle");
-		const kViewScroll	        = document.getElementById("ViewScroll");
-		const kViewBody		        = document.getElementById("ViewBody");
-		const kViewPrev		        = document.getElementById("ViewPrev");		// 서치 2번 창 포지션 « 위로 VIEW_COUNT 줄 (읽어 쌓인 범위 안)
-		const kViewShift	        = document.getElementById("ViewShift");		// 서치 2번 창 위치 (0: 처음 연 위치)
-		const kViewNext		        = document.getElementById("ViewNext");		// 서치 2번 창 포지션 » 아래로 VIEW_COUNT 줄 (읽어 쌓인 범위 안)
-		const kLogButton	        = document.getElementById("LogButton");		// 서치 탭 버튼
-		const kDumpButton	        = document.getElementById("DumpButton");	// 덤프 탭 버튼
-		const kDumpPanel	        = document.getElementById("DumpPanel");		// 덤프 1번 창: 덤프 파일
-		const kDumpTitle	        = document.getElementById("DumpTitle");
-		const kDumpScroll	        = document.getElementById("DumpScroll");
-		const kDumpTable	        = document.getElementById("DumpTable");		// 덤프 1번 창 표
-		const kDumpBody		        = document.getElementById("DumpBody");
-		const kDumpProgress	        = document.getElementById("DumpProgress");	// 덤프 진행 팝업
-		const kDumpDeleteAll	    = document.getElementById("DumpDeleteAll");	// 덤프 전체 삭제 버튼
-		const kDeleteDialog	        = document.getElementById("DeleteDialog");	// 삭제 확인 팝업
-		const kDeleteText	        = document.getElementById("DeleteText");
-		const kFileButton	        = document.getElementById("FileButton");	// 파일 탭 버튼
-		const kFilePanel	        = document.getElementById("FilePanel");		// 파일 1번 창: 클라 감시 폴더 트리
-		const kManagerButton	        = document.getElementById("ManagerButton");	// 운영 탭 버튼
-		const kManagerPanel	        = document.getElementById("ManagerPanel");		// 운영 창: 게임 서버 목록·동접·차트·모니터
-		const kProcessButton	        = document.getElementById("ProcessButton");	// 반영 탭 버튼
-		const kProcessPanel	        = document.getElementById("ProcessPanel");		// 반영 창: 게임 서버 프로세스 목록·작업 (서랍·메뉴·팝업 포함)
-		const kFileTitle	        = document.getElementById("FileTitle");
-		const kFileTree		        = document.getElementById("FileTree");
-		const kFileScroll	        = document.getElementById("FileScroll");		// 파일 1번 창 왼쪽: 트리
-		const kFileSplitter	        = document.getElementById("FileSplitter");	// 파일 1번 창 좌우 사이 세로선
-		const kFileViewTitle	    = document.getElementById("FileViewTitle");	// 파일 1번 창 오른쪽: 파일 보기
-		const kFileViewScroll	    = document.getElementById("FileViewScroll");
-		const kFileViewBody	        = document.getElementById("FileViewBody");
-		const kFilePrev		        = document.getElementById("FilePrev");		// 파일 보기 포지션 « (위로, 위에 쌓임)
-		const kFileShift	        = document.getElementById("FileShift");		// 파일 보기 포지션 (0: 파일 맨 아래)
-		const kFileNext		        = document.getElementById("FileNext");		// 파일 보기 포지션 » (아래로)
-		const kQueryButton	        = document.getElementById("QueryButton");	// 쿼리 탭 버튼
-		const kHelpDialog	        = document.getElementById("HelpDialog");	// 힌트 팝업
-		const kAccountDialog	        = document.getElementById("AccountDialog");	// 계정 팝업
-		const kAccountEditDialog	        = document.getElementById("AccountEditDialog");	// 계정 추가·수정·삭제 창
-		const MACHINE_LIMIT	        = 1000000;	// 머신당 최대 건수 상한 (서버·클라 m_nSearchMax 와 같음)
-		const RESULT_LIMIT	        = 1000000;	// 전체 최대 건수 상한
-		const MACHINE_DEFAULT	    = 1000;	// 머신당 최대 건수 기본값 (서버·클라 m_nSearchDefault 와 같음)
-		const RESULT_DEFAULT	    = 10000;	// 전체 최대 건수 기본값 (모든 머신 합)
-		const LIMIT_KEY		        = "HMX.Limit";	// 설정 localStorage 키 (서치·쿼리)
-		const LIMIT_SEC_DEFAULT	    = 60;		// 서치·쿼리 제한 시간 기본값 (초, 서버 m_nSearchLimitSec·m_nQueryLimitSec 와 같음)
-		const LIMIT_SEC_MAX	        = 600;		// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
-		let nMachineMax		        = MACHINE_DEFAULT;	// 머신당 최대 건수 (설정)
-		let nResultMax		        = RESULT_DEFAULT;	// 전체 최대 건수 (설정, 넘음: 이후 머신 검색 안 함)
-		let nSearchLimitSec	        = LIMIT_SEC_DEFAULT;	// 서치 제한 시간 (설정, 초, /api/search nLimit → 클라 마감)
-		let nQueryLimitSec	        = LIMIT_SEC_DEFAULT;	// 쿼리 제한 시간 (설정, 초, /api/query·stat·lens nLimit)
-		const SORT_TIME		        = "time";	// 시간 정렬 (Search.SortTime)
-		const SORT_BASE		        = "base";	// 머신 정렬 (받은 순서)
-		const SORT_DEFAULT	        = SORT_TIME;	// 결과 정렬 기본값
-		const SORT_INFO		        = { [SORT_TIME]: "시간 정렬", [SORT_BASE]: "머신 정렬" };	// 결과 정렬 값 → 표시
-		let sSort			        = SORT_DEFAULT;	// 결과 정렬 (설정)
-		const MACHINE_REFRESH_MS    = 1000;	// 접속 머신 목록 자동 갱신 주기 (ms, 서버 연결 끊김 감지 겸)
-		let bMachineLoading		    = false;	// 접속 머신 조회 중 (겹침 방지)
-		let sMachineSignature	    = "";		// 마지막 그린 머신 목록 (바뀐 경우만 다시 그림)
-		let arrMachineList	        = [];		// 드롭 박스 머신 (이름순 + 끊긴 체크 머신)
-		const setMachineCheck	    = new Set();	// 체크한 머신 (비면: 전체)
-		let nMachineCount	        = 0;		// 접속 머신 수
-		let arrMachineOption	    = [];		// 서치 드롭 박스 목록 [값, 표시] (쿼리 모드 갔다 오면 다시 그림)
-		let arrQueryMachine	        = [];		// 쿼리 드롭 박스 색인 머신 (이름순, 접속 머신·쿼리칸 머신과 합쳐 그림)
-		const QUERY_MACHINE_REGEX   = /^\s*(?:\(\s*(Machine:[^\s()]+(?:\s+OR\s+Machine:[^\s()]+)+)\s*\)|(Machine:[^\s()]+))(?:\s+AND\s+|\s*$)/;	// 쿼리칸 앞 머신 조건 (Machine:A·(Machine:A OR Machine:B) 뒤 AND·끝)
-		const OPEN_WORD		        = "#ResultBody td.log, #ViewBody .line, #QueryBody td.log, #QueryBody .querytext, #QueryBody .queryfield span[data-field]";	// Ctrl·Alt+클릭 단어 칸 (입력칸에 단어 추가)
-		const OPEN_TARGET	        = "a[href], button, input, select, textarea, label, td.filename, #FileTree div.node";	// Ctrl·Alt+클릭 새 창 대상
-		const OPEN_SELF		        = ".fieldname";	// 원래 새 창 여는 것 (필드 이름): 그대로
-		const OPEN_SKIP		        = "td.act, td.fileact, #ProcessTables tbody, #ProcessDrawer, #ProcessMenu";	// 줄 동작 (덤프 Ac.·반영 줄·상세 패널·줄 메뉴): 원래 동작
-		const OPEN_STATE_INPUT	    = ["QueryRange", "StartDate", "StartHour", "StartMinute", "StartSecond", "EndDate", "EndHour", "EndMinute", "EndSecond", "SearchKey", "QueryKey"];	// 새 창에 넘길 입력칸
-		let sOpenMode		        = "";		// OpenWindow 방식 ("": 크기 지정 새 창, browser: 같은 크기·자리 새 창 (Ctrl), tab: 새 탭 (Alt))
-		const OPEN_TITLE	        = ".panel .resulthead, #ViewPanel > .filter";	// Ctrl·Alt+클릭 하위 창 제목란
-		let kSelectTable	        = null;		// 마지막 누른 표 (Ctrl+A 대상, 없음: 맨 위 표)
-		const SHIFT_QUERY_WORD	    = "#QueryBody td.log, #QueryBody .querytext";	// Shift+클릭 쿼리 단어 칸 (→ 서치)
-		let bShiftClick		        = false;	// Shift+누름 실행함: 뒤따르는 클릭 막음
+		const	kFilterPanel			= document.getElementById("FilterPanel");																											// 명령 창: 검색 조건 (덤프·파일 모드 숨김)
+		const	kMachinePick			= document.getElementById("MachinePick");																											// 머신 드롭 박스 묶음 (밖 클릭: 목록 닫음)
+		const	kMachineBox				= document.getElementById("MachineBox");																											// 머신 드롭 박스 (전체·고른 머신 표시)
+		const	kMachineMenu			= document.getElementById("MachineMenu");																											// 펼친 목록 (왼쪽 체크 박스)
+		const	kMachineList			= document.getElementById("MachineList");
+		const	kMachineAll				= document.getElementById("MachineAll");																											// 전체 (체크: 모든 머신)
+		const	kStart					= document.getElementById("StartDate");																												// 시작일 (기본: 어제 KST)
+		const	kStartHour				= document.getElementById("StartHour");																												// 시작 시 (00~23, 기본 00)
+		const	kEnd					= document.getElementById("EndDate");																												// 종료일 (기본: 오늘 KST)
+		const	kEndHour				= document.getElementById("EndHour");																												// 종료 시 (00~24, 기본 24 = 그날 23시 파일까지)
+		const	kStartMinute			= document.getElementById("StartMinute");																											// 시작 분 (00~59, 서치·쿼리)
+		const	kEndMinute				= document.getElementById("EndMinute");																												// 종료 분 (00~59, 서치·쿼리)
+		const	kStartSecond			= document.getElementById("StartSecond");																											// 시작 초 (00~59, 서치·쿼리, 포함)
+		const	kEndSecond				= document.getElementById("EndSecond");																												// 종료 초 (00~59, 서치·쿼리, 미포함)
+		const	kQueryRange				= document.getElementById("QueryRange");																											// D: 쿼리 최근 기간 (분, 첫 칸 선택: D 해제)
+		const	kQuerySaveDialog		= document.getElementById("QuerySaveDialog");																										// 쿼리·알람 추가·수정 창 (알람: class alarm → 알람 칸)
+		const	kQuerySaveKey			= document.getElementById("QuerySaveKey");																											// 쿼리 추가·수정 제목
+		const	kQuerySaveQuery			= document.getElementById("QuerySaveQuery");																										// 쿼리 추가·수정 쿼리 (줄바꿈: 빈칸으로 저장)
+		const	kQuerySaveQueryLabel	= document.getElementById("QuerySaveQueryLabel");																									// 쿼리 칸 이름 (저장 서치: 검색어)
+		const	kQuerySaveTitle			= document.getElementById("QuerySaveTitle");																										// 쿼리 추가·수정 창 제목
+		const	kQuerySaveMinute		= document.getElementById("QuerySaveMinute");																										// 쿼리 추가·수정 간격 (분)
+		const	kAlarmMinute			= document.getElementById("AlarmMinute");																											// 알람 간격 (분)
+		const	kAlarmCount				= document.getElementById("AlarmCount");																											// 알람 건수
+		const	kAlarmDelay				= document.getElementById("AlarmDelay");																											// 알람 억제 (분)
+		const	kAlarmMail				= document.getElementById("AlarmMail");																												// 알람 메일 받는 계정 고르기 (추가 → 밑 목록)
+		const	kAlarmMailList			= document.getElementById("AlarmMailList");																											// 알람 메일 받는 계정 목록
+		const	kAlarmHook				= document.getElementById("AlarmHook");																												// 알람 훅 주소
+		const	kAlarmSMS				= document.getElementById("AlarmSMS");																												// 알람 SMS 받는 계정 고르기 (추가 → 밑 목록)
+		const	kAlarmSMSList			= document.getElementById("AlarmSMSList");																											// 알람 SMS 목록
+		const	kAlarmEnable			= document.getElementById("AlarmEnable");																											// 알람 사용
+		const	kQuerySettingTitle		= document.getElementById("QuerySettingTitle");																										// 설정 창 제목 (누른 버튼: 저장·알람·필드)
+		const	kQueryEditAdd			= document.getElementById("QueryEditAdd");																											// 설정 창 추가 버튼
+		const	kAlarmHistoryDialog		= document.getElementById("AlarmHistoryDialog");																									// 알람 기록 창 (날짜·제목·채널·결과, 전체 스크롤)
+		const	kAlarmHistoryScroll		= document.getElementById("AlarmHistoryScroll");																									// 알람 기록 줄 상자
+		const	kAlarmHistoryList		= document.getElementById("AlarmHistoryList");																										// 알람 기록 줄
+		const	kAlarmHistoryViewDialog	= document.getElementById("AlarmHistoryViewDialog");																								// 알람 기록 내용 창 (제목 클릭)
+		const	kAlarmHistoryViewTitle	= document.getElementById("AlarmHistoryViewTitle");																									// 알람 기록 내용 창 제목
+		const	kAlarmHistoryViewInfo	= document.getElementById("AlarmHistoryViewInfo");																									// 알람 기록 내용 창 날짜·채널·결과
+		const	kAlarmHistoryViewBody	= document.getElementById("AlarmHistoryViewBody");																									// 알람 기록 내용
+		const	kQueryEditScroll		= document.getElementById("QueryEditScroll");																										// 설정 창 줄 상자 (높이 고정, 넘침: 스크롤)
+		const	kQueryEditList			= document.getElementById("QueryEditList");																											// 설정 창 줄 (저장 쿼리·알람)
+		const	kSettingButton			= document.getElementById("SettingButton");																											// 설정 버튼 (서치·쿼리 공통, 맨 오른쪽: 서치 최대 건수·제한 시간·정렬, 쿼리 제한 시간)
+		const	kSearchSavedButton		= document.getElementById("SearchSavedButton");																										// 저장 버튼 (서치 모드: 저장 서치, 타이머 오른쪽)
+		const	kQuerySavedButton		= document.getElementById("QuerySavedButton");																										// 저장 버튼 (쿼리 모드: 쿼리 설정 저장 탭, 실행·중단 위)
+		const	kQueryAlarmButton		= document.getElementById("QueryAlarmButton");																										// 알람 버튼 (쿼리 모드: 쿼리 설정 알람 탭, 실행·중단 위)
+		const	kQueryHistoryButton		= document.getElementById("QueryHistoryButton");																									// 기록 버튼 (쿼리 모드: 알람 기록 창, 알람 버튼 오른쪽)
+		const	kQueryRuleButton		= document.getElementById("QueryRuleButton");																										// 필드 버튼 (쿼리 모드: 쿼리 설정 필드 탭 = 설정 aField, 실행·중단 위)
+		const	kFieldRuleDialog		= document.getElementById("FieldRuleDialog");																										// 필드 추가·수정 창
+		const	kFieldRuleTitle			= document.getElementById("FieldRuleTitle");																										// 필드 추가·수정 창 제목
+		const	kFieldRuleKey			= document.getElementById("FieldRuleKey");																											// 필드 이름
+		const	kFieldRuleRegex			= document.getElementById("FieldRuleRegex");																										// 필드 정규식 (첫 () 값)
+		const	kFieldRuleValue			= document.getElementById("FieldRuleValue");																										// 필드 고정값 (있음: 정규식 안 씀)
+		const	kSettingDialog			= document.getElementById("SettingDialog");																											// 설정 창 (class query: 쿼리 줄만, 아니면 서치 줄만)
+		const	kQuerySettingDialog		= document.getElementById("QuerySettingDialog");																									// 쿼리 설정 창
+		const	kDownDialog				= document.getElementById("DownDialog");																											// 다운 확인 팝업 (File 칸·파일 트리·덤프 zip 공통)
+		let		funcDownYes				= null;																																				// 다운 확인 예 동작 (null: 확인 중 아님)
+		let		funcDeleteYes			= null;																																				// 삭제 확인 동작 (null: 확인 중 아님)
+		const	kMachineMaxInput		= document.getElementById("MachineMaxInput");
+		const	kResultMaxInput			= document.getElementById("ResultMaxInput");
+		const	kSearchLimitInput		= document.getElementById("SearchLimitInput");																										// 설정 창 서치 제한 시간 (초)
+		const	kQueryLimitInput		= document.getElementById("QueryLimitInput");																										// 설정 창 쿼리 제한 시간 (초)
+		const	kSortSelect				= document.getElementById("SortSelect");																											// 설정 창 결과 정렬
+		const	kColGuide				= document.getElementById("ColGuide");																												// 칸 너비 드래그 위치 세로선 (표는 놓을 때 한 번만 배치)
+		const	kKey					= document.getElementById("SearchKey");																												// 검색어 (서치만)
+		const	kSearchButton			= document.getElementById("SearchButton");																											// 검색 버튼
+		const	kQueryKey				= document.getElementById("QueryKey");																												// 쿼리 입력칸
+		const	kQueryRunButton			= document.getElementById("QueryRunButton");																										// 쿼리 버튼
+		const	kTimerButton			= document.getElementById("TimerButton");																											// 타이머 버튼 (기능 버튼 맨 앞: 쿼리 알람·서치 저장 왼쪽, 초 입력 → 초 줄여 감 → 0: 실행 → 다시, 지금 탭 타이머 표시)
+		const	kTimer					= { kSearch: { sName: "서치", kRun: kSearchButton, nSec: 10, nDue: 0, nId: 0, kFrom: null, kTo: null, nLast: 0, sPick: "" }, kQuery: { sName: "쿼리", kRun: kQueryRunButton, nSec: 10, nDue: 0, nId: 0, kFrom: null, kTo: null, nLast: 0, sPick: "" } };	// 서치·쿼리 타이머 따로 (실행 버튼, 주기 초 (기본 X초), 다음 실행 시각 ms, 1초 setInterval: 0 = 꺼짐, 실행 기간 (초 포함), 마지막 실행 시각 ms, 마지막으로 넣은 S·E 표시)
+		const	TIMER_SEC_DEFAULT		= 10;																																				// 타이머 기본 주기 (초, 리셋 때)
+		const	QUERY_DAY_MAX			= 1096;																																				// 쿼리 기간 최대 (일, 3년, 서버 m_nQueryDayMax 와 같음 → 쿼리 S 달력 최소)
+		const	TIMER_SEC_MIN			= 1;																																				// 타이머 최소 주기 (초)
+		const	TIMER_SEC_MAX			= 86400;																																			// 타이머 최대 주기 (초, 1일)
+		const	PROGRESS_DELAY_MS		= 2000;																																				// 진행 팝업 지연 (ms, 로딩 인디케이터 형식 모든 팝업: 이보다 빨리 끝남 → 안 띄움, 깜빡임 방지)
+		const	kQueryStopButton		= document.getElementById("QueryStopButton");																										// 쿼리 중단 버튼
+		const	kQueryProgress			= document.getElementById("QueryProgress");																											// 쿼리 진행 표시
+		const	kStopButton				= document.getElementById("StopButton");																											// 검색 중지 버튼
+		const	kFilterTool				= document.getElementById("FilterTool");																											// 기능 버튼 묶음 (타이머 ~ 설정: 1줄 오른쪽 끝, 창 좁음: 2줄 실행·중단 오른쪽, PlaceToolButtons)
+		const	kSearchBox				= document.getElementById("SearchBox");																												// 2줄: 입력칸·실행·중단 (기능 버튼 내려오는 곳)
+		const	TOOL_GAP				= 6;																																				// 명령 창 줄 요소 최소 간격 (px, 공통 규칙: 평소 12·안 8 → 창 좁으면 이 값까지 줄여 버팀 (.filter.tight), 기능 버튼도 E "미만" 과 이 간격까지, 그보다 좁으면 내려감)
+		const	kProgress				= document.getElementById("SearchProgress");																										// 검색 진행 표시
+		const	kResultPanel			= document.getElementById("ResultPanel");																											// 서치 1번 창: 검색 결과
+		const	kResultTitle			= document.getElementById("ResultTitle");
+		const	kResultPager			= document.getElementById("ResultPager");																											// 페이지 번호
+		const	kResultScroll			= document.getElementById("ResultScroll");
+		const	kResultTable			= document.getElementById("ResultTable");																											// 서치 1번 창 표
+		const	kResultBody				= document.getElementById("ResultBody");
+		const	kQueryTitle				= document.getElementById("QueryTitle");																											// 쿼리 1번 창 제목
+		const	kQueryPager				= document.getElementById("QueryPager");																											// 쿼리 1번 창 페이지 번호
+		const	kQueryBody				= document.getElementById("QueryBody");																												// 쿼리 1번 창 결과 줄
+		const	kQueryChart				= document.getElementById("QueryChart");																											// 쿼리 1번 창 시간별 건수 막대
+		const	kQueryPrev				= document.getElementById("QueryPrev");																												// ← 이전 단계
+		const	kQueryDepth				= document.getElementById("QueryDepth");																											// 지금 단계 (0: 최초, 누름: 숫자 입력)
+		const	kQueryNext				= document.getElementById("QueryNext");																												// → 다음 단계
+		const	kQueryLens				= document.getElementById("QueryLens");																												// 쿼리 막대 렌즈 (막대 왼쪽 ↑·스텝·↓)
+		const	kLensUp					= document.getElementById("LensUp");																												// 렌즈 ↑ 큰 단위 (스텝 0: 기간 넓혀 쿼리)
+		const	kLensStep				= document.getElementById("LensStep");																												// 렌즈 숫자 (넓힌 깊이 - 스텝: 0 처음 기간 기본 단위, ↓ -1·↑ +1, 툴팁: 지금 단위)
+		const	kLensDown				= document.getElementById("LensDown");																												// 렌즈 ↓ 작은 단위 (초봉까지)
+		const	kQueryPanel				= document.getElementById("QueryPanel");																											// 쿼리 2번 창: 로그
+		const	kQueryLogTitle			= document.getElementById("QueryLogTitle");																											// 쿼리 2번 창 제목
+		const	kQueryScroll			= document.getElementById("QueryScroll");
+		const	kQuerySplitter			= document.getElementById("QuerySplitter");																											// 쿼리 1·2번 창 사이 바
+		const	kFilterSplitter			= document.getElementById("FilterSplitter");																										// 명령 창·결과 창 사이 바 (쿼리·서치)
+		const	kQuerySplit				= document.getElementById("QuerySplit");																											// 쿼리 2번 창 필드 + 로그 (--fieldWidth: 필드 폭)
+		const	kQueryField				= document.getElementById("QueryField");																											// 쿼리 2번 창 필드 상자
+		const	kQueryFieldSplitter		= document.getElementById("QueryFieldSplitter");																									// 필드·로그 사이 세로선
+		const	kQueryFieldList			= document.getElementById("QueryFieldList");																										// 쿼리 2번 창 필드 목록
+		const	kQueryFieldPanel		= document.getElementById("QueryFieldPanel");																										// 필드 값 목록 새 창 (필드 모드만)
+		const	kQueryFieldTitle		= document.getElementById("QueryFieldTitle");																										// 필드 새 창 제목
+		const	kQueryFieldColumn		= document.getElementById("QueryFieldColumn");																										// 필드 새 창 값 칸 이름
+		const	kQueryFieldScroll		= document.getElementById("QueryFieldScroll");
+		const	kQueryFieldBody			= document.getElementById("QueryFieldBody");																										// 필드 새 창 값 줄
+		const	kQueryFieldPager		= document.getElementById("QueryFieldPager");																										// 필드 새 창 아래 페이지 번호
+		const	kViewPanel				= document.getElementById("ViewPanel");																												// 서치 2번 창: 파일 보기
+		const	kViewTitle				= document.getElementById("ViewTitle");
+		const	kViewScroll				= document.getElementById("ViewScroll");
+		const	kViewBody				= document.getElementById("ViewBody");
+		const	kViewPrev				= document.getElementById("ViewPrev");																												// 서치 2번 창 포지션 « 위로 VIEW_COUNT 줄 (읽어 쌓인 범위 안)
+		const	kViewShift				= document.getElementById("ViewShift");																												// 서치 2번 창 위치 (0: 처음 연 위치)
+		const	kViewNext				= document.getElementById("ViewNext");																												// 서치 2번 창 포지션 » 아래로 VIEW_COUNT 줄 (읽어 쌓인 범위 안)
+		const	kLogButton				= document.getElementById("LogButton");																												// 서치 탭 버튼
+		const	kDumpButton				= document.getElementById("DumpButton");																											// 덤프 탭 버튼
+		const	kDumpPanel				= document.getElementById("DumpPanel");																												// 덤프 1번 창: 덤프 파일
+		const	kDumpTitle				= document.getElementById("DumpTitle");
+		const	kDumpScroll				= document.getElementById("DumpScroll");
+		const	kDumpTable				= document.getElementById("DumpTable");																												// 덤프 1번 창 표
+		const	kDumpBody				= document.getElementById("DumpBody");
+		const	kDumpProgress			= document.getElementById("DumpProgress");																											// 덤프 진행 팝업
+		const	kDumpDeleteAll			= document.getElementById("DumpDeleteAll");																											// 덤프 전체 삭제 버튼
+		const	kDeleteDialog			= document.getElementById("DeleteDialog");																											// 삭제 확인 팝업
+		const	kDeleteText				= document.getElementById("DeleteText");
+		const	kFileButton				= document.getElementById("FileButton");																											// 파일 탭 버튼
+		const	kFilePanel				= document.getElementById("FilePanel");																												// 파일 1번 창: 클라 감시 폴더 트리
+		const	kManagerButton			= document.getElementById("ManagerButton");																											// 운영 탭 버튼
+		const	kManagerPanel			= document.getElementById("ManagerPanel");																											// 운영 창: 게임 서버 목록·동접·차트·모니터
+		const	kProcessButton			= document.getElementById("ProcessButton");																											// 반영 탭 버튼
+		const	kProcessPanel			= document.getElementById("ProcessPanel");																											// 반영 창: 게임 서버 프로세스 목록·작업 (서랍·메뉴·팝업 포함)
+		const	kFileTitle				= document.getElementById("FileTitle");
+		const	kFileTree				= document.getElementById("FileTree");
+		const	kFileScroll				= document.getElementById("FileScroll");																											// 파일 1번 창 왼쪽: 트리
+		const	kFileSplitter			= document.getElementById("FileSplitter");																											// 파일 1번 창 좌우 사이 세로선
+		const	kFileViewTitle			= document.getElementById("FileViewTitle");																											// 파일 1번 창 오른쪽: 파일 보기
+		const	kFileViewScroll			= document.getElementById("FileViewScroll");
+		const	kFileViewBody			= document.getElementById("FileViewBody");
+		const	kFilePrev				= document.getElementById("FilePrev");																												// 파일 보기 포지션 « (위로, 위에 쌓임)
+		const	kFileShift				= document.getElementById("FileShift");																												// 파일 보기 포지션 (0: 파일 맨 아래)
+		const	kFileNext				= document.getElementById("FileNext");																												// 파일 보기 포지션 » (아래로)
+		const	kQueryButton			= document.getElementById("QueryButton");																											// 쿼리 탭 버튼
+		const	kHelpDialog				= document.getElementById("HelpDialog");																											// 힌트 팝업
+		const	kAccountDialog			= document.getElementById("AccountDialog");																											// 계정 팝업
+		const	kAccountEditDialog		= document.getElementById("AccountEditDialog");																										// 계정 추가·수정·삭제 창
+		const	MACHINE_LIMIT			= 1000000;																																			// 머신당 최대 건수 상한 (서버·클라 m_nSearchMax 와 같음)
+		const	RESULT_LIMIT			= 1000000;																																			// 전체 최대 건수 상한
+		const	MACHINE_DEFAULT			= 1000;																																				// 머신당 최대 건수 기본값 (서버·클라 m_nSearchDefault 와 같음)
+		const	RESULT_DEFAULT			= 10000;																																			// 전체 최대 건수 기본값 (모든 머신 합)
+		const	LIMIT_KEY				= "HMX.Limit";																																		// 설정 localStorage 키 (서치·쿼리)
+		const	LIMIT_SEC_DEFAULT		= 60;																																				// 서치·쿼리 제한 시간 기본값 (초, 서버 m_nSearchLimitSec·m_nQueryLimitSec 와 같음)
+		const	LIMIT_SEC_MAX			= 600;																																				// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
+		let		nMachineMax				= MACHINE_DEFAULT;																																	// 머신당 최대 건수 (설정)
+		let		nResultMax				= RESULT_DEFAULT;																																	// 전체 최대 건수 (설정, 넘음: 이후 머신 검색 안 함)
+		let		nSearchLimitSec			= LIMIT_SEC_DEFAULT;																																// 서치 제한 시간 (설정, 초, /api/search nLimit → 클라 마감)
+		let		nQueryLimitSec			= LIMIT_SEC_DEFAULT;																																// 쿼리 제한 시간 (설정, 초, /api/query·stat·lens nLimit)
+		const	SORT_TIME				= "time";																																			// 시간 정렬 (Search.SortTime)
+		const	SORT_BASE				= "base";																																			// 머신 정렬 (받은 순서)
+		const	SORT_DEFAULT			= SORT_TIME;																																		// 결과 정렬 기본값
+		const	SORT_INFO				= { [SORT_TIME]: "시간 정렬", [SORT_BASE]: "머신 정렬" };																							// 결과 정렬 값 → 표시
+		let		sSort					= SORT_DEFAULT;																																		// 결과 정렬 (설정)
+		const	MACHINE_REFRESH_MS		= 1000;																																				// 접속 머신 목록 자동 갱신 주기 (ms, 서버 연결 끊김 감지 겸)
+		let		bMachineLoading			= false;																																			// 접속 머신 조회 중 (겹침 방지)
+		let		sMachineSignature		= "";																																				// 마지막 그린 머신 목록 (바뀐 경우만 다시 그림)
+		let		arrMachineList			= [];																																				// 드롭 박스 머신 (이름순 + 끊긴 체크 머신)
+		const	setMachineCheck			= new Set();																																		// 체크한 머신 (비면: 전체)
+		let		nMachineCount			= 0;																																				// 접속 머신 수
+		let		arrMachineOption		= [];																																				// 서치 드롭 박스 목록 [값, 표시] (쿼리 모드 갔다 오면 다시 그림)
+		let		arrQueryMachine			= [];																																				// 쿼리 드롭 박스 색인 머신 (이름순, 접속 머신·쿼리칸 머신과 합쳐 그림)
+		const	QUERY_MACHINE_REGEX		= /^\s*(?:\(\s*(Machine:[^\s()]+(?:\s+OR\s+Machine:[^\s()]+)+)\s*\)|(Machine:[^\s()]+))(?:\s+AND\s+|\s*$)/;											// 쿼리칸 앞 머신 조건 (Machine:A·(Machine:A OR Machine:B) 뒤 AND·끝)
+		const	OPEN_WORD				= "#ResultBody td.log, #ViewBody .line, #QueryBody td.log, #QueryBody .querytext, #QueryBody .queryfield span[data-field]";							// Ctrl·Alt+클릭 단어 칸 (입력칸에 단어 추가)
+		const	OPEN_TARGET				= "a[href], button, input, select, textarea, label, td.filename, #FileTree div.node";																// Ctrl·Alt+클릭 새 창 대상
+		const	OPEN_SELF				= ".fieldname";																																		// 원래 새 창 여는 것 (필드 이름): 그대로
+		const	OPEN_SKIP				= "td.act, td.fileact, #ProcessTables tbody, #ProcessDrawer, #ProcessMenu";																			// 줄 동작 (덤프 Ac.·반영 줄·상세 패널·줄 메뉴): 원래 동작
+		const	OPEN_STATE_INPUT		= ["QueryRange", "StartDate", "StartHour", "StartMinute", "StartSecond", "EndDate", "EndHour", "EndMinute", "EndSecond", "SearchKey", "QueryKey"];	// 새 창에 넘길 입력칸
+		let		sOpenMode				= "";																																				// OpenWindow 방식 ("": 크기 지정 새 창, browser: 같은 크기·자리 새 창 (Ctrl), tab: 새 탭 (Alt))
+		const	OPEN_TITLE				= ".panel .resulthead, #ViewPanel > .filter";																										// Ctrl·Alt+클릭 하위 창 제목란
+		let		kSelectTable			= null;																																				// 마지막 누른 표 (Ctrl+A 대상, 없음: 맨 위 표)
+		const	SHIFT_QUERY_WORD		= "#QueryBody td.log, #QueryBody .querytext";																										// Shift+클릭 쿼리 단어 칸 (→ 서치)
+		let		bShiftClick				= false;																																			// Shift+누름 실행함: 뒤따르는 클릭 막음
 
 		for (let nHour = 0; nHour <= 24; ++nHour)	// 시 선택: 시작 00~23, 종료 00~24
 		{
-		    const sHour = String(nHour).padStart(2, "0");
+		    const	sHour	= String(nHour).padStart(2, "0");
 
 		    if (nHour < 24)
 		    {
@@ -1256,7 +1258,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		for (let nMinute = 0; nMinute < 60; ++nMinute)	// 분·초 선택: 00~59
 		{
-		    const sMinute = String(nMinute).padStart(2, "0");
+		    const	sMinute	= String(nMinute).padStart(2, "0");
 
 		    kStartMinute.add(new Option(sMinute, sMinute));
 		    kEndMinute.add(new Option(sMinute, sMinute));
@@ -1266,8 +1268,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetFilter()	// 선택 값 (nStart·nEnd: yyyyMMddHH 끝 포함, nStartMin·nEndMin: yyyyMMddHHmm, nStartSec·nEndSec: yyyyMMddHHmmss, 시작 포함·끝 미포함)
 		{
-		    const nStart	= Number(kStart.value.replaceAll("-", "")) * 100 + Number(kStartHour.value);
-		    const nEnd		= Number(kEnd.value.replaceAll("-", "")) * 100 + Number(kEndHour.value);
+		    const	nStart	= Number(kStart.value.replaceAll("-", "")) * 100 + Number(kStartHour.value);
+		    const	nEnd	= Number(kEnd.value.replaceAll("-", "")) * 100 + Number(kEndHour.value);
 
 		    return {
 		        sMachine:	GetMachineText(),
@@ -1284,7 +1286,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		async function FetchJson(sUrl, kOption)	// 요청 → JSON (HTTP 오류: throw "HTTP 상태", 경유 서버 오류 페이지 → Bad Data 대신 상태)
 		{
-		    const kResponse = await fetch(sUrl, kOption);
+		    const	kResponse	= await fetch(sUrl, kOption);
 
 		    if (!kResponse.ok)
 		    {
@@ -1301,9 +1303,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const kRow		= kSearchBox.parentElement;	// 명령 창 (.filter)
-		    const kEndLabel	= kEnd.parentElement;		// E 줄 (날짜·시·분·초·미만)
-		    const nTop		= kRow.firstElementChild.offsetTop;	// 1줄 위치 (리셋 버튼)
+		    const	kRow		= kSearchBox.parentElement;			// 명령 창 (.filter)
+		    const	kEndLabel	= kEnd.parentElement;				// E 줄 (날짜·시·분·초·미만)
+		    const	nTop		= kRow.firstElementChild.offsetTop;	// 1줄 위치 (리셋 버튼)
 
 		    kFilterTool.classList.remove("row", "fix");
 		    kFilterTool.style.height = "";
@@ -1348,7 +1350,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ClampLimit(value, nDefault, nLimit)	// 최대 건수 값 정리 (정수 1 ~ nLimit, 그 외: nDefault)
 		{
-		    const nValue = Math.floor(Number(value));
+		    const	nValue	= Math.floor(Number(value));
 
 		    if (value === "" || value == null || !Number.isFinite(nValue))
 		    {
@@ -1367,7 +1369,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    try
 		    {
-		        const kSaved = JSON.parse(localStorage.getItem(LIMIT_KEY) ?? "null");
+		        const	kSaved	= JSON.parse(localStorage.getItem(LIMIT_KEY) ?? "null");
 
 		        if (kSaved != null)
 		        {
@@ -1386,7 +1388,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OpenSetting()	// 설정 창 열기 (지금 탭 항목만: 서치 최대 건수·제한 시간·정렬, 쿼리 제한 시간, 서치 중: 안 엶)
 		{
-		    const bQuery = IsQueryMode();
+		    const	bQuery	= IsQueryMode();
 
 		    if (!bQuery && Search.bSearching)
 		    {
@@ -1406,7 +1408,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function SaveSetting()	// 설정 저장 (서치·쿼리 항목 모두 한 키, 저장 실패: 이 창만 적용, 정렬 바뀜: 지금 결과 다시 정렬)
 		{
-		    const sSortBefore = sSort;
+		    const	sSortBefore	= sSort;
 
 		    nMachineMax		= ClampLimit(kMachineMaxInput.value, MACHINE_DEFAULT, MACHINE_LIMIT);
 		    nResultMax		= ClampLimit(kResultMaxInput.value, RESULT_DEFAULT, RESULT_LIMIT);
@@ -1443,7 +1445,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const kFilter = GetFilter();
+		    const	kFilter	= GetFilter();
 
 		    if (kFilter.nStartSec > kFilter.nEndSec)	// 초까지 비교
 		    {
@@ -1469,17 +1471,17 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		function GetDayBefore(sDate, nDay)	// yyyy-MM-dd 의 nDay 일 전 날짜 (yyyy-MM-dd, 달력 min)
 		{
 		    const [nYear, nMonth, nDate]	= sDate.split("-").map(Number);
-		    const kDate						= new Date(nYear, nMonth - 1, nDate - nDay);	// 일 넘침: 달·해 맞춤
-		    const funcPad					= (nValue) => String(nValue).padStart(2, "0");
+		    const	kDate	= new Date(nYear, nMonth - 1, nDate - nDay);	// 일 넘침: 달·해 맞춤
+		    const	funcPad	= (nValue) => String(nValue).padStart(2, "0");
 
 		    return `${kDate.getFullYear()}-${funcPad(kDate.getMonth() + 1)}-${funcPad(kDate.getDate())}`;
 		}
 
 		function LimitRange()	// S·E 고르기 제한: S 는 E 보다 늦게, E 는 S 보다 이르게 못 고름, 쿼리 S 는 E 기준 최대 기간보다 이르게 못 고름 (날짜: 달력 S 최대 E·E 최소 S·쿼리 S 최소 E - (QUERY_DAY_MAX - 1)일, 같은 날짜: 시, 같은 시: 분, 같은 분: 초 꺼짐, E 24시: 그날 끝 → 제한 없음, S = E: 됨)
 		{
-		    const bDay		= kStart.value === kEnd.value && kEndHour.value !== "24";		// 같은 날짜 (E 24시: 그날 끝 → 시·분·초 제한 없음)
-		    const bHour		= bDay && kStartHour.value === kEndHour.value;					// 같은 시
-		    const bMinute	= bHour && kStartMinute.value === kEndMinute.value;				// 같은 분
+		    const	bDay	= kStart.value === kEnd.value && kEndHour.value !== "24";	// 같은 날짜 (E 24시: 그날 끝 → 시·분·초 제한 없음)
+		    const	bHour	= bDay && kStartHour.value === kEndHour.value;				// 같은 시
+		    const	bMinute	= bHour && kStartMinute.value === kEndMinute.value;			// 같은 분
 		    const funcLimit	= (kSelect, bOn, funcOff) =>	// 선택 칸 꺼짐 (bOn: 제한 적용)
 		    {
 		        for (const kOption of kSelect.options)
@@ -1502,7 +1504,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function AddCell(kRow, sText, sClass)	// 표 칸 추가 (textContent)
 		{
-		    const kCell = kRow.insertCell();
+		    const	kCell	= kRow.insertCell();
 
 		    kCell.textContent = sText;
 
@@ -1514,8 +1516,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    return kCell;
 		}
 
-		const LINE_PAD	= 8;	// 줄 보기 pre 기본 위·아래 여백 (px, CSS pre padding)
-		const LINE_NEAR	= 20;	// 줄 보기 이어 읽기 시작 (읽은 끝에서 X줄 안)
+		const	LINE_PAD	= 8;	// 줄 보기 pre 기본 위·아래 여백 (px, CSS pre padding)
+		const	LINE_NEAR	= 20;	// 줄 보기 이어 읽기 시작 (읽은 끝에서 X줄 안)
 
 		function GetLineHeight(kBody)	// 줄 보기 한 줄 높이 (소수까지: offsetHeight 반올림 → 줄 많으면 위치 어긋남, 줄 없음: 0)
 		{
@@ -1524,7 +1526,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function SetLineSpace(kBody, kState)	// 줄 보기 위·아래 빈 높이: 안 읽은 줄 수 × 줄 높이 → 스크롤 바 처음부터 전체 크기 (kState.nExtra: 짧은 파일 아래 여백)
 		{
-		    const nLineH = GetLineHeight(kBody);
+		    const	nLineH	= GetLineHeight(kBody);
 
 		    kBody.style.paddingTop		= nLineH > 0 && kState.nFirst > 1 ? `${LINE_PAD + (kState.nFirst - 1) * nLineH}px` : "";
 		    kBody.style.paddingBottom	= nLineH > 0 ? `${LINE_PAD + Math.max(0, kState.nTotal - kState.nLast) * nLineH + (kState.nExtra ?? 0)}px` : "";
@@ -1532,21 +1534,21 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetLineRange(kScroll, kBody)	// 줄 보기 보이는 줄 번호 [첫, 끝] (빈 높이 포함, 줄 없음: null)
 		{
-		    const nLineH = GetLineHeight(kBody);
+		    const	nLineH	= GetLineHeight(kBody);
 
 		    if (nLineH === 0)
 		    {
 		        return null;
 		    }
 
-		    const nTop = kScroll.scrollTop - kBody.offsetTop - LINE_PAD;	// 첫 줄 위치 기준
+		    const	nTop	= kScroll.scrollTop - kBody.offsetTop - LINE_PAD;	// 첫 줄 위치 기준
 
 		    return [Math.max(1, Math.floor(nTop / nLineH) + 1), Math.max(1, Math.ceil((nTop + kScroll.clientHeight) / nLineH))];
 		}
 
 		function GetCenterAbove(kScroll, kBody)	// 줄 보기 기준 줄 (클릭·검색 줄) 위에 보일 줄 수: 보이는 줄 수의 가운데 (공통, 줄 없음: 0)
 		{
-		    const nLineH = GetLineHeight(kBody);
+		    const	nLineH	= GetLineHeight(kBody);
 
 		    return nLineH > 0 ? Math.floor(Math.floor(kScroll.clientHeight / nLineH) / 2) : 0;
 		}
@@ -1555,7 +1557,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetPosRange(kPos)	// 포지션 범위 [최소, 최대] (읽어 쌓인 줄 범위 끝까지: 끝 포지션 = 끝 줄, 예: 위로 -11 까지 쌓임: -11 ~ 0, 없음: null)
 		{
-		    const kState = kPos.funcState();
+		    const	kState	= kPos.funcState();
 
 		    if (kState == null || kState.nAnchor == null || kState.nAnchor <= 0 || kState.nTotal === 0 || kState.nLast === 0 || kState.nLast < kState.nFirst)
 		    {
@@ -1567,15 +1569,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetPosLine(kPos, nShift)	// 포지션 줄 (포지션 0 줄 + nStep 줄 단위, 읽어 쌓인 줄 범위로 맞춤)
 		{
-		    const kState = kPos.funcState();
+		    const	kState	= kPos.funcState();
 
 		    return Math.min(Math.max(kState.nAnchor + nShift * kPos.nStep, kState.nFirst), kState.nLast);
 		}
 
 		function GetPosRef(kPos)	// 기준 줄 (보이는 줄 가운데, 1 ~ 끝 줄, 줄 없음: 포지션 0 줄)
 		{
-		    const kState	= kPos.funcState();
-		    const arrRange	= GetLineRange(kPos.kScroll, kPos.kBody);
+		    const	kState		= kPos.funcState();
+		    const	arrRange	= GetLineRange(kPos.kScroll, kPos.kBody);
 
 		    if (kState == null || arrRange == null)
 		    {
@@ -1587,9 +1589,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetPosNow(kPos)	// 지금 포지션 (옮긴 뒤 스크롤 전: 옮긴 포지션, 맨 위: 최소, 맨 아래: 최대, 그 외: 기준 줄에 가장 가까운 포지션 줄, 범위 없음: 0)
 		{
-		    const kState	= kPos.funcState();
-		    const kScroll	= kPos.kScroll;
-		    const arrRange	= GetPosRange(kPos);
+		    const	kState		= kPos.funcState();
+		    const	kScroll		= kPos.kScroll;
+		    const	arrRange	= GetPosRange(kPos);
 
 		    if (arrRange == null)
 		    {
@@ -1611,9 +1613,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return arrRange[1];
 		    }
 
-		    const nRef	= GetPosRef(kPos);											// 기준 줄
-		    const nNear	= Math.round((nRef - kState.nAnchor) / kPos.nStep);			// 끝 맞춤 없는 가까운 포지션
-		    let nBest	= Math.min(Math.max(nNear, arrRange[0]), arrRange[1]);		// 가장 가까운 포지션
+		    const	nRef	= GetPosRef(kPos);										// 기준 줄
+		    const	nNear	= Math.round((nRef - kState.nAnchor) / kPos.nStep);		// 끝 맞춤 없는 가까운 포지션
+		    let		nBest	= Math.min(Math.max(nNear, arrRange[0]), arrRange[1]);	// 가장 가까운 포지션
 
 		    for (let nShift = Math.max(nNear - 1, arrRange[0]); nShift <= Math.min(nNear + 1, arrRange[1]); ++nShift)	// 끝 포지션 (끝 줄로 맞춤) 도 비교
 		    {
@@ -1628,17 +1630,17 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GoPos(kPos, nShift)	// 포지션 nShift 로 스크롤 (포지션 범위로 맞춤, 포지션 줄을 보이는 줄 가운데에, 스크롤 이벤트: 포지션 표시)
 		{
-		    const kState	= kPos.funcState();
-		    const arrRange	= GetPosRange(kPos);
-		    const nLineH	= GetLineHeight(kPos.kBody);
+		    const	kState		= kPos.funcState();
+		    const	arrRange	= GetPosRange(kPos);
+		    const	nLineH		= GetLineHeight(kPos.kBody);
 
 		    if (arrRange == null || nLineH === 0)
 		    {
 		        return;
 		    }
 
-		    const nGo	= Math.min(Math.max(nShift, arrRange[0]), arrRange[1]);	// 갈 포지션
-		    const nLine	= GetPosLine(kPos, nGo);									// 갈 기준 줄
+		    const	nGo		= Math.min(Math.max(nShift, arrRange[0]), arrRange[1]);	// 갈 포지션
+		    const	nLine	= GetPosLine(kPos, nGo);	// 갈 기준 줄
 
 		    kPos.kScroll.scrollTop = kPos.kBody.offsetTop + LINE_PAD + (Math.max(1, nLine - GetCenterAbove(kPos.kScroll, kPos.kBody)) - 1) * nLineH;
 
@@ -1648,8 +1650,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ShiftPos(kPos, nDirection)	// 포지션 « (-1)·» (1): 지금 포지션 앞·뒤 포지션으로 (포지션 범위 안만, 읽기는 스크롤만)
 		{
-		    const arrRange	= GetPosRange(kPos);
-		    const nShift	= GetPosNow(kPos) + nDirection;	// 갈 포지션
+		    const	arrRange	= GetPosRange(kPos);
+		    const	nShift		= GetPosNow(kPos) + nDirection;	// 갈 포지션
 
 		    if (arrRange != null && nShift >= arrRange[0] && nShift <= arrRange[1])
 		    {
@@ -1659,7 +1661,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function SetPosStart(kPos)	// 파일 열기 위치: 포지션 0 (스크롤 전: 0 그대로)
 		{
-		    const kState = kPos.funcState();
+		    const	kState	= kPos.funcState();
 
 		    kState.nShiftGo	= 0;
 		    kState.nGoTop	= kPos.kScroll.scrollTop;
@@ -1667,8 +1669,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ShowPos(kPos)	// 포지션 « » 켬·끔 (범위 끝: 끔), 가운데 포지션 (0: 처음 연 위치, 스크롤 따라감, 툴팁: 포지션 범위)
 		{
-		    const arrRange	= GetPosRange(kPos);
-		    const nNow		= GetPosNow(kPos);	// 지금 포지션
+		    const	arrRange	= GetPosRange(kPos);
+		    const	nNow		= GetPosNow(kPos);	// 지금 포지션
 
 		    kPos.kPrev.disabled		= arrRange == null || nNow <= arrRange[0];
 		    kPos.kNext.disabled		= arrRange == null || nNow >= arrRange[1];
@@ -1693,16 +1695,16 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function EditPos(kPos)	// 가운데 포지션 누름: 숫자 입력 (- 포함) → Enter: 그 포지션으로 (포지션 범위로 맞춤, 끝 포지션: 끝까지), Esc·밖 누름: 취소 (포지션 1개뿐: 안 함)
 		{
-		    const arrRange	= GetPosRange(kPos);
-		    const kShift	= kPos.kShift;
+		    const	arrRange	= GetPosRange(kPos);
+		    const	kShift		= kPos.kShift;
 
 		    if (arrRange == null || arrRange[0] === arrRange[1] || document.getElementById(kPos.sInput) != null)
 		    {
 		        return;
 		    }
 
-		    const kInput	= document.createElement("input");	// 포지션 입력 (포지션 버튼 자리, 같은 크기)
-		    let bDone		= false;							// 끝냄 (Enter·Esc·밖 누름 중 한 번만)
+		    const	kInput	= document.createElement("input");	// 포지션 입력 (포지션 버튼 자리, 같은 크기)
+		    let		bDone	= false;	// 끝냄 (Enter·Esc·밖 누름 중 한 번만)
 
 		    kInput.type			= "text";
 		    kInput.id			= kPos.sInput;
@@ -1720,7 +1722,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		        bDone = true;
 
-		        const nTarget = Number.parseInt(kInput.value, 10);	// 입력한 포지션
+		        const	nTarget	= Number.parseInt(kInput.value, 10);	// 입력한 포지션
 
 		        kInput.remove();
 
@@ -1764,7 +1766,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OnTimerButton()	// 타이머 버튼 누름 (지금 탭 타이머): 도는 중 → 중지, 아님 → 초 입력 (정수, TIMER_SEC_MIN ~ MAX) → Enter: 시작, Esc·밖 누름: 취소 (포지션 입력과 같음)
 		{
-		    const kItem = GetTimer();
+		    const	kItem	= GetTimer();
 
 		    if (kItem == null || document.getElementById("TimerInput") != null)
 		    {
@@ -1778,8 +1780,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const kInput	= document.createElement("input");	// 초 입력 (타이머 버튼 자리, 같은 크기)
-		    let bDone		= false;							// 끝냄 (Enter·Esc·밖 누름 중 한 번만)
+		    const	kInput	= document.createElement("input");	// 초 입력 (타이머 버튼 자리, 같은 크기)
+		    let		bDone	= false;	// 끝냄 (Enter·Esc·밖 누름 중 한 번만)
 
 		    kInput.type			= "text";
 		    kInput.id			= "TimerInput";
@@ -1797,7 +1799,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		        bDone = true;
 
-		        const nSec = Number.parseInt(kInput.value, 10);	// 입력한 초
+		        const	nSec	= Number.parseInt(kInput.value, 10);	// 입력한 초
 
 		        kInput.remove();
 
@@ -1838,9 +1840,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function StartTimer(kItem, nSec)	// 타이머 시작 (서치·쿼리 따로): S·E 를 지금 + 간격으로 맞춤 → 바로 1회 실행 → 초 줄여 감 (1초마다, 시각 기준 → 백그라운드 탭에서도 맞음), 0: 존 색 1회 반짝 + S·E 지난 시간만큼 밀고 실행 → 다시
 		{
-		    const kFrom	= Query.GetPicker(kStart, kStartHour, kStartMinute);	// 지금 명령 창 기간 (간격: D 없음일 때)
-		    const kTo	= Query.GetPicker(kEnd, kEndHour, kEndMinute);
-		    const kNow	= new Date();											// 지금 (초 단위)
+		    const	kFrom	= Query.GetPicker(kStart, kStartHour, kStartMinute);	// 지금 명령 창 기간 (간격: D 없음일 때)
+		    const	kTo		= Query.GetPicker(kEnd, kEndHour, kEndMinute);
+		    const	kNow	= new Date();	// 지금 (초 단위)
 
 		    kNow.setMilliseconds(0);
 
@@ -1889,7 +1891,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        kItem.kTo	= Query.GetPicker(kEnd, kEndHour, kEndMinute);
 		    }
 
-		    const nShift = Math.round((Date.now() - kItem.nLast) / 1000) * 1000;	// 지난 시간 (초 단위, 건너뛴 주기 포함 → 밀림 없이 따라감)
+		    const	nShift	= Math.round((Date.now() - kItem.nLast) / 1000) * 1000;	// 지난 시간 (초 단위, 건너뛴 주기 포함 → 밀림 없이 따라감)
 
 		    kItem.nLast	+= nShift;
 		    kItem.kFrom	= new Date(kItem.kFrom.getTime() + nShift);
@@ -1941,14 +1943,14 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ShowTimer()	// 타이머 버튼 글자: 지금 탭 타이머 (숫자만, 도는 중: 남은 초·존 색 글자, 아님: 주기 초)
 		{
-		    const kItem = GetTimer();
+		    const	kItem	= GetTimer();
 
 		    if (kItem == null)
 		    {
 		        return;
 		    }
 
-		    const bOn = kItem.nId !== 0;
+		    const	bOn	= kItem.nId !== 0;
 
 		    kTimerButton.classList.toggle("on", bOn);
 		    kTimerButton.textContent	= String(bOn ? Math.max(0, Math.ceil((kItem.nDue - Date.now()) / 1000)) : kItem.nSec);
@@ -1973,7 +1975,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function FillLines(kScroll, kBody, kState, nCount, funcLoad)	// 줄 보기 스크롤: 빈 높이 근처면 funcLoad(시작 줄, 줄 수, 방향) (가까움: 위 -1·아래 1 이어 읽기, 멂: 그 위치로 바꿈 2)
 		{
-		    const arrRange = GetLineRange(kScroll, kBody);
+		    const	arrRange	= GetLineRange(kScroll, kBody);
 
 		    if (kState == null || kState.bLoading || kState.bError || kState.nFirst === 0 || kState.nTotal === 0 || arrRange == null)
 		    {
@@ -1984,13 +1986,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    if (nBottom < kState.nFirst - nCount || nTop > kState.nLast + nCount)	// 멂: 그 위치로 바꿈
 		    {
-		        const nStart = Math.max(1, nTop - nCount);
+		        const	nStart	= Math.max(1, nTop - nCount);
 
 		        funcLoad(nStart, Math.min(kState.nTotal, nBottom + nCount) - nStart + 1, 2);
 		    }
 		    else if (kState.nFirst > 1 && nTop - LINE_NEAR < kState.nFirst)	// 위 가까움: 앞 줄
 		    {
-		        const nStart = Math.max(1, Math.min(kState.nFirst - nCount, nTop - LINE_NEAR));
+		        const	nStart	= Math.max(1, Math.min(kState.nFirst - nCount, nTop - LINE_NEAR));
 
 		        funcLoad(nStart, kState.nFirst - nStart, -1);
 		    }
@@ -2012,9 +2014,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const arrCol	= kTable.querySelectorAll("col");
-		    const nRest		= GetRestColumn(kTable);
-		    const arrWidth	= [...kTable.tHead.rows[0].cells].map(kHead => kHead.getBoundingClientRect().width);	// 먼저 모두 읽음 (쓰기 사이 읽기: 칸마다 다시 배치)
+		    const	arrCol		= kTable.querySelectorAll("col");
+		    const	nRest		= GetRestColumn(kTable);
+		    const	arrWidth	= [...kTable.tHead.rows[0].cells].map(kHead => kHead.getBoundingClientRect().width);	// 먼저 모두 읽음 (쓰기 사이 읽기: 칸마다 다시 배치)
 
 		    arrWidth.forEach((nWidth, nIndex) =>
 		    {
@@ -2039,7 +2041,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function SetFixed(kTable, bFixed)	// 칸 너비 고정 켜기·끄기: tbody 떼고 바꾼 뒤 다시 붙임 (붙은 채: 줄 수 제곱으로 느림)
 		{
-		    const kBody = kTable.tBodies[0];	// 결과 줄 (표 맨 끝)
+		    const	kBody	= kTable.tBodies[0];	// 결과 줄 (표 맨 끝)
 
 		    kBody.remove();
 		    kTable.classList.toggle("fixed", bFixed);
@@ -2048,8 +2050,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetColumnMin(kHead)	// 칸 최소 너비: 제목 첫 글자 + 왼쪽 여백·테두리
 		{
-		    const kStyle	= getComputedStyle(kHead);
-		    const kRange	= document.createRange();
+		    const	kStyle	= getComputedStyle(kHead);
+		    const	kRange	= document.createRange();
 
 		    kRange.setStart(kHead.firstChild, 0);
 		    kRange.setEnd(kHead.firstChild, 1);
@@ -2068,9 +2070,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    try
 		    {
-		        const kData			= await FetchJson("/api/client", { cache: "no-store" });
-		        const arrMachine	= [...new Set(kData.arrClient.map(kClient => kClient.sMachine).filter(sMachine => sMachine !== ""))].sort();
-		        const arrOption		= arrMachine.map(sMachine => [sMachine, sMachine]);	// [값, 표시]
+		        const	kData		= await FetchJson("/api/client", { cache: "no-store" });
+		        const	arrMachine	= [...new Set(kData.arrClient.map(kClient => kClient.sMachine).filter(sMachine => sMachine !== ""))].sort();
+		        const	arrOption	= arrMachine.map(sMachine => [sMachine, sMachine]);	// [값, 표시]
 
 		        for (const sCheck of setMachineCheck)	// 체크 머신 끊김: 체크 유지
 		        {
@@ -2080,7 +2082,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            }
 		        }
 
-		        const sSignature = JSON.stringify(arrOption);
+		        const	sSignature	= JSON.stringify(arrOption);
 
 		        if (sSignature !== sMachineSignature)
 		        {
@@ -2115,7 +2117,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetMachineText()	// 머신 표시 글자 (전체 · 1대: 이름 · 여러 대: 첫 머신 외 N대)
 		{
-		    const arrCheck = arrMachineList.filter(sMachine => setMachineCheck.has(sMachine));
+		    const	arrCheck	= arrMachineList.filter(sMachine => setMachineCheck.has(sMachine));
 
 		    return arrCheck.length === 0 ? "전체" : (arrCheck.length === 1 ? arrCheck[0] : `${arrCheck[0]} 외 ${arrCheck.length - 1}대`);
 		}
@@ -2124,9 +2126,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    kMachineList.replaceChildren(...arrOption.map(([sValue, sLabel]) =>
 		    {
-		        const kLabel	= document.createElement("label");
-		        const kCheck	= document.createElement("input");
-		        const kName		= document.createElement("span");
+		        const	kLabel	= document.createElement("label");
+		        const	kCheck	= document.createElement("input");
+		        const	kName	= document.createElement("span");
 
 		        kCheck.type			= "checkbox";
 		        kCheck.value		= sValue;
@@ -2145,7 +2147,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    if (IsQueryMode())
 		    {
-		        const bCheck = GetQueryMachine()[0].length > 0;	// 쿼리칸 머신 조건 있음
+		        const	bCheck	= GetQueryMachine()[0].length > 0;	// 쿼리칸 머신 조건 있음
 
 		        kMachineBox.textContent	= bCheck ? "선택" : "전체";
 		        kMachineAll.checked		= !bCheck;
@@ -2254,7 +2256,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		function RenderQueryMachine()	// 쿼리 모드 드롭 박스 목록: 색인·접속·쿼리칸 머신 (이름순, 체크: 쿼리칸 머신 조건)
 		{
 		    const [arrCheck]	= GetQueryMachine();
-		    const arrMachine	= [...new Set([...arrQueryMachine, ...arrMachineList, ...arrCheck])].sort();
+		    const	arrMachine	= [...new Set([...arrQueryMachine, ...arrMachineList, ...arrCheck])].sort();
 
 		    RenderMachine(arrMachine.map(sMachine => [sMachine, sMachine]), new Set(arrCheck));
 		}
@@ -2274,8 +2276,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetQueryMachine()	// 쿼리칸 앞 머신 조건 → [머신 목록, 나머지 쿼리] (없음: [[], 쿼리칸])
 		{
-		    const sQuery	= kQueryKey.value;
-		    const kMatch	= sQuery.match(QUERY_MACHINE_REGEX);
+		    const	sQuery	= kQueryKey.value;
+		    const	kMatch	= sQuery.match(QUERY_MACHINE_REGEX);
 
 		    if (kMatch == null)
 		    {
@@ -2302,7 +2304,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return sQuery;
 		    }
 
-		    let nDepth = 0;	// 괄호 깊이
+		    let	nDepth	= 0;	// 괄호 깊이
 
 		    for (let nIndex = 0; nIndex < sQuery.length - 1; ++nIndex)
 		    {
@@ -2346,15 +2348,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    if (sOpenMode === "browser")	// Ctrl: 같은 바깥 크기·자리 (open 크기: 안쪽 → 열고 바깥 크기로 맞춤)
 		    {
-		        const nOuterWidth	= window.outerWidth;	// 누른 때 바깥 크기·자리
-		        const nOuterHeight	= window.outerHeight;
-		        const nScreenX		= window.screenX;
-		        const nScreenY		= window.screenY;
+		        const	nOuterWidth		= window.outerWidth;	// 누른 때 바깥 크기·자리
+		        const	nOuterHeight	= window.outerHeight;
+		        const	nScreenX		= window.screenX;
+		        const	nScreenY		= window.screenY;
 		        const sInner		= `width=${window.innerWidth},height=${window.innerHeight},left=${nScreenX},top=${nScreenY}`;	// 안쪽 내용 크기 (같은 화면이면 바깥도 거의 같음)
 
 		        setTimeout(() =>	// 클릭 이벤트 끝난 뒤 열기 (이벤트 안: Chrome 이 눌린 Ctrl 보고 뒤 탭으로 엶, 클릭 직후: 팝업 허용 유지)
 		        {
-		            const kWindow = window.open(sUrl, "_blank", sInner);
+		            const	kWindow	= window.open(sUrl, "_blank", sInner);
 
 		            try
 		            {
@@ -2370,8 +2372,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const nLeft	= Math.round(bCenterWindow ? window.screenX + Math.max(0, window.outerWidth - nWidth) / 2 : (screen.availLeft || 0) + Math.max(0, screen.availWidth - nWidth) / 2);
-		    const nTop	= Math.round(bCenterWindow ? window.screenY + Math.max(0, window.outerHeight - nHeight) / 2 : (screen.availTop || 0) + Math.max(0, screen.availHeight - nHeight) / 2);
+		    const	nLeft	= Math.round(bCenterWindow ? window.screenX + Math.max(0, window.outerWidth - nWidth) / 2 : (screen.availLeft || 0) + Math.max(0, screen.availWidth - nWidth) / 2);
+		    const	nTop	= Math.round(bCenterWindow ? window.screenY + Math.max(0, window.outerHeight - nHeight) / 2 : (screen.availTop || 0) + Math.max(0, screen.availHeight - nHeight) / 2);
 
 		    window.open(sUrl, "_blank", `width=${nWidth},height=${nHeight},left=${nLeft},top=${nTop}`);
 		}
@@ -2383,11 +2385,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return null;
 		    }
 
-		    const kTarget = kEvent.target.closest?.(OPEN_TARGET) ?? null;	// 누른 UI (제목란 안 버튼 포함: 그 버튼)
+		    const	kTarget	= kEvent.target.closest?.(OPEN_TARGET) ?? null;	// 누른 UI (제목란 안 버튼 포함: 그 버튼)
 
 		    if (kTarget == null)	// UI 아님: 하위 창 제목란 (제목 글자·빈 곳)
 		    {
-		        const kTitle = kEvent.target.closest?.(OPEN_TITLE) ?? null;	// 누른 하위 창 제목란
+		        const	kTitle	= kEvent.target.closest?.(OPEN_TITLE) ?? null;	// 누른 하위 창 제목란
 
 		        if (kTitle == null)
 		        {
@@ -2435,7 +2437,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OnOpenClick(kEvent)	// Ctrl+클릭: 새 창, Alt+클릭: 새 탭 (지금 창 그대로)
 		{
-		    const kOpen = GetOpenTarget(kEvent);	// 대상 (null: 원래 동작)
+		    const	kOpen	= GetOpenTarget(kEvent);	// 대상 (null: 원래 동작)
 
 		    if (kOpen == null)
 		    {
@@ -2488,8 +2490,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetStateUrl(kTarget)	// 지금 상태 첫 화면 주소 (탭·머신 체크·입력칸·쿼리 결과 + 누른 UI id → 새 창 RestoreState)
 		{
-		    const kControl	= kTarget.matches("label") ? kTarget.control : kTarget;	// 라벨: 그 입력칸
-		    const kParam	= new URLSearchParams({ sTab: document.querySelector("#TabBar button.cur")?.id ?? kQueryButton.id, sMachine: [...setMachineCheck].join(","), bQuery: Query.sQueryKey !== "" ? "1" : "0", sClick: kControl?.id ?? "" });
+		    const	kControl	= kTarget.matches("label") ? kTarget.control : kTarget;	// 라벨: 그 입력칸
+		    const	kParam		= new URLSearchParams({ sTab: document.querySelector("#TabBar button.cur")?.id ?? kQueryButton.id, sMachine: [...setMachineCheck].join(","), bQuery: Query.sQueryKey !== "" ? "1" : "0", sClick: kControl?.id ?? "" });
 
 		    for (const sId of OPEN_STATE_INPUT)
 		    {
@@ -2503,7 +2505,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    try
 		    {
-		        const kOpener = window.opener;	// 연 창 (같은 출처)
+		        const	kOpener	= window.opener;	// 연 창 (같은 출처)
 
 		        if (kOpener == null || kOpener.closed || kOpener.Query == null || kOpener.Search == null)
 		        {
@@ -2539,9 +2541,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function RestoreState(kParam)	// Ctrl·Alt+클릭 새 창 첫 화면 복원 (머신 → 탭 → 입력칸 → 연 창 기간·단계·결과 → 결과 그대로 (없음: 쿼리 다시, 서치 다시 검색 안 함 (실서버 부하)) → 누른 버튼·포커스)
 		{
-		    const sTab		= kParam.get("sTab") ?? "";
-		    const kClick	= document.getElementById(kParam.get("sClick") ?? "");	// 누른 UI (없음: null)
-		    const bButton	= kClick?.matches("button") === true;
+		    const	sTab	= kParam.get("sTab") ?? "";
+		    const	kClick	= document.getElementById(kParam.get("sClick") ?? "");	// 누른 UI (없음: null)
+		    const	bButton	= kClick?.matches("button") === true;
 
 		    history.replaceState(null, "", location.pathname);	// 새로 고침: 처음 화면 (다시 누르지 않음)
 
@@ -2570,7 +2572,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        }
 		    }
 
-		    const kOpener = GetOpenerState();	// 연 창 다른 탭 기간·← 단계 → (못 가져옴: null → 입력칸만)
+		    const	kOpener	= GetOpenerState();	// 연 창 다른 탭 기간·← 단계 → (못 가져옴: null → 입력칸만)
 
 		    if (kOpener != null)
 		    {
@@ -2608,8 +2610,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    if (sTab === kQueryButton.id && kParam.get("bQuery") === "1")	// 쿼리 결과 보던 중: 그 결과 그대로 (결과 없음·버튼 아님: 같은 조건으로 다시)
 		    {
-		        const kStep		= Query.arrHistory[Query.nHistory];									// 연 창 지금 단계 (없음: undefined)
-		        const kResult	= kStep === undefined ? undefined : Query.mapStepResult.get(kStep);	// 그 결과 (연 창에서 복사)
+		        const	kStep	= Query.arrHistory[Query.nHistory];	// 연 창 지금 단계 (없음: undefined)
+		        const	kResult	= kStep === undefined ? undefined : Query.mapStepResult.get(kStep);	// 그 결과 (연 창에서 복사)
 
 		        if (kResult?.kPage != null)
 		        {
@@ -2625,7 +2627,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        }
 		    }
 
-		    const kSearchResult = Search.mapStepResult.get(Search.arrHistory[Search.nHistory]);	// 연 창 지금 서치 단계 결과 (없음: undefined)
+		    const	kSearchResult	= Search.mapStepResult.get(Search.arrHistory[Search.nHistory]);	// 연 창 지금 서치 단계 결과 (없음: undefined)
 
 		    if (sTab === kLogButton.id && kSearchResult !== undefined)	// 서치 결과 보던 중: 그 결과 그대로 (없음: 다시 검색 안 함)
 		    {
@@ -2654,28 +2656,28 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return { sKey: kEvent.target.value.trim(), bToSearch: kEvent.target === kQueryKey, bRun: false };	// 입력칸: 명령·기간 복사만 (실행 안 함)
 		    }
 
-		    const kRun = kEvent.target.closest?.("#QueryRunButton, #SearchButton");	// 실행 버튼: 그 탭 입력한 명령 (쿼리 실행 → 서치, 서치 실행 → 쿼리)
+		    const	kRun	= kEvent.target.closest?.("#QueryRunButton, #SearchButton");	// 실행 버튼: 그 탭 입력한 명령 (쿼리 실행 → 서치, 서치 실행 → 쿼리)
 
 		    if (kRun != null)
 		    {
 		        return kRun === kQueryRunButton ? { sKey: kQueryKey.value.trim(), bToSearch: true, bRun: true } : { sKey: kKey.value.trim(), bToSearch: false, bRun: true };
 		    }
 
-		    const kField = kEvent.target.closest?.("#QueryBody .queryfield span[data-field]");	// 펼친 줄 필드 값: 값만 서치
+		    const	kField	= kEvent.target.closest?.("#QueryBody .queryfield span[data-field]");	// 펼친 줄 필드 값: 값만 서치
 
 		    if (kField != null)
 		    {
 		        return { sKey: kField.dataset.value, bToSearch: true, bRun: true };
 		    }
 
-		    const bQuery = kEvent.target.closest?.(SHIFT_QUERY_WORD) != null;	// 쿼리 단어 (아님: 서치 단어)
+		    const	bQuery	= kEvent.target.closest?.(SHIFT_QUERY_WORD) != null;	// 쿼리 단어 (아님: 서치 단어)
 
 		    if (!bQuery && kEvent.target.closest?.(Search.WORD_BOX) == null)
 		    {
 		        return null;
 		    }
 
-		    let sWord = bQuery ? Query.WordAt(kEvent.clientX, kEvent.clientY, "td.log, .querytext", true) : Query.WordAt(kEvent.clientX, kEvent.clientY, Search.WORD_BOX, false);	// 누른 단어 (Ctrl·Alt 단어 클릭과 같음)
+		    let	sWord	= bQuery ? Query.WordAt(kEvent.clientX, kEvent.clientY, "td.log, .querytext", true) : Query.WordAt(kEvent.clientX, kEvent.clientY, Search.WORD_BOX, false);	// 누른 단어 (Ctrl·Alt 단어 클릭과 같음)
 
 		    if (!/[^-_]/.test(sWord))	// 단어 없음 (-·_ 만)
 		    {
@@ -2694,7 +2696,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    bShiftClick = false;
 
-		    const kMove = GetShiftMove(kEvent);	// 대상 (null: 원래 동작)
+		    const	kMove	= GetShiftMove(kEvent);	// 대상 (null: 원래 동작)
 
 		    if (kMove == null)
 		    {
@@ -2711,13 +2713,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const arrPick = GetPeriodPick();	// 지금 탭 기간 (옮긴 탭도 같은 기간, 쿼리 D: 지금 기준)
+		    const	arrPick	= GetPeriodPick();	// 지금 탭 기간 (옮긴 탭도 같은 기간, 쿼리 D: 지금 기준)
 
-		    const kInput = kMove.bToSearch ? kKey : kQueryKey;	// 옮길 탭 입력칸
+		    const	kInput	= kMove.bToSearch ? kKey : kQueryKey;	// 옮길 탭 입력칸
 
 		    if (kEvent.ctrlKey || kEvent.altKey)	// 새 탭·새 창: RestoreState 가 그 탭 입력칸·기간 넣고 실행 (단계: 연 창에서 복사)
 		    {
-		        const kParam = new URLSearchParams({ sTab: kMove.bToSearch ? kLogButton.id : kQueryButton.id, sMachine: [...setMachineCheck].join(","), bQuery: "0", bMove: "1", sClick: kMove.bRun ? (kMove.bToSearch ? kSearchButton.id : kQueryRunButton.id) : kInput.id });
+		        const	kParam	= new URLSearchParams({ sTab: kMove.bToSearch ? kLogButton.id : kQueryButton.id, sMachine: [...setMachineCheck].join(","), bQuery: "0", bMove: "1", sClick: kMove.bRun ? (kMove.bToSearch ? kSearchButton.id : kQueryRunButton.id) : kInput.id });
 
 		        kParam.set(kInput.id, kMove.sKey);
 		        [kStart.id, kStartHour.id, kStartMinute.id, kEnd.id, kEndHour.id, kEndMinute.id, kStartSecond.id, kEndSecond.id].forEach((sId, nIndex) => kParam.set(sId, arrPick[nIndex]));
@@ -2789,15 +2791,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const bHelp = kHelpDialog.open && document.querySelector("dialog[open]:not(#HelpDialog)") == null;	// 힌트 팝업만 열림: 힌트 탭 이동
+		    const	bHelp	= kHelpDialog.open && document.querySelector("dialog[open]:not(#HelpDialog)") == null;	// 힌트 팝업만 열림: 힌트 탭 이동
 
 		    if (!bHelp && (document.body.dataset.mode !== "main" || document.querySelector("dialog[open]") != null))
 		    {
 		        return;
 		    }
 
-		    const arrTab	= [...document.querySelectorAll(bHelp ? "#HelpTabs button:not([hidden])" : "#TabBar button:not([hidden]):not(#AccountButton):not(#HelpButton)")];	// 탭 순서: 보이는 탭 화면 순서 (aMenu, 계정·힌트 제외, 힌트 팝업: 힌트 탭)
-		    const kNext		= arrTab[(arrTab.findIndex(kTab => kTab.classList.contains("cur")) + 1) % arrTab.length];	// 오른쪽 탭 (맨 끝: 처음)
+		    const	arrTab	= [...document.querySelectorAll(bHelp ? "#HelpTabs button:not([hidden])" : "#TabBar button:not([hidden]):not(#AccountButton):not(#HelpButton)")];	// 탭 순서: 보이는 탭 화면 순서 (aMenu, 계정·힌트 제외, 힌트 팝업: 힌트 탭)
+		    const	kNext	= arrTab[(arrTab.findIndex(kTab => kTab.classList.contains("cur")) + 1) % arrTab.length];	// 오른쪽 탭 (맨 끝: 처음)
 
 		    kEvent.preventDefault();
 
@@ -2826,7 +2828,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ResetTab()	// 지금 탭만 최초 입장 상태 (쿼리·서치: Query.ResetState, 덤프·파일: 처음부터 다시 조회, 운영·반영: 탭 리셋)
 		{
-		    const sTab = document.querySelector("#TabBar button.cur")?.id ?? "";	// 지금 탭 버튼
+		    const	sTab	= document.querySelector("#TabBar button.cur")?.id ?? "";	// 지금 탭 버튼
 
 		    if (sTab === kQueryButton.id || sTab === kLogButton.id)	// 쿼리: 리셋 뒤 실행, 서치: 빈 첫 화면
 		    {
@@ -2852,7 +2854,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OnTabRefresh()	// 제목란 새로 고침 버튼: 지금 탭 리셋 (F5 와 같음, 화살표 1바퀴)
 		{
-		    const kButton = document.getElementById("TabRefresh");
+		    const	kButton	= document.getElementById("TabRefresh");
 
 		    kButton.classList.remove("turn");
 		    void kButton.offsetWidth;	// 회전 처음부터 다시 (애니메이션 재시작)
@@ -2872,15 +2874,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    ShowHelp();
 		}
 
-		const HELP_WIDTH_PX		= 650;	// 힌트 팝업 너비 (px, 테두리 포함, 모든 탭 같음, 창 좁음: 화면 너비까지)
-		const HELP_HEIGHT_PX	= 750;	// 힌트 팝업 높이 (px, 테두리 포함, 표 영역이 남는 높이 채움, 모든 탭 같음)
-		const HELP_MIN_PX	= 120;	// 힌트 표 최소 높이 (px, 브라우저 창 작음)
+		const	HELP_WIDTH_PX	= 650;	// 힌트 팝업 너비 (px, 테두리 포함, 모든 탭 같음, 창 좁음: 화면 너비까지)
+		const	HELP_HEIGHT_PX	= 750;	// 힌트 팝업 높이 (px, 테두리 포함, 표 영역이 남는 높이 채움, 모든 탭 같음)
+		const	HELP_MIN_PX		= 120;	// 힌트 표 최소 높이 (px, 브라우저 창 작음)
 
-		const HELP_KEY = "HMX.HelpTab";	// 마지막에 본 힌트 탭 localStorage 키 (없음: 공통)
+		const	HELP_KEY	= "HMX.HelpTab";	// 마지막에 본 힌트 탭 localStorage 키 (없음: 공통)
 
 		function ShowHelp()	// 힌트 팝업: 마지막에 본 힌트 탭 (처음·저장 못 읽음·숨은 탭: 공통)
 		{
-		    let sHelp = "common";	// 열 힌트 탭
+		    let	sHelp	= "common";	// 열 힌트 탭
 
 		    try
 		    {
@@ -2900,18 +2902,18 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function FixHelpSize()	// 힌트 팝업 크기 고정 (모든 탭 같음): 좌우·상하 X px (표 영역: 남는 높이, 넘침: 표 안 스크롤, 브라우저 창 작음: 줄임, 최소 X px)
 		{
-		    const kScroll = document.getElementById("HelpScroll");
+		    const	kScroll	= document.getElementById("HelpScroll");
 
 		    kHelpDialog.style.width	= `${HELP_WIDTH_PX}px`;	// 테두리 포함 (box-sizing: border-box)
 		    kScroll.style.height	= "0px";
 
-		    const nHeight = HELP_HEIGHT_PX - Math.ceil(kHelpDialog.getBoundingClientRect().height);	// 표 영역 높이 (팝업 높이 - 힌트 탭 버튼·닫기·여백)
+		    const	nHeight	= HELP_HEIGHT_PX - Math.ceil(kHelpDialog.getBoundingClientRect().height);	// 표 영역 높이 (팝업 높이 - 힌트 탭 버튼·닫기·여백)
 
 		    kScroll.style.height	= `${Math.max(HELP_MIN_PX, nHeight)}px`;
 		    kScroll.scrollTop		= 0;
 		    kHelpDialog.scrollTop	= 0;
 
-		    const nOver = kHelpDialog.scrollHeight - kHelpDialog.clientHeight;	// 브라우저 창 작음: 팝업 넘침 → 표 높이 줄임 (닫기 버튼 보이게)
+		    const	nOver	= kHelpDialog.scrollHeight - kHelpDialog.clientHeight;	// 브라우저 창 작음: 팝업 넘침 → 표 높이 줄임 (닫기 버튼 보이게)
 
 		    if (nOver > 0)
 		    {
@@ -2921,7 +2923,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function SetHelpTab(sHelp)	// 힌트 탭 보기: 그 묶음 줄만, 맨 위부터 (크기: FixHelpSize 고정, 넘침: 표 안 스크롤, 닫기 버튼 autofocus → 아래로 스크롤된 것 되돌림, 포커스: 닫기 그대로)
 		{
-		    const kScroll	= document.getElementById("HelpScroll");
+		    const	kScroll	= document.getElementById("HelpScroll");
 
 		    document.getElementById("HelpTable").dataset.help = sHelp;
 
@@ -2933,22 +2935,22 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kScroll.scrollTop = 0;
 		}
 
-		let sAccountLogin	= "";		// 지금 로그인 아이디 (목록 강조)
-		let arrAccountTab	= [];		// 계정 메뉴 고를 탭 (모든 탭)
-		let arrAccountApi	= [];		// 계정 외부 API 고를 권한 (aAPI: 쿼리·서치·로그)
-		let arrAccountList	= [];		// 계정 목록 { sID, aMenu, aAPI, bMain } (정렬 뒤 전체, 줄 dataset.index = 이 위치)
-		const ACCOUNT_PAGE	= 10;		// 계정 팝업 한 페이지 계정 수 (관리 계정 제외)
-		let nAccountPage	= 0;		// 계정 팝업 지금 페이지 (0부터, 열 때 0)
-		let kAccountEdit	= null;		// 수정·삭제할 계정 (추가: null)
-		let sAccountNewKey	= "";		// 수정 창 새 키 (적용 전, 없음: "")
-		const ACCOUNT_KEY_LENGTH	= 20;		// 계정 키 글자 수 (서버 Auth.m_nKeyLength 와 같음)
-		let bAccountDelete	= false;	// 삭제 창
-		let bAccountAdmin	= false;	// 추가·수정·삭제 가능 (관리 계정)
+		let		sAccountLogin		= "";		// 지금 로그인 아이디 (목록 강조)
+		let		arrAccountTab		= [];		// 계정 메뉴 고를 탭 (모든 탭)
+		let		arrAccountApi		= [];		// 계정 외부 API 고를 권한 (aAPI: 쿼리·서치·로그)
+		let		arrAccountList		= [];		// 계정 목록 { sID, aMenu, aAPI, bMain } (정렬 뒤 전체, 줄 dataset.index = 이 위치)
+		const	ACCOUNT_PAGE		= 10;		// 계정 팝업 한 페이지 계정 수 (관리 계정 제외)
+		let		nAccountPage		= 0;		// 계정 팝업 지금 페이지 (0부터, 열 때 0)
+		let		kAccountEdit		= null;		// 수정·삭제할 계정 (추가: null)
+		let		sAccountNewKey		= "";		// 수정 창 새 키 (적용 전, 없음: "")
+		const	ACCOUNT_KEY_LENGTH	= 20;		// 계정 키 글자 수 (서버 Auth.m_nKeyLength 와 같음)
+		let		bAccountDelete		= false;	// 삭제 창
+		let		bAccountAdmin		= false;	// 추가·수정·삭제 가능 (관리 계정)
 
 		async function ShowAccount()	// 계정 팝업: 제목 밑 계정 목록 표만 + 추가 (관리 계정만, 실패: 오류 글만)
 		{
-		    const kText		= document.getElementById("AccountText");	// 오류 글 (설명 안 씀)
-		    const kAdd		= document.getElementById("AccountAdd");
+		    const	kText	= document.getElementById("AccountText");	// 오류 글 (설명 안 씀)
+		    const	kAdd	= document.getElementById("AccountAdd");
 
 		    kText.textContent	= "";
 		    kText.hidden		= true;
@@ -2962,7 +2964,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    try
 		    {
-		        const kData = await FetchJson("/api/account", { cache: "no-store" });
+		        const	kData	= await FetchJson("/api/account", { cache: "no-store" });
 
 		        sAccountLogin		= kData.sID;
 		        bAccountAdmin		= kData.bAdmin;
@@ -2984,15 +2986,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    arrAccountList = [...arrAccount].sort((kLeft, kRight) => Number(kRight.bMain) - Number(kLeft.bMain) || kLeft.sID.localeCompare(kRight.sID, undefined, { numeric: true }));	// 관리 계정 먼저, 그다음 오름차순
 		    arrAccount = arrAccountList;
 
-		    const nMainCount	= arrAccount.filter(kAccount => kAccount.bMain).length;					// 고정 줄 (관리 계정)
-		    const nPageCount	= Math.max(1, Math.ceil((arrAccount.length - nMainCount) / ACCOUNT_PAGE));	// 나머지 페이지 수
-		    const kPager		= document.getElementById("AccountPager");
+		    const	nMainCount	= arrAccount.filter(kAccount => kAccount.bMain).length;						// 고정 줄 (관리 계정)
+		    const	nPageCount	= Math.max(1, Math.ceil((arrAccount.length - nMainCount) / ACCOUNT_PAGE));	// 나머지 페이지 수
+		    const	kPager		= document.getElementById("AccountPager");
 
 		    nAccountPage = Math.min(Math.max(0, nPage), nPageCount - 1);	// 범위 밖 (삭제로 줄어듦): 끝 페이지
 
 		    kPager.replaceChildren(...Array.from({ length: nPageCount }, (_, nIndex) =>
 		    {
-		        const kButton = document.createElement("button");
+		        const	kButton	= document.createElement("button");
 
 		        kButton.type		= "button";
 		        kButton.textContent	= String(nIndex + 1);
@@ -3006,13 +3008,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kPager.style.visibility = nPageCount <= 1 ? "hidden" : "";	// 1쪽: 자리만 (팝업 크기 고정)
 
-		    const nFrom		= nMainCount + nAccountPage * ACCOUNT_PAGE;	// 이 페이지 첫 계정 위치 (관리 계정 뒤)
+		    const	nFrom	= nMainCount + nAccountPage * ACCOUNT_PAGE;	// 이 페이지 첫 계정 위치 (관리 계정 뒤)
 		    const arrRow	= [...arrAccount.slice(0, nMainCount), ...arrAccount.slice(nFrom, nFrom + ACCOUNT_PAGE)].map((kAccount, nOffset) =>
 		    {
-		        const nIndex = nOffset < nMainCount ? nOffset : nFrom + nOffset - nMainCount;	// 전체 목록 위치 (관리 계정: 앞, 나머지: 이 페이지)
-		        const kRow	= document.createElement("tr");
-		        const kID	= kRow.insertCell();	// 아이디
-		        const kAct	= kRow.insertCell();	// 수정·삭제
+		        const	nIndex	= nOffset < nMainCount ? nOffset : nFrom + nOffset - nMainCount;	// 전체 목록 위치 (관리 계정: 앞, 나머지: 이 페이지)
+		        const	kRow	= document.createElement("tr");
+		        const	kID		= kRow.insertCell();	// 아이디
+		        const	kAct	= kRow.insertCell();	// 수정·삭제
 
 		        kRow.dataset.index	= String(nIndex);	// 목록 위치
 		        kRow.className		= kAccount.sID === sAccountLogin ? "sel" : "";
@@ -3029,7 +3031,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		        for (const [sAction, sText] of bAccountAdmin ? [["edit", "수정"], ["delete", "삭제"]] : [])	// 관리 계정 아님: 버튼 없음
 		        {
-		            const kButton = document.createElement("button");
+		            const	kButton	= document.createElement("button");
 
 		            kButton.type			= "button";
 		            kButton.textContent		= sText;
@@ -3046,10 +3048,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OnAccountClick(kEvent)	// 계정 줄: 수정·삭제 버튼, 더블클릭: 수정 (버튼 더블클릭·관리 계정 줄·관리 계정 로그인 아님: 안 함)
 		{
-		    const kRow		= kEvent.target.closest("tr[data-index]");	// 누른 줄
-		    const kAccount	= kRow == null ? undefined : arrAccountList[Number(kRow.dataset.index)];
-		    const sButton	= kEvent.target.closest("button[data-action]")?.dataset.action;	// 누른 버튼 (없음: 줄)
-		    const sAction	= kEvent.type === "dblclick" ? (sButton === undefined ? "edit" : "") : (sButton ?? "");
+		    const	kRow		= kEvent.target.closest("tr[data-index]");						// 누른 줄
+		    const	kAccount	= kRow == null ? undefined : arrAccountList[Number(kRow.dataset.index)];
+		    const	sButton		= kEvent.target.closest("button[data-action]")?.dataset.action;	// 누른 버튼 (없음: 줄)
+		    const	sAction		= kEvent.type === "dblclick" ? (sButton === undefined ? "edit" : "") : (sButton ?? "");
 
 		    if (kAccount === undefined || kAccount.bMain || sAction === "" || !bAccountAdmin)
 		    {
@@ -3061,9 +3063,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OpenAccountEdit(kAccount, bDelete = false)	// 계정 추가·수정·삭제 창 (kAccount: 수정·삭제할 계정, null: 추가, 관리 비밀번호 필수, 삭제: 아이디·관리 비밀번호만)
 		{
-		    const kID	= document.getElementById("AccountEditID");
-		    const kPass	= document.getElementById("AccountEditPass");
-		    const kOk	= document.getElementById("AccountEditOk");
+		    const	kID		= document.getElementById("AccountEditID");
+		    const	kPass	= document.getElementById("AccountEditPass");
+		    const	kOk		= document.getElementById("AccountEditOk");
 
 		    kAccountEdit	= kAccount;
 		    bAccountDelete	= bDelete;
@@ -3088,8 +3090,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    document.getElementById("AccountEditAdmin").value = "";
 		    const funcCheck = (sTab, arrSel, bEmptyAll) =>	// 메뉴·외부 체크 1개 (추가: 없음, bEmptyAll: 빈 값 = 전체 (메뉴 aMenu), 외부 aAPI: 고른 것만)
 		    {
-		        const kLabel	= document.createElement("label");
-		        const kCheck	= document.createElement("input");
+		        const	kLabel	= document.createElement("label");
+		        const	kCheck	= document.createElement("input");
 
 		        kCheck.type		= "checkbox";
 		        kCheck.value	= sTab;
@@ -3110,7 +3112,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ShowEditKey(kAccount)	// 수정 창 키·토큰 칸 (없음: 키 없음, 새 키 대기·적용 버튼: 지움)
 		{
-		    const kKey = document.getElementById("AccountEditKey");
+		    const	kKey	= document.getElementById("AccountEditKey");
 
 		    sAccountNewKey		= "";
 		    kKey.textContent	= kAccount?.sKey || "없음";
@@ -3122,9 +3124,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function NewAccountKey()	// 수정 창 새 키 버튼: 새 키 만들어 보여줌 (저장 안 함 → 관리 비밀번호 입력 + 적용, 영문·숫자 X자리, crypto 무작위 치우침 없음)
 		{
-		    const sChars	= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";	// 62자
-		    const kKey		= document.getElementById("AccountEditKey");
-		    let sKey		= "";
+		    const	sChars	= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";	// 62자
+		    const	kKey	= document.getElementById("AccountEditKey");
+		    let		sKey	= "";
 
 		    while (sKey.length < ACCOUNT_KEY_LENGTH)
 		    {
@@ -3147,9 +3149,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		async function ApplyAccountKey()	// 관리 비밀번호 옆 적용 버튼: 수정 중인 계정만 새 키 저장 → 서버 Account.json (저장 버튼 안 눌러도 바로, 비밀번호 빈칸: 그 칸으로, 예전 키·링크: 못 씀, 성공: 수정 창 키·목록 다시, 실패: 알림·새 키 그대로)
 		{
-		    const kApply	= document.getElementById("AccountEditKeyApply");
-		    const kAdmin	= document.getElementById("AccountEditAdmin");
-		    const sID		= kAccountEdit?.sID ?? "";	// 수정 중인 계정
+		    const	kApply	= document.getElementById("AccountEditKeyApply");
+		    const	kAdmin	= document.getElementById("AccountEditAdmin");
+		    const	sID		= kAccountEdit?.sID ?? "";	// 수정 중인 계정
 
 		    if (sID === "" || sAccountNewKey === "")
 		    {
@@ -3167,7 +3169,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    try
 		    {
-		        const kData = await FetchJson("/api/account/key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sID, sKey: sAccountNewKey, sAdmin: kAdmin.value }) });
+		        const	kData	= await FetchJson("/api/account/key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sID, sKey: sAccountNewKey, sAdmin: kAdmin.value }) });
 
 		        if (kData.sError !== "")
 		        {
@@ -3176,7 +3178,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		        ShowAccountList(kData.arrAccount);
 
-		        const kAccount = kData.arrAccount.find(kItem => kItem.sID === sID);	// 새 키 받은 계정
+		        const	kAccount	= kData.arrAccount.find(kItem => kItem.sID === sID);	// 새 키 받은 계정
 
 		        if (kAccount !== undefined)
 		        {
@@ -3195,9 +3197,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		async function SaveAccountEdit()	// 계정 추가·수정·삭제 → 서버 Account.json (빈칸: 그 칸으로, 성공: 창 닫고 목록 다시, 실패: 알림·창 유지)
 		{
-		    const kID		= document.getElementById("AccountEditID");
-		    const kAdmin	= document.getElementById("AccountEditAdmin");
-		    const kOk		= document.getElementById("AccountEditOk");
+		    const	kID		= document.getElementById("AccountEditID");
+		    const	kAdmin	= document.getElementById("AccountEditAdmin");
+		    const	kOk		= document.getElementById("AccountEditOk");
 
 		    if (kID.value.trim() === "" || kAdmin.value === "")
 		    {
@@ -3206,13 +3208,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const kBody = bAccountDelete ? { sID: kAccountEdit.sID, sAdmin: kAdmin.value } : { sOldID: kAccountEdit?.sID ?? "", sID: kID.value.trim(), sPass: document.getElementById("AccountEditPass").value, sMail: document.getElementById("AccountEditMail").value.trim(), sPhone: document.getElementById("AccountEditPhone").value.trim(), aMenu: [...document.querySelectorAll("#AccountEditMenu input:checked")].map(kCheck => kCheck.value), aAPI: [...document.querySelectorAll("#AccountEditApi input:checked")].map(kCheck => kCheck.value), sAdmin: kAdmin.value };	// 요청 본문
+		    const	kBody	= bAccountDelete ? { sID: kAccountEdit.sID, sAdmin: kAdmin.value } : { sOldID: kAccountEdit?.sID ?? "", sID: kID.value.trim(), sPass: document.getElementById("AccountEditPass").value, sMail: document.getElementById("AccountEditMail").value.trim(), sPhone: document.getElementById("AccountEditPhone").value.trim(), aMenu: [...document.querySelectorAll("#AccountEditMenu input:checked")].map(kCheck => kCheck.value), aAPI: [...document.querySelectorAll("#AccountEditApi input:checked")].map(kCheck => kCheck.value), sAdmin: kAdmin.value };	// 요청 본문
 
 		    kOk.disabled = true;
 
 		    try
 		    {
-		        const kData = await FetchJson(bAccountDelete ? "/api/account/delete" : "/api/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(kBody) });
+		        const	kData	= await FetchJson(bAccountDelete ? "/api/account/delete" : "/api/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(kBody) });
 
 		        if (kData.sError !== "")
 		        {
@@ -3238,17 +3240,17 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const kDialog	= document.querySelector("dialog[open]");	// 열린 팝업 (있으면 그 안 표만)
-		    const funcShow	= (kItem) => kItem?.isConnected === true && kItem.tBodies[0] != null && kItem.getClientRects().length > 0 && (kDialog == null || kDialog.contains(kItem));	// 보이는 표
-		    const kTable	= funcShow(kSelectTable) ? kSelectTable : [...document.querySelectorAll("table")].filter(kItem => funcShow(kItem) && kItem.tBodies[0].rows.length > 0).sort((kLeft, kRight) => kLeft.getBoundingClientRect().top - kRight.getBoundingClientRect().top)[0];	// 고를 표 (지정 없음: 맨 위)
-		    const kBody		= kTable?.tBodies[0] ?? null;
+		    const	kDialog		= document.querySelector("dialog[open]");	// 열린 팝업 (있으면 그 안 표만)
+		    const	funcShow	= (kItem) => kItem?.isConnected === true && kItem.tBodies[0] != null && kItem.getClientRects().length > 0 && (kDialog == null || kDialog.contains(kItem));	// 보이는 표
+		    const	kTable		= funcShow(kSelectTable) ? kSelectTable : [...document.querySelectorAll("table")].filter(kItem => funcShow(kItem) && kItem.tBodies[0].rows.length > 0).sort((kLeft, kRight) => kLeft.getBoundingClientRect().top - kRight.getBoundingClientRect().top)[0];	// 고를 표 (지정 없음: 맨 위)
+		    const	kBody		= kTable?.tBodies[0] ?? null;
 
 		    if (kBody == null)
 		    {
 		        return;
 		    }
 
-		    const kRange = document.createRange();	// 표 전체 (칸 이름 + 줄)
+		    const	kRange	= document.createRange();	// 표 전체 (칸 이름 + 줄)
 
 		    kEvent.preventDefault();
 		    kRange.selectNodeContents(kTable);
@@ -3259,7 +3261,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ShowPanel(sPanel)	// 보이는 창 바꾸기 (log: 서치 1·2번 창, file: 파일 트리, dump: 덤프 표, manager: 운영 창, process: 반영 창 (file·dump·manager·process: 명령 창 숨김), query: 쿼리 창, 숨긴 창 내용 유지)
 		{
-		    const bModeChange = (sPanel === "query") !== kFilterPanel.classList.contains("query");	// 쿼리 모드 들어감·나감
+		    const	bModeChange	= (sPanel === "query") !== kFilterPanel.classList.contains("query");	// 쿼리 모드 들어감·나감
 
 		    if (bModeChange)	// 명령 창 기간·D 값 바꿔 끼움 (서치·쿼리 따로)
 		    {
@@ -3317,22 +3319,22 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return;
 		    }
 
-		    const kRect		= kScroll.getBoundingClientRect();
-		    const nFrame	= kRect.height - (parseFloat(getComputedStyle(kScroll).height) || 0);	// 상자 테두리 (height 는 안쪽만)
-		    const nBelow	= kPanel.getBoundingClientRect().bottom - kRect.bottom;					// 상자 아래 (페이지 번호·여백)
-		    const nPageGap	= parseFloat(getComputedStyle(document.body).paddingBottom) || 0;			// 페이지 아래 여백
+		    const	kRect		= kScroll.getBoundingClientRect();
+		    const	nFrame		= kRect.height - (parseFloat(getComputedStyle(kScroll).height) || 0);	// 상자 테두리 (height 는 안쪽만)
+		    const	nBelow		= kPanel.getBoundingClientRect().bottom - kRect.bottom;					// 상자 아래 (페이지 번호·여백)
+		    const	nPageGap	= parseFloat(getComputedStyle(document.body).paddingBottom) || 0;		// 페이지 아래 여백
 
 		    kScroll.style.height = `${Math.max(Search.SPLIT_MIN, Math.floor(window.innerHeight - (kRect.top + window.scrollY) - nBelow - nPageGap - nFrame))}px`;
 		}
 
 		function SetResultTitle(kTitle, sText)	// 상자 제목 (쿼리·서치 결과 건수·시간 숫자만 존 색 span.count, 글자: textContent 로만)
 		{
-		    const arrPart	= [];	// 글자·숫자 조각
-		    let nPos		= 0;	// 이어 붙일 위치
+		    const	arrPart	= [];	// 글자·숫자 조각
+		    let		nPos	= 0;	// 이어 붙일 위치
 
 		    for (const kMatch of sText.matchAll(/((?:결과|중지): )([\d,]+)(?=건)|(시간: )([\d,]+)(?= ms)/g))
 		    {
-		        const kCount = document.createElement("span");	// 숫자
+		        const	kCount	= document.createElement("span");	// 숫자
 
 		        kCount.className	= "count";
 		        kCount.textContent	= kMatch[2] ?? kMatch[4];
@@ -3349,7 +3351,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ErrorText(kError)	// 요청 오류 → 두 단어 (예: Server Off·Server Error, 서버 오류 글: 그대로)
 		{
-		    const kStatus = /HTTP (\d+)/.exec(kError?.message ?? "");	// HTTP 상태 (예: HTTP 500)
+		    const	kStatus	= /HTTP (\d+)/.exec(kError?.message ?? "");	// HTTP 상태 (예: HTTP 500)
 
 		    if (kError?.name === "AbortError")
 		    {
@@ -3373,7 +3375,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    if (kStatus != null)
 		    {
-		        const nStatus = Number(kStatus[1]);
+		        const	nStatus	= Number(kStatus[1]);
 
 		        return { 400: "Bad Request", 401: "Login Need", 403: "Access Denied", 404: "Not Found", 408: "Time Out", 500: "Server Error", 502: "Bad Gateway", 503: "Server Busy", 504: "Time Out" }[nStatus] ?? (nStatus >= 500 ? "Server Error" : "Bad Request");
 		    }
@@ -3408,14 +3410,14 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetFolderText(sFolder)	// 표 Folder 칸 글자: 마지막 두 폴더 (예: C:\NHNServices\Log1\Server → Log1\Server, 두 단계 이하: 그대로)
 		{
-		    const arrPart = sFolder.split("\\").filter(sPart => sPart !== "");
+		    const	arrPart	= sFolder.split("\\").filter(sPart => sPart !== "");
 
 		    return arrPart.length > 2 ? arrPart.slice(-2).join("\\") : sFolder;
 		}
 
 		function GetLogFolder(sPath)	// 로그 파일 경로 → 대상 폴더 (파일명 뗌, 날짜 폴더 yyyyMMdd 뗌)
 		{
-		    const sDir = sPath.slice(0, Math.max(0, sPath.lastIndexOf("\\")));
+		    const	sDir	= sPath.slice(0, Math.max(0, sPath.lastIndexOf("\\")));
 
 		    return /\\\d{8}$/.test(sDir) ? sDir.slice(0, sDir.lastIndexOf("\\")) : sDir;
 		}
@@ -3427,7 +3429,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function AddFileNameCell(kRow, sMachine, sPath, nLine = 0, sKey = "")	// 결과 줄 File 칸 (서치·쿼리 공통, 파일명 전체, Shift+클릭: 다운, Ctrl·Alt+클릭: 파일 보기, nLine 0: 마지막 줄부터, sKey: 강조 검색어)
 		{
-		    const kCell = AddCell(kRow, sPath.slice(sPath.lastIndexOf("\\") + 1), "nowrap filename");	// 파일명 (확장자 포함)
+		    const	kCell	= AddCell(kRow, sPath.slice(sPath.lastIndexOf("\\") + 1), "nowrap filename");	// 파일명 (확장자 포함)
 
 		    kCell.title				= sPath;
 		    kCell.dataset.machine	= sMachine;
@@ -3443,7 +3445,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        return null;
 		    }
 
-		    const kFile = kEvent.target.closest?.("td.filename, #FileTree div.node[data-kind=file]") ?? null;	// 누른 파일
+		    const	kFile	= kEvent.target.closest?.("td.filename, #FileTree div.node[data-kind=file]") ?? null;	// 누른 파일
 
 		    return kFile == null ? null : { sMachine: kFile.dataset.machine, sPath: kFile.dataset.path, sInfo: kFile.querySelector(".info")?.textContent ?? "" };
 		}
@@ -3458,7 +3460,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function OnShiftFileClick(kEvent)	// Shift+클릭 파일: 확인 팝업 → 브라우저로 받기 (원래 클릭 막음)
 		{
-		    const kFile = GetShiftFile(kEvent);	// 다운할 파일 (null: 원래 동작)
+		    const	kFile	= GetShiftFile(kEvent);	// 다운할 파일 (null: 원래 동작)
 
 		    if (kFile == null)
 		    {
@@ -3473,7 +3475,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function DownloadFile(sMachine, sPath)	// 파일 다운: UTF-8 변환 후 브라우저로 (서버가 조각마다 바로 전달, 상대 주소: ToolManager 경유 대응)
 		{
-		    const kLink = document.createElement("a");
+		    const	kLink	= document.createElement("a");
 
 		    kLink.href		= "api/files/download?" + new URLSearchParams({ sMachine, sPath });
 		    kLink.download	= "";	// 파일명: 서버 응답 (원본 파일명)
@@ -3483,14 +3485,14 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		class Key	// 검색어 규칙 (서치·쿼리 공통, Client SearchNode 와 같음): AND·OR·NOT (대소문자 무시) 왼쪽부터, 괄호 안 먼저, 앞뒤 * 와일드카드 + 검색어 강조
 		{
-		    static sSplitKey		= null;		// 마지막으로 나눈 검색어 (결과 줄마다 다시 해석하지 않음)
-		    static arrSplitKey		= [];		// 그 강조할 검색어
+		    static	sSplitKey	= null;	// 마지막으로 나눈 검색어 (결과 줄마다 다시 해석하지 않음)
+		    static	arrSplitKey	= [];	// 그 강조할 검색어
 
 		    static GetOperator(sKey, nPos)	// nPos 의 연산자 [길이, 종류 & | !] (AND·OR·NOT 대소문자 무시 + 공백·여는 괄호, 아님: [0, ""])
 		    {
 		        for (const [sWord, sType] of [["AND", "&"], ["OR", "|"], ["NOT", "!"]])
 		        {
-		            const cNext = sKey[nPos + sWord.length];	// 연산자 뒤 글자
+		            const	cNext	= sKey[nPos + sWord.length];	// 연산자 뒤 글자
 
 		            if (sKey.substr(nPos, sWord.length).toUpperCase() === sWord && cNext !== undefined && (/\s/.test(cNext) || cNext === "("))	// 대소문자 무시
 		            {
@@ -3503,7 +3505,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static IsClose(sKey, nPos)	// nPos 의 ')' 가 닫는 괄호 (뒤에 공백·')' 만 이어진 뒤 끝·연산자, 아님: 검색어 글자)
 		    {
-		        let nNext = nPos + 1;	// 뒤 글자
+		        let	nNext	= nPos + 1;	// 뒤 글자
 
 		        while (nNext < sKey.length && (/\s/.test(sKey[nNext]) || sKey[nNext] === ")"))
 		        {
@@ -3515,15 +3517,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static FindTermEnd(sKey, nStart, nDepth)	// 검색어 끝: 공백 뒤 연산자·괄호 안 닫는 괄호 앞 (검색어 안 짝 맞는 괄호: 검색어 글자)
 		    {
-		        let nInner = 0;	// 검색어 안에서 열린 괄호 수 (예: Init(x))
+		        let	nInner	= 0;	// 검색어 안에서 열린 괄호 수 (예: Init(x))
 
 		        for (let nIndex = nStart; nIndex < sKey.length; ++nIndex)
 		        {
-		            const cChar = sKey[nIndex];
+		            const	cChar	= sKey[nIndex];
 
 		            if (/\s/.test(cChar))	// 공백 뒤 연산자·닫는 괄호면 여기서 끝
 		            {
-		                let nNext = nIndex;	// 공백 다음 글자
+		                let	nNext	= nIndex;	// 공백 다음 글자
 
 		                while (nNext < sKey.length && /\s/.test(sKey[nNext]))
 		                {
@@ -3559,10 +3561,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static Tokenize(sKey)	// 토큰 나누기: 검색어 T·AND &·OR |·NOT !·괄호 (null: 형식 오류)
 		    {
-		        const arrToken	= [];	// { sType, sTerm }
-		        let nPos		= 0;	// 읽을 위치
-		        let nDepth		= 0;	// 열린 괄호 수
-		        let bOperand	= true;	// 검색어·여는 괄호 차례 (false: 연산자·닫는 괄호 차례)
+		        const	arrToken	= [];	// { sType, sTerm }
+		        let		nPos		= 0;	// 읽을 위치
+		        let		nDepth		= 0;	// 열린 괄호 수
+		        let		bOperand	= true;	// 검색어·여는 괄호 차례 (false: 연산자·닫는 괄호 차례)
 
 		        while (true)
 		        {
@@ -3588,7 +3590,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		            if (bOperand)	// 검색어: 다음 연산자·닫는 괄호 앞까지
 		            {
-		                const nEnd = Key.FindTermEnd(sKey, nPos, nDepth);	// 검색어 끝
+		                const	nEnd	= Key.FindTermEnd(sKey, nPos, nDepth);	// 검색어 끝
 
 		                arrToken.push({ sType: "T", sTerm: sKey.slice(nPos, nEnd).trim() });
 
@@ -3626,11 +3628,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static ParseExpr(arrToken, kState)	// 식: 항 (연산자 항)… 왼쪽부터 차례로 (null: 형식 오류, kState.nIndex: 읽을 토큰)
 		    {
-		        let kLeft = Key.ParseTerm(arrToken, kState);	// 지금까지 결과
+		        let	kLeft	= Key.ParseTerm(arrToken, kState);	// 지금까지 결과
 
 		        while (kLeft != null && kState.nIndex < arrToken.length && arrToken[kState.nIndex].sType !== ")")
 		        {
-		            const sOp = arrToken[kState.nIndex].sType;	// 연산자
+		            const	sOp	= arrToken[kState.nIndex].sType;	// 연산자
 
 		            if (sOp !== "&" && sOp !== "|" && sOp !== "!")	// 연산자 자리에 다른 토큰
 		            {
@@ -3639,7 +3641,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		            ++kState.nIndex;
 
-		            const kRight = Key.ParseTerm(arrToken, kState);
+		            const	kRight	= Key.ParseTerm(arrToken, kState);
 
 		            kLeft = kRight == null ? null : { sOp: sOp, kLeft: kLeft, kRight: kRight };
 		        }
@@ -3654,7 +3656,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            return null;
 		        }
 
-		        const kToken = arrToken[kState.nIndex++];
+		        const	kToken	= arrToken[kState.nIndex++];
 
 		        if (kToken.sType === "T")
 		        {
@@ -3666,7 +3668,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            return null;
 		        }
 
-		        const kInner = Key.ParseExpr(arrToken, kState);	// 괄호 안
+		        const	kInner	= Key.ParseExpr(arrToken, kState);	// 괄호 안
 
 		        if (kState.nIndex < arrToken.length && arrToken[kState.nIndex].sType === ")")
 		        {
@@ -3678,16 +3680,16 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static Parse(sKey)	// 검색어 → 조건 트리 { sOp: T·&·|·!, sTerm, kLeft, kRight } (빈 검색어: null, 형식 오류: 전체를 검색어 하나로)
 		    {
-		        const sTrim = sKey.trim();
+		        const	sTrim	= sKey.trim();
 
 		        if (sTrim === "")
 		        {
 		            return null;
 		        }
 
-		        const arrToken	= Key.Tokenize(sTrim);	// 토큰 (null: 형식 오류)
-		        const kState	= { nIndex: 0 };				// 읽을 토큰
-		        const kRoot		= arrToken == null ? null : Key.ParseExpr(arrToken, kState);
+		        const	arrToken	= Key.Tokenize(sTrim);	// 토큰 (null: 형식 오류)
+		        const	kState		= { nIndex: 0 };		// 읽을 토큰
+		        const	kRoot		= arrToken == null ? null : Key.ParseExpr(arrToken, kState);
 
 		        if (arrToken == null || kRoot == null || kState.nIndex !== arrToken.length)	// 형식 오류: 전체를 검색어 하나로
 		        {
@@ -3699,15 +3701,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static IsValid(sKey)	// 검색어 형식 맞음 (빈 괄호·연산자로 시작·끝·빈 검색어: false, 서버 SearchNode.IsValid 와 같음)
 		    {
-		        const sTrim = sKey.trim();
+		        const	sTrim	= sKey.trim();
 
 		        if (sTrim === "")
 		        {
 		            return false;
 		        }
 
-		        const arrToken	= Key.Tokenize(sTrim);	// 토큰 (null: 형식 오류)
-		        const kState	= { nIndex: 0 };				// 읽을 토큰
+		        const	arrToken	= Key.Tokenize(sTrim);	// 토큰 (null: 형식 오류)
+		        const	kState		= { nIndex: 0 };		// 읽을 토큰
 
 		        return arrToken != null && Key.ParseExpr(arrToken, kState) != null && kState.nIndex === arrToken.length && !arrToken.some(kToken => kToken.sType === "T" && /^(AND|OR|NOT)(\s|$)|\s(AND|OR|NOT)$/i.test(kToken.sTerm.trim()));	// 검색어가 AND·OR·NOT (대소문자 무시) 로 시작·끝남 (예: "A AND"): 연산자 빠짐으로 봄
 		    }
@@ -3719,8 +3721,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            return Key.arrSplitKey;
 		        }
 
-		        const arrKey	= [];						// 강조할 검색어
-		        const kRoot		= Key.Parse(sKey);	// 조건 트리 (빈 검색어: null)
+		        const	arrKey	= [];				// 강조할 검색어
+		        const	kRoot	= Key.Parse(sKey);	// 조건 트리 (빈 검색어: null)
 
 		        const funcCollect = (kNode, bFind) =>	// 검색어 모으기 (bFind: 찾는 쪽, NOT 오른쪽에서 뒤집힘)
 		        {
@@ -3751,16 +3753,16 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    static IsWild(sTerm)	// 와일드카드 검색어: 앞뒤 * 이고 * 뗀 글자 있음 (서버·클라 TryGetWild 와 같음)
 		    {
-		        const sTrim = sTerm.trim();
+		        const	sTrim	= sTerm.trim();
 
 		        return (sTrim.startsWith("*") || sTrim.endsWith("*")) && sTrim.replace(/^\*+|\*+$/g, "") !== "";
 		    }
 
 		    static MakeRegex(sTerm)	// 검색어 → 찾기 정규식 (대소문자 무시, 와일드카드: * 뗀 글자 + 앞·뒤 * 없는 쪽 글자·숫자 경계, 서버·클라 IsWildMatch 와 같음, 그 외: 글자 그대로)
 		    {
-		        const sTrim	= sTerm.trim();
-		        const bWild	= Key.IsWild(sTerm);
-		        const sText	= (bWild ? sTrim.replace(/^\*+|\*+$/g, "") : sTerm).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");	// 정규식 기호 그대로
+		        const	sTrim	= sTerm.trim();
+		        const	bWild	= Key.IsWild(sTerm);
+		        const	sText	= (bWild ? sTrim.replace(/^\*+|\*+$/g, "") : sTerm).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");	// 정규식 기호 그대로
 
 		        return new RegExp(bWild ? `${sTrim.startsWith("*") ? "" : "(?<![\\p{L}\\p{Nd}])"}${sText}${sTrim.endsWith("*") ? "" : "(?![\\p{L}\\p{Nd}])"}` : sText, "giu");
 		    }
@@ -3773,19 +3775,19 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            Key.arrRegex	= Key.SplitKey(sKey).map(sItem => Key.MakeRegex(sItem));
 		        }
 
-		        const arrRegex	= Key.arrRegex;	// 강조할 검색어
-		        let nPos		= 0;			// 추가할 위치
+		        const	arrRegex	= Key.arrRegex;	// 강조할 검색어
+		        let		nPos		= 0;			// 추가할 위치
 
 		        while (arrRegex.length > 0)
 		        {
-		            let nFind	= -1;	// 가장 앞에 있는 검색어 위치 (-1: 없음)
-		            let nLength	= 0;	// 그 검색어 길이 (같은 위치면 긴 것)
+		            let	nFind	= -1;	// 가장 앞에 있는 검색어 위치 (-1: 없음)
+		            let	nLength	= 0;	// 그 검색어 길이 (같은 위치면 긴 것)
 
 		            for (const kRegex of arrRegex)
 		            {
 		                kRegex.lastIndex = nPos;
 
-		                const kMatch = kRegex.exec(sText);	// nPos 뒤 첫 맞음
+		                const	kMatch	= kRegex.exec(sText);	// nPos 뒤 첫 맞음
 
 		                if (kMatch != null && kMatch[0].length > 0 && (nFind === -1 || kMatch.index < nFind || (kMatch.index === nFind && kMatch[0].length > nLength)))
 		                {
@@ -3799,7 +3801,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		                break;
 		            }
 
-		            const kMark = document.createElement("mark");
+		            const	kMark	= document.createElement("mark");
 
 		            kParent.append(sText.slice(nPos, nFind));
 		            kMark.textContent = sText.slice(nFind, nFind + nLength);
@@ -4060,7 +4062,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		document.getElementById("HelpClose").addEventListener("click", () => kHelpDialog.close());
 		document.getElementById("HelpTabs").addEventListener("click", (kEvent) =>	// 힌트 탭 버튼: 그 묶음 보기 + 마지막 본 탭 저장
 		{
-		    const kButton = kEvent.target.closest("button[data-help]");
+		    const	kButton	= kEvent.target.closest("button[data-help]");
 
 		    if (kButton == null)
 		    {
@@ -4080,7 +4082,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		document.getElementById("DownYes").addEventListener("click", () =>	// 다운 확인 예: 닫고 받기 (파일: 브라우저로, 덤프: zip 브라우저로)
 		{
-		    const funcYes = funcDownYes;	// 닫히면 지워지므로 먼저 보관
+		    const	funcYes	= funcDownYes;	// 닫히면 지워지므로 먼저 보관
 
 		    kDownDialog.close();
 
@@ -4092,7 +4094,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		document.getElementById("DeleteYes").addEventListener("click", () =>	// 삭제 확인 삭제: 닫고 삭제 (덤프 전체·덤프 하나·저장 쿼리)
 		{
-		    const funcYes = funcDeleteYes;	// 닫히면 지워지므로 먼저 보관
+		    const	funcYes	= funcDeleteYes;	// 닫히면 지워지므로 먼저 보관
 
 		    kDeleteDialog.close();
 
@@ -4110,15 +4112,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		kFileSplitter.addEventListener("pointerdown", (kEvent) =>	// 파일 1번 창 세로선 좌우 드래그: 왼쪽 트리 폭 (최소 File.FILE_SPLIT_MIN)
 		{
-		    const nStartX		= kEvent.clientX;													// 드래그 시작 위치
-		    const nWidthStart	= kFileScroll.getBoundingClientRect().width;						// 왼쪽 시작 폭
-		    const nWidthMax		= kFileSplitter.parentElement.getBoundingClientRect().width - kFileSplitter.getBoundingClientRect().width - File.FILE_SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
+		    const	nStartX		= kEvent.clientX;	// 드래그 시작 위치
+		    const	nWidthStart	= kFileScroll.getBoundingClientRect().width;	// 왼쪽 시작 폭
+		    const	nWidthMax	= kFileSplitter.parentElement.getBoundingClientRect().width - kFileSplitter.getBoundingClientRect().width - File.FILE_SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
 
-		    const nTitleExtra	= kFileSplitter.getBoundingClientRect().width - parseFloat(getComputedStyle(kFileTitle.parentElement).columnGap);	// 머리줄 왼쪽 제목 칸 폭 (오른쪽 제목 = 오른쪽 상자 위치)
+		    const	nTitleExtra	= kFileSplitter.getBoundingClientRect().width - parseFloat(getComputedStyle(kFileTitle.parentElement).columnGap);	// 머리줄 왼쪽 제목 칸 폭 (오른쪽 제목 = 오른쪽 상자 위치)
 
 		    const funcMove = (kMove) =>	// 끈 만큼 왼쪽 폭 변경 (머리줄 왼쪽 제목 칸도 같이)
 		    {
-		        const nWidth = Math.min(nWidthMax, Math.max(File.FILE_SPLIT_MIN, nWidthStart + kMove.clientX - nStartX));	// 왼쪽 트리 폭
+		        const	nWidth	= Math.min(nWidthMax, Math.max(File.FILE_SPLIT_MIN, nWidthStart + kMove.clientX - nStartX));	// 왼쪽 트리 폭
 
 		        kFileScroll.style.width	= nWidth + "px";
 		        kFileTitle.style.width	= (nWidth + nTitleExtra) + "px";
@@ -4143,17 +4145,17 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		kDumpBody.addEventListener("click", Dump.OnDumpClick);
 		kDumpDeleteAll.addEventListener("click", Dump.DeleteAllDump);
 
-		const kSplitter = document.getElementById("Splitter");	// 서치 1·2번 창 사이 바
+		const	kSplitter	= document.getElementById("Splitter");	// 서치 1·2번 창 사이 바
 
 		kSplitter.addEventListener("pointerdown", (kEvent) =>	// 서치 1·2번 창 사이 바 드래그: 높이 합 유지 (최소 Search.SPLIT_MIN)
 		{
-		    const nStartY		= kEvent.clientY;										// 드래그 시작 위치
-		    const nTopStart		= parseFloat(getComputedStyle(kResultScroll).height);	// 서치 1번 창 시작 높이
-		    const nTotal		= nTopStart + parseFloat(getComputedStyle(kViewScroll).height);	// 두 창 높이 합 (유지)
+		    const	nStartY		= kEvent.clientY;												// 드래그 시작 위치
+		    const	nTopStart	= parseFloat(getComputedStyle(kResultScroll).height);			// 서치 1번 창 시작 높이
+		    const	nTotal		= nTopStart + parseFloat(getComputedStyle(kViewScroll).height);	// 두 창 높이 합 (유지)
 
 		    const funcMove = (kMove) =>	// 끈 만큼 서치 1번 창 높이 변경, 서치 2번 창은 나머지
 		    {
-		        const nTop = Math.min(Math.max(Search.SPLIT_MIN, nTopStart + kMove.clientY - nStartY), nTotal - Search.SPLIT_MIN);	// 서치 1번 창 높이
+		        const	nTop	= Math.min(Math.max(Search.SPLIT_MIN, nTopStart + kMove.clientY - nStartY), nTotal - Search.SPLIT_MIN);	// 서치 1번 창 높이
 
 		        kResultScroll.style.height	= nTop + "px";
 		        kViewScroll.style.height	= (nTotal - nTop) + "px";
@@ -4181,13 +4183,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		kQueryFieldSplitter.addEventListener("pointerdown", (kEvent) =>	// 필드·로그 사이 세로선 좌우 드래그: 왼쪽 필드 폭 (최소 Query.FIELD_SPLIT_MIN)
 		{
-		    const nStartX		= kEvent.clientX;																	// 드래그 시작 위치
-		    const nWidthStart	= kQueryField.getBoundingClientRect().width;										// 왼쪽 시작 폭
-		    const nWidthMax		= kQuerySplit.getBoundingClientRect().width - kQueryFieldSplitter.getBoundingClientRect().width - Query.FIELD_SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
+		    const	nStartX		= kEvent.clientX;	// 드래그 시작 위치
+		    const	nWidthStart	= kQueryField.getBoundingClientRect().width;	// 왼쪽 시작 폭
+		    const	nWidthMax	= kQuerySplit.getBoundingClientRect().width - kQueryFieldSplitter.getBoundingClientRect().width - Query.FIELD_SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
 
 		    const funcMove = (kMove) =>	// 끈 만큼 왼쪽 폭 변경 (세로선·오른쪽 로그는 CSS 변수로 따라옴)
 		    {
-		        const nWidth = Math.min(nWidthMax, Math.max(Query.FIELD_SPLIT_MIN, nWidthStart + kMove.clientX - nStartX));	// 왼쪽 필드 폭
+		        const	nWidth	= Math.min(nWidthMax, Math.max(Query.FIELD_SPLIT_MIN, nWidthStart + kMove.clientX - nStartX));	// 왼쪽 필드 폭
 
 		        kQuerySplit.style.setProperty("--fieldWidth", nWidth + "px");
 		    };
@@ -4211,24 +4213,24 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		kFilterSplitter.addEventListener("pointerdown", (kEvent) =>	// 명령 창·결과 창 사이 바 드래그: 두 창 높이 합 유지 (명령 창: 원래 높이 이상·늘면 아래 빈칸, 결과 창: 서치 결과·쿼리 막대 최소 이상, 아래 창: 나머지)
 		{
-		    const bQuery		= kResultPanel.classList.contains("query");									// 쿼리 모드: 결과 창 = 막대
-		    const nStartY		= kEvent.clientY;														// 드래그 시작 위치
-		    const nFilterStart	= kFilterPanel.getBoundingClientRect().height;							// 명령 창 시작 높이
-		    const nFilterFrame	= nFilterStart - parseFloat(getComputedStyle(kFilterPanel).height);		// 명령 창 여백·테두리 (min-height: 안쪽만)
-		    const sMinHeight	= kFilterPanel.style.minHeight;											// 지금 늘린 높이
+		    const	bQuery			= kResultPanel.classList.contains("query");							// 쿼리 모드: 결과 창 = 막대
+		    const	nStartY			= kEvent.clientY;													// 드래그 시작 위치
+		    const	nFilterStart	= kFilterPanel.getBoundingClientRect().height;						// 명령 창 시작 높이
+		    const	nFilterFrame	= nFilterStart - parseFloat(getComputedStyle(kFilterPanel).height);	// 명령 창 여백·테두리 (min-height: 안쪽만)
+		    const	sMinHeight		= kFilterPanel.style.minHeight;										// 지금 늘린 높이
 
 		    kFilterPanel.style.minHeight = "";
 
-		    const nFilterMin	= kFilterPanel.getBoundingClientRect().height;							// 명령 창 원래 높이
-		    const nBoxStart		= bQuery ? (parseFloat(getComputedStyle(kQueryChart).getPropertyValue("--chartHeight")) || 120) : parseFloat(getComputedStyle(kResultScroll).height);	// 결과 창 시작 높이
-		    const nBoxMin		= bQuery ? Query.CHART_MIN : Search.SPLIT_MIN;						// 결과 창 최소 높이
+		    const	nFilterMin	= kFilterPanel.getBoundingClientRect().height;	// 명령 창 원래 높이
+		    const	nBoxStart	= bQuery ? (parseFloat(getComputedStyle(kQueryChart).getPropertyValue("--chartHeight")) || 120) : parseFloat(getComputedStyle(kResultScroll).height);	// 결과 창 시작 높이
+		    const	nBoxMin		= bQuery ? Query.CHART_MIN : Search.SPLIT_MIN;	// 결과 창 최소 높이
 
 		    kFilterPanel.style.minHeight = sMinHeight;
 
 		    const funcMove = (kMove) =>	// 끈 만큼 명령 창 높이 변경, 결과 창은 반대로
 		    {
-		        const nFilter	= Math.min(Math.max(nFilterMin, nFilterStart + kMove.clientY - nStartY), nFilterStart + nBoxStart - nBoxMin);	// 명령 창 높이
-		        const nBox		= nBoxStart - (nFilter - nFilterStart);												// 결과 창 높이
+		        const	nFilter	= Math.min(Math.max(nFilterMin, nFilterStart + kMove.clientY - nStartY), nFilterStart + nBoxStart - nBoxMin);	// 명령 창 높이
+		        const	nBox	= nBoxStart - (nFilter - nFilterStart);	// 결과 창 높이
 
 		        kFilterPanel.style.minHeight = nFilter > nFilterMin ? (nFilter - nFilterFrame) + "px" : "";
 
@@ -4266,13 +4268,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		kQuerySplitter.addEventListener("pointerdown", (kEvent) =>	// 쿼리 1·2번 창 사이 바 드래그: 막대 + 로그 높이 합 유지 (최소 CHART_MIN·SPLIT_MIN)
 		{
-		    const nStartY		= kEvent.clientY;																	// 드래그 시작 위치
-		    const nChartStart	= parseFloat(getComputedStyle(kQueryChart).getPropertyValue("--chartHeight")) || 120;	// 막대 시작 높이
-		    const nTotal		= nChartStart + parseFloat(getComputedStyle(kQueryScroll).height);					// 막대 + 로그 표 높이 합 (유지)
+		    const	nStartY		= kEvent.clientY;																		// 드래그 시작 위치
+		    const	nChartStart	= parseFloat(getComputedStyle(kQueryChart).getPropertyValue("--chartHeight")) || 120;	// 막대 시작 높이
+		    const	nTotal		= nChartStart + parseFloat(getComputedStyle(kQueryScroll).height);						// 막대 + 로그 표 높이 합 (유지)
 
 		    const funcMove = (kMove) =>	// 끈 만큼 막대 높이 변경, 로그 표는 나머지 (첫 화면: 브라우저 창 아래 끝까지)
 		    {
-		        const nChart = Math.min(Math.max(Query.CHART_MIN, nChartStart + kMove.clientY - nStartY), nTotal - Search.SPLIT_MIN);	// 막대 높이
+		        const	nChart	= Math.min(Math.max(Query.CHART_MIN, nChartStart + kMove.clientY - nStartY), nTotal - Search.SPLIT_MIN);	// 막대 높이
 
 		        kQueryChart.style.setProperty("--chartHeight", nChart + "px");
 		        kQueryScroll.style.height = (nTotal - nChart) + "px";
@@ -4297,8 +4299,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kEvent.preventDefault();	// 드래그 중 글자 선택 방지
 		});
 
-		const kViewHScroll		= document.getElementById("ViewHScroll");		// 서치 2번 창 아래 좌우 바 (창 아래쪽이 화면 밖일 때 화면 맨 아래에 표시)
-		const kViewHScrollSize	= document.getElementById("ViewHScrollSize");	// 좌우 바 안 폭 (좌우 이동 범위)
+		const	kViewHScroll		= document.getElementById("ViewHScroll");		// 서치 2번 창 아래 좌우 바 (창 아래쪽이 화면 밖일 때 화면 맨 아래에 표시)
+		const	kViewHScrollSize	= document.getElementById("ViewHScrollSize");	// 좌우 바 안 폭 (좌우 이동 범위)
 
 		kViewHScroll.addEventListener("scroll", () =>	// 좌우 바 이동 → 서치 2번 창 같이 이동
 		{
@@ -4321,7 +4323,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    for (const kHead of [...kTable.tHead.rows[0].cells].slice(0, -1).filter(kItem => kItem.cellIndex !== GetRestColumn(kTable)))	// 마지막 칸·나머지 너비 칸 제외
 		    {
-		        const kGrip = document.createElement("span");
+		        const	kGrip	= document.createElement("span");
 
 		        kGrip.className	= "colgrip";
 		        kGrip.title		= "칸 너비";
@@ -4331,23 +4333,23 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kTable.tHead.addEventListener("pointerdown", (kEvent) =>	// 칸 경계 드래그: 중엔 세로선만, 놓을 때 한 번 적용 (큰 표 재배치 멈춤 방지), 최소 1글자, 차이: 나머지 칸 흡수
 		    {
-		        const kGrip = kEvent.target.closest(".colgrip");	// 잡은 손잡이
+		        const	kGrip	= kEvent.target.closest(".colgrip");	// 잡은 손잡이
 
 		        if (kGrip == null)
 		        {
 		            return;
 		        }
 
-		        const kHead			= kGrip.parentElement;								// 조절할 칸 제목
-		        const kLastHead		= kHead.parentElement.cells[GetRestColumn(kTable)];	// 나머지 너비 칸 제목 (기본: 마지막 칸)
-		        const kCol			= kTable.querySelectorAll("col")[kHead.cellIndex];	// 조절할 칸
-		        const kHeadRect		= kHead.getBoundingClientRect();					// 조절할 칸 제목 위치 (세로선 기준)
-		        const kScrollRect	= kTable.parentElement.getBoundingClientRect();		// 표 스크롤 영역 (세로선 위치·높이)
-		        const nStartX		= kEvent.clientX;									// 드래그 시작 위치
-		        const nWidthStart	= kTable.classList.contains("fixed") ? parseFloat(kCol.style.width) : kHeadRect.width;	// 칸 시작 너비 (고정 전: 지금 자동 너비 = FixColumn 이 고정할 너비)
-		        const nWidthMin		= GetColumnMin(kHead);								// 칸 최소 너비 (1글자)
-		        const nWidthMax		= nWidthStart + Math.max(0, kLastHead.getBoundingClientRect().width - GetColumnMin(kLastHead));	// 칸 최대 너비 (마지막 칸이 1글자 남을 때까지)
-		        let nWidth			= nWidthStart;										// 놓을 때 적용할 너비
+		        const	kHead		= kGrip.parentElement;								// 조절할 칸 제목
+		        const	kLastHead	= kHead.parentElement.cells[GetRestColumn(kTable)];	// 나머지 너비 칸 제목 (기본: 마지막 칸)
+		        const	kCol		= kTable.querySelectorAll("col")[kHead.cellIndex];	// 조절할 칸
+		        const	kHeadRect	= kHead.getBoundingClientRect();					// 조절할 칸 제목 위치 (세로선 기준)
+		        const	kScrollRect	= kTable.parentElement.getBoundingClientRect();		// 표 스크롤 영역 (세로선 위치·높이)
+		        const	nStartX		= kEvent.clientX;									// 드래그 시작 위치
+		        const	nWidthStart	= kTable.classList.contains("fixed") ? parseFloat(kCol.style.width) : kHeadRect.width;	// 칸 시작 너비 (고정 전: 지금 자동 너비 = FixColumn 이 고정할 너비)
+		        const	nWidthMin	= GetColumnMin(kHead);								// 칸 최소 너비 (1글자)
+		        const	nWidthMax	= nWidthStart + Math.max(0, kLastHead.getBoundingClientRect().width - GetColumnMin(kLastHead));	// 칸 최대 너비 (마지막 칸이 1글자 남을 때까지)
+		        let		nWidth		= nWidthStart;										// 놓을 때 적용할 너비
 
 		        const funcMove = (kMove) =>	// 끈 만큼 세로선만 이동 (표는 그대로)
 		        {
@@ -4396,16 +4398,16 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    });
 		}
 
-		const FOLD_KEY		= "HMX.Fold";	// 칸 접기 localStorage 키 ({ 표 id: [칸 번호] }, 표마다)
-		const FOLD_WIDTH_PX	= 20;			// 접은 칸 너비 (px, 모든 칸 고정)
-		const FOLD_NEAR_PX	= 2;			// 최소 폭 판정 여유 (px, 경계 드래그 최소 1글자 ≒ 접은 폭)
-		const hmapFold		= LoadFold();	// 접은 칸 (표 id → 칸 번호 목록)
+		const	FOLD_KEY		= "HMX.Fold";	// 칸 접기 localStorage 키 ({ 표 id: [칸 번호] }, 표마다)
+		const	FOLD_WIDTH_PX	= 20;			// 접은 칸 너비 (px, 모든 칸 고정)
+		const	FOLD_NEAR_PX	= 2;			// 최소 폭 판정 여유 (px, 경계 드래그 최소 1글자 ≒ 접은 폭)
+		const	hmapFold		= LoadFold();	// 접은 칸 (표 id → 칸 번호 목록)
 
 		function LoadFold()	// 저장된 접은 칸 (없음·오류: 빈)
 		{
 		    try
 		    {
-		        const kSaved = JSON.parse(localStorage.getItem(FOLD_KEY) ?? "null");
+		        const	kSaved	= JSON.parse(localStorage.getItem(FOLD_KEY) ?? "null");
 
 		        if (kSaved != null && typeof kSaved === "object" && !Array.isArray(kSaved))
 		        {
@@ -4427,11 +4429,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function GetNaturalWidth(kTable, nIndex)	// 칸 기본 너비: 칸 글자 최대 너비 (자동 너비와 같음, 고정 너비 표에서 칸마다 글자 폭 잼, colspan 줄 제외)
 		{
-		    let nWidth = 0;
+		    let	nWidth	= 0;
 
 		    for (const kRow of kTable.rows)
 		    {
-		        const kCell = kRow.cells[nIndex];
+		        const	kCell	= kRow.cells[nIndex];
 
 		        if (kCell != null && kCell.colSpan === 1)
 		        {
@@ -4444,9 +4446,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ApplyFold(kTable)	// 접은 칸 그림: FOLD_WIDTH_PX 고정 (CSS, colspan 칸 제외), 고정 너비 표: col 너비도
 		{
-		    const arrCol	= kTable.querySelectorAll("col");
-		    const arrFold	= (Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : []).filter(nIndex => Number.isInteger(nIndex) && nIndex >= 0 && IsFoldColumn(kTable, nIndex));
-		    const bFixed	= kTable.classList.contains("fixed");
+		    const	arrCol	= kTable.querySelectorAll("col");
+		    const	arrFold	= (Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : []).filter(nIndex => Number.isInteger(nIndex) && nIndex >= 0 && IsFoldColumn(kTable, nIndex));
+		    const	bFixed	= kTable.classList.contains("fixed");
 
 		    document.getElementById(kTable.id + "Fold").textContent = arrFold.map(nIndex => `#${kTable.id} tr>:nth-child(${nIndex + 1}):not([colspan]){box-sizing:border-box;width:${FOLD_WIDTH_PX}px;min-width:${FOLD_WIDTH_PX}px;max-width:${FOLD_WIDTH_PX}px;padding-right:0;overflow:hidden;text-overflow:clip;white-space:nowrap}`).join("");
 
@@ -4466,10 +4468,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function ToggleFold(kTable, nIndex)	// 칸 접기 ↔ 기본 크기 (표마다 저장): 접힌 칸·경계 드래그로 최소 폭 된 칸 → 기본 크기 (글자 최대 너비), 그 밖 → 접음
 		{
-		    const arrFold	= Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : [];
-		    const kHead		= kTable.tHead.rows[0].cells[nIndex];
-		    const kCol		= kTable.querySelectorAll("col")[nIndex];
-		    const bFold		= !arrFold.includes(nIndex) && kHead.getBoundingClientRect().width > Math.max(FOLD_WIDTH_PX, GetColumnMin(kHead)) + FOLD_NEAR_PX;	// 접음 (이미 최소 폭: 펼침)
+		    const	arrFold	= Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : [];
+		    const	kHead	= kTable.tHead.rows[0].cells[nIndex];
+		    const	kCol	= kTable.querySelectorAll("col")[nIndex];
+		    const	bFold	= !arrFold.includes(nIndex) && kHead.getBoundingClientRect().width > Math.max(FOLD_WIDTH_PX, GetColumnMin(kHead)) + FOLD_NEAR_PX;	// 접음 (이미 최소 폭: 펼침)
 
 		    hmapFold[kTable.id] = bFold ? [...arrFold, nIndex] : arrFold.filter(nItem => nItem !== nIndex);
 
@@ -4497,7 +4499,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		function InitColumnFold(kTable)	// 표 칸 접기 (모든 표 공통): 칸 이름 클릭 → 좌우 FOLD_WIDTH_PX 고정 ↔ 다시 클릭: 기본 크기, 표마다 저장
 		{
-		    const kStyle = document.createElement("style");	// 이 표 접은 칸 CSS
+		    const	kStyle	= document.createElement("style");	// 이 표 접은 칸 CSS
 
 		    kStyle.id = kTable.id + "Fold";
 		    document.head.append(kStyle);
@@ -4509,7 +4511,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kTable.tHead.addEventListener("click", (kEvent) =>	// 칸 이름 클릭 (경계 손잡이 제외)
 		    {
-		        const kHead = kEvent.target.closest("th");
+		        const	kHead	= kEvent.target.closest("th");
 
 		        if (kHead?.classList.contains("foldhead") && kEvent.target.closest(".colgrip") == null)
 		        {
@@ -4535,12 +4537,12 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		if (document.body.dataset.mode === "view")	// 새 창 (보기 모드): 쿼리의 파일·페이지만 보기
 		{
-		    const kQuery	= new URLSearchParams(location.search);
-		    const sPath		= kQuery.get("sPath") ?? "";
+		    const	kQuery	= new URLSearchParams(location.search);
+		    const	sPath	= kQuery.get("sPath") ?? "";
 
 		    document.title = `${sPath.slice(sPath.lastIndexOf("\\") + 1)} - ${document.title}`;	// 창 구분용: 파일명
 
-		    const nTarget	= Number(kQuery.get("nTarget") ?? 0);	// 강조할 줄 (0: 줄 모름 → 마지막 줄부터)
+		    const	nTarget	= Number(kQuery.get("nTarget") ?? 0);	// 강조할 줄 (0: 줄 모름 → 마지막 줄부터)
 
 		    Search.OpenView(kQuery.get("sMachine") ?? "", sPath, nTarget, kQuery.get("sKey") ?? "", nTarget > 0 ? null : 0);	// 그 줄 위·아래부터 (스크롤: 이어서)
 		}
@@ -4550,15 +4552,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		}
 		else
 		{
-		    const kOpenParam	= new URLSearchParams(location.search);	// Ctrl·Alt+클릭으로 열림: 지금 상태 (sTab 있음)
+		    const	kOpenParam	= new URLSearchParams(location.search);	// Ctrl·Alt+클릭으로 열림: 지금 상태 (sTab 있음)
 
 		    ApplyMenu();	// 탭 메뉴: 설정 aMenu (보일 탭·순서, 빠진 탭: 아래 시작 조회 안 함)
 
 		    LoadLimit();
 		    ShowStatus();
 
-		    const bClient		= [kQueryButton, kLogButton, kFileButton, kDumpButton].some(kButton => !kButton.hidden);	// 클라 쓰는 탭 있음 (없음: 서버 /api/client 없음)
-		    const kMachineLoad	= bClient ? LoadMachine() : Promise.resolve();
+		    const	bClient			= [kQueryButton, kLogButton, kFileButton, kDumpButton].some(kButton => !kButton.hidden);	// 클라 쓰는 탭 있음 (없음: 서버 /api/client 없음)
+		    const	kMachineLoad	= bClient ? LoadMachine() : Promise.resolve();
 
 		    Search.FitResultHeight();	// 검색 전에도 서치 1번 창 최소 줄 수 높이
 
@@ -4577,7 +4579,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		    else
 		    {
-		        const kFirst = document.querySelector("#TabBar button:not([hidden]):not(#AccountButton):not(#HelpButton)");	// 첫 탭: aMenu 첫 번째 (없음: 쿼리)
+		        const	kFirst	= document.querySelector("#TabBar button:not([hidden]):not(#AccountButton):not(#HelpButton)");	// 첫 탭: aMenu 첫 번째 (없음: 쿼리)
 
 		        if (kFirst == null || kFirst === kQueryButton)
 		        {

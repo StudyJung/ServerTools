@@ -10,7 +10,7 @@ static class AES	// MySQL AES 호환 암호화·복호화 (MySQL 기본 aes-128-
 			return null;
 		}
 
-		byte[] arrData;
+		byte[]	arrData;
 
 		try
 		{
@@ -58,8 +58,8 @@ static class AES	// MySQL AES 호환 암호화·복호화 (MySQL 기본 aes-128-
 
 	private static byte[] GetMySQLKey(string sKey)	// MySQL 키 변환: 16바이트 버퍼에 순환 XOR
 	{
-		byte[] arrKey		= new byte[16];
-		byte[] arrSource	= Encoding.UTF8.GetBytes(sKey);
+		byte[]	arrKey		= new byte[16];
+		byte[]	arrSource	= Encoding.UTF8.GetBytes(sKey);
 
 		for (int nIndex = 0; nIndex < arrSource.Length; ++nIndex)
 		{

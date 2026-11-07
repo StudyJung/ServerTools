@@ -5,12 +5,12 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 	public const int	m_nMinuteMax	= 129600;	// 간격 최대 (분, 페이지 SAVED_MINUTE_MAX)
 	public const int	m_nMinute		= 10;		// 간격 기본 (분, 페이지 SAVED_MINUTE)
 
-	private readonly string												m_sKey;					// 설정 키 (aQuery·aSearch)
-	private readonly string												m_sName;				// 로그 이름 (저장 쿼리·저장 서치)
-	private readonly string												m_sWord;				// 항목 글 (쿼리·검색어)
-	private readonly string												m_sResult;				// 응답 배열 키 (arrQuery·arrSearch)
-	private readonly object												m_kLock	= new object();	// 바꾸기 1건씩
-	private volatile List<(string sKey, string sQuery, int nMinute)>	m_listSaved;			// 목록 (바꿀 때 통째로)
+	private readonly string	m_sKey;					// 설정 키 (aQuery·aSearch)
+	private readonly string	m_sName;				// 로그 이름 (저장 쿼리·저장 서치)
+	private readonly string	m_sWord;				// 항목 글 (쿼리·검색어)
+	private readonly string	m_sResult;				// 응답 배열 키 (arrQuery·arrSearch)
+	private readonly object	m_kLock	= new object();	// 바꾸기 1건씩
+	private volatile List<(string sKey, string sQuery, int nMinute)>	m_listSaved;	// 목록 (바꿀 때 통째로)
 
 	public SavedList(string sKey, string sName, string sWord, string sResult)
 	{
@@ -107,7 +107,7 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 
 		lock (m_kLock)
 		{
-			List<(string sKey, string sQuery, int nMinute)> listSaved = m_listSaved.Where(kSaved => !string.Equals(kSaved.sKey, sKey, StringComparison.OrdinalIgnoreCase)).ToList();
+			List<(string sKey, string sQuery, int nMinute)>	listSaved	= m_listSaved.Where(kSaved => !string.Equals(kSaved.sKey, sKey, StringComparison.OrdinalIgnoreCase)).ToList();
 
 			sError = listSaved.Count == m_listSaved.Count ? "없는 제목" : Save(listSaved);
 
@@ -127,7 +127,7 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 
 		lock (m_kLock)
 		{
-			int nFrom = Find(m_listSaved, sKey);
+			int	nFrom	= Find(m_listSaved, sKey);
 
 			sError = nFrom < 0 ? "없는 제목" : Save(MoveItem(m_listSaved, nFrom, kParam.nTo ?? nFrom));
 
@@ -165,7 +165,7 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 
 	private List<(string sKey, string sQuery, int nMinute)> Load(IEnumerable<IConfigurationSection>? listSection = null, List<string>? listWarn = null)	// 설정 → 목록 (제목 없음·너무 김·같은 제목: 뺌, 간격 범위 밖: 기본, listWarn: 오류 글 모음, 없음: 바로 출력)
 	{
-		List<(string sKey, string sQuery, int nMinute)> listSaved = new List<(string sKey, string sQuery, int nMinute)>();
+		List<(string sKey, string sQuery, int nMinute)>	listSaved	= new List<(string sKey, string sQuery, int nMinute)>();
 
 		foreach (IConfigurationSection kSection in listSection ?? Config.GetChildren(m_sKey))
 		{
@@ -216,7 +216,7 @@ class SavedList	// 저장 목록 (저장 쿼리 aQuery → Query.json·저장 �
 			return;
 		}
 
-		List<string>									listWarn	= new List<string>();
+		List<string>	listWarn	= new List<string>();
 		List<(string sKey, string sQuery, int nMinute)>	listSaved	= Load(kConfig.GetSection(m_sKey).GetChildren(), listWarn);
 
 		lock (m_kLock)

@@ -1,15 +1,15 @@
 static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간별 (줄: [yyyy/MM/dd HH:mm:ss.fff] [sTitle_][레벨] 메시지, sTitle 없음: [레벨] 부터) (Server·Client 공통)
 {
-	public const string DEBUG	= "DEBUG";	// 로그 레벨: 디버그
-	public const string INFO_	= "INFO_";	// 로그 레벨: 정보
-	public const string NOTI_	= "NOTI_";	// 로그 레벨: 알림
-	public const string WARN_	= "WARN_";	// 로그 레벨: 경고
-	public const string ERROR	= "ERROR";	// 로그 레벨: 오류
-	public const string FATAL	= "FATAL";	// 로그 레벨: 치명
+	public const string	DEBUG	= "DEBUG";	// 로그 레벨: 디버그
+	public const string	INFO_	= "INFO_";	// 로그 레벨: 정보
+	public const string	NOTI_	= "NOTI_";	// 로그 레벨: 알림
+	public const string	WARN_	= "WARN_";	// 로그 레벨: 경고
+	public const string	ERROR	= "ERROR";	// 로그 레벨: 오류
+	public const string	FATAL	= "FATAL";	// 로그 레벨: 치명
 
-	private static readonly object	m_lockWrite	= new object();								// 같은 파일 동시 추가 방지
-	private static readonly bool	m_bConsole	= !WindowsServiceHelpers.IsWindowsService();	// 콘솔 모드 (서비스 아님)
-	private static readonly object	m_lockConsole	= new object();							// 콘솔 색 변경·출력·복원 묶음 (색 번짐 방지)
+	private static readonly object	m_lockWrite		= new object();	// 같은 파일 동시 추가 방지
+	private static readonly bool	m_bConsole		= !WindowsServiceHelpers.IsWindowsService();	// 콘솔 모드 (서비스 아님)
+	private static readonly object	m_lockConsole	= new object();	// 콘솔 색 변경·출력·복원 묶음 (색 번짐 방지)
 
 	public static string GetDir()	// 로그 폴더 (기준 폴더 하위 Log)
 	{
@@ -23,15 +23,15 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 
 	public static string GetTag()	// 레벨 앞 태그: [설정 sTitle_] (예: HMX → [시각] [HMX_][INFO_] 내용, 없음·설정 로딩 전: 안 붙음)
 	{
-		string sTitle = Config.GetString("sTitle").Trim();	// 이름 (제목과 같음)
+		string	sTitle	= Config.GetString("sTitle").Trim();	// 이름 (제목과 같음)
 
 		return sTitle == "" ? "" : $"[{sTitle}_]";
 	}
 
 	public static void Write(string sLevel, string sMessage)	// 로그 한 줄 추가 (콘솔 모드: 콘솔도, 파일: bLog true 일 때만)
 	{
-		DateTimeOffset kNow = GetNow();
-		string sFile = GetFile(kNow.ToString("yyyyMMdd_HH", CultureInfo.InvariantCulture));
+		DateTimeOffset	kNow	= GetNow();
+		string			sFile	= GetFile(kNow.ToString("yyyyMMdd_HH", CultureInfo.InvariantCulture));
 		string sLine = $"[{kNow.ToString("yyyy/MM/dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}] {GetTag()}[{sLevel}] {sMessage.Replace('\r', ' ').Replace('\n', ' ')}";	// 레벨 앞 태그 (설정 sTitle), 줄바꿈 제거 (한 줄 = 로그 1건)
 
 		if (m_bConsole)

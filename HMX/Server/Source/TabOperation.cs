@@ -2,7 +2,7 @@ using StackExchange.Redis;	// Redis 해시 명령 (이 파일·Redis 만, 전역
 
 class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·로비·AuthKey·접속자·CDS)·서버 버전·패치 시작 시각·X분 정각 동접 기록 (Redis) API (페이지 쪽: ManagerHTML, ServerManager 이식)
 {
-	private readonly OperationMonitor m_kMonitor;	// 게임 서버 점검
+	private readonly OperationMonitor	m_kMonitor;	// 게임 서버 점검
 
 	public TabOperation()
 	{
@@ -63,8 +63,8 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		await m_kMonitor.Check();
 
 		OperationServer[]	arrServer	= m_kMonitor.GetList();
-		long			nPatchTime	= 0;
-		string			sError		= "";
+		long				nPatchTime	= 0;
+		string				sError		= "";
 
 		try
 		{
@@ -106,7 +106,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 	private async Task<IResult> OnCDS(string sKey)	// 서버 1대 CDS 확인 (모니터 탭에서 CDS 등록·해제 후 변경 감지용)
 	{
-		OperationServer? kServer = await m_kMonitor.CheckOne(sKey);
+		OperationServer?	kServer	= await m_kMonitor.CheckOne(sKey);
 
 		if (kServer == null)	// 설정에 없는 주소
 		{
@@ -118,7 +118,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 	private IResult OnMonitor(string sKey)	// XLO 모니터 페이지 이동 (설정에 있는 서버만 → 임의 주소 이동 방지)
 	{
-		OperationServer? kServer = m_kMonitor.Find(sKey);
+		OperationServer?	kServer	= m_kMonitor.Find(sKey);
 
 		if (kServer == null)
 		{
@@ -137,7 +137,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		try
 		{
-			long nTime = await OperationRedis.SetPatchTime(nPatchTime ?? 0);
+			long	nTime	= await OperationRedis.SetPatchTime(nPatchTime ?? 0);
 
 			Log.Write(INFO_, $"패치 시작 설정: {nTime} ({GetTimeText(nTime)})");
 
@@ -165,7 +165,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 	{
 		try
 		{
-			TimeSpan kPing = await Redis.GetDb().PingAsync();
+			TimeSpan	kPing	= await Redis.GetDb().PingAsync();
 
 			return Results.Ok(new { bConnect = true, nDB = Redis.GetDbNumber(), dPingMs = kPing.TotalMilliseconds, sTime = GetNowText() });
 		}
@@ -187,7 +187,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 	private static string GetShortError(Exception kException)	// 오류 메시지 (Redis 진단 정보 등 긴 메시지는 앞부분만)
 	{
-		string sText = kException.Message;
+		string	sText	= kException.Message;
 
 		return sText.Length > 200 ? sText.Substring(0, 200) + "..." : sText;
 	}
@@ -207,44 +207,44 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		return """
 		class Operation	// 운영 탭: 왼쪽 게임 서버 목록 (XLO 모니터 점검·패치 시각) + 오른쪽 동접·차트·모니터 (ServerManager 이식, this 없음 → 메서드를 이벤트 처리기로 바로 넘김, 데이터: textContent)
 		{
-		    static GAME_NAME	= { Total: "Total", Baduki: "Baduki", Poker7: "7Poker", Holdem: "Holdem", Highlow: "Highlow", Blackjack: "Blackjack" };	// 최고 동접 게임명 (동접 기록 표 제목과 같게)
-		    static CCU_FIELD	= ["nBaduki", "nPoker7", "nHighlow", "nHoldem", "nBlackjack"];	// 동접 기록 표 칸 (Total 앞, 표 제목 순서)
-		    static CHART_SET	= [["baduki", "nBaduki", "#df0c24"], ["poker7", "nPoker7", "#006edb"], ["highlow", "nHighlow", "#b88700"], ["holdem", "nHoldem", "#30a147"], ["blackjack", "nBlackjack", "#894ceb"], ["total", "nTotal", "#808fa3"]];	// 차트 [라벨, 필드, 색] (Primer data 색)
-		    static CHART_URL	= "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";	// Chart.js (차트 처음 그릴 때 불러옴, 인터넷 필요)
-		    static SPLIT_MIN	= 120;	// 왼쪽·오른쪽 최소 폭 (px, 세로선 드래그)
+		    static	GAME_NAME	= { Total: "Total", Baduki: "Baduki", Poker7: "7Poker", Holdem: "Holdem", Highlow: "Highlow", Blackjack: "Blackjack" };	// 최고 동접 게임명 (동접 기록 표 제목과 같게)
+		    static	CCU_FIELD	= ["nBaduki", "nPoker7", "nHighlow", "nHoldem", "nBlackjack"];			// 동접 기록 표 칸 (Total 앞, 표 제목 순서)
+		    static	CHART_SET	= [["baduki", "nBaduki", "#df0c24"], ["poker7", "nPoker7", "#006edb"], ["highlow", "nHighlow", "#b88700"], ["holdem", "nHoldem", "#30a147"], ["blackjack", "nBlackjack", "#894ceb"], ["total", "nTotal", "#808fa3"]];	// 차트 [라벨, 필드, 색] (Primer data 색)
+		    static	CHART_URL	= "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";	// Chart.js (차트 처음 그릴 때 불러옴, 인터넷 필요)
+		    static	SPLIT_MIN	= 120;																	// 왼쪽·오른쪽 최소 폭 (px, 세로선 드래그)
 
-		    static kServerTitle		= document.getElementById("ManagerServerTitle");	// 서버 목록 제목 (운영·전체 수)
-		    static kRefresh			= document.getElementById("ManagerRefresh");		// 서버 새로 고침 (전체 점검)
-		    static kProgress		= document.getElementById("ManagerProgress");		// 서버 점검 진행 팝업
-		    static kError			= document.getElementById("ManagerError");			// 서버 목록 오류
-		    static kServerBody		= document.getElementById("ManagerServerBody");		// 운영 서버 줄
-		    static kDownCount		= document.getElementById("ManagerDownCount");		// 미운영 수
-		    static kDownBody		= document.getElementById("ManagerDownBody");		// 미운영 서버 줄
-		    static kPatchTime		= document.getElementById("ManagerPatchTime");		// 패치 시간 (시각 (unix))
-		    static kPatchDialog		= document.getElementById("ManagerPatchDialog");	// 패치 시간 팝업
-		    static kPatchInput		= document.getElementById("ManagerPatchInput");		// 패치 시간 입력 (unix)
-		    static kSplitter		= document.getElementById("ManagerSplitter");		// 왼쪽·오른쪽 사이 세로선
-		    static kCcuButton		= document.getElementById("ManagerCcuButton");		// 동접 하위 탭
-		    static kChartButton		= document.getElementById("ManagerChartButton");	// 차트 하위 탭
-		    static kMonitorButton	= document.getElementById("ManagerMonitorButton");	// 모니터 하위 탭
-		    static kCcuPanel		= document.getElementById("ManagerCcuPanel");		// 동접 창
-		    static kCcuRefresh		= document.getElementById("ManagerCcuRefresh");		// 동접 새로 고침
-		    static kCcuProgress		= document.getElementById("ManagerCcuProgress");	// 동접 조회 진행 팝업
-		    static kCcuError		= document.getElementById("ManagerCcuError");		// 동접 오류
-		    static kMaxBody			= document.getElementById("ManagerMaxBody");		// 최고 동접 줄
-		    static kCcuBody			= document.getElementById("ManagerCcuBody");		// 동접 기록 줄
-		    static kChartPanel		= document.getElementById("ManagerChartPanel");		// 차트 창
-		    static kChartError		= document.getElementById("ManagerChartError");		// 차트 오류
-		    static kMonitorPanel	= document.getElementById("ManagerMonitorPanel");	// 모니터 창
-		    static kMonitorTitle	= document.getElementById("ManagerMonitorTitle");	// 모니터 창 제목 (서버 키)
-		    static kMonitorFrame	= document.getElementById("ManagerMonitorFrame");	// XLO 모니터 (서버 URL 클릭)
+		    static	kServerTitle	= document.getElementById("ManagerServerTitle");	// 서버 목록 제목 (운영·전체 수)
+		    static	kRefresh		= document.getElementById("ManagerRefresh");		// 서버 새로 고침 (전체 점검)
+		    static	kProgress		= document.getElementById("ManagerProgress");		// 서버 점검 진행 팝업
+		    static	kError			= document.getElementById("ManagerError");			// 서버 목록 오류
+		    static	kServerBody		= document.getElementById("ManagerServerBody");		// 운영 서버 줄
+		    static	kDownCount		= document.getElementById("ManagerDownCount");		// 미운영 수
+		    static	kDownBody		= document.getElementById("ManagerDownBody");		// 미운영 서버 줄
+		    static	kPatchTime		= document.getElementById("ManagerPatchTime");		// 패치 시간 (시각 (unix))
+		    static	kPatchDialog	= document.getElementById("ManagerPatchDialog");	// 패치 시간 팝업
+		    static	kPatchInput		= document.getElementById("ManagerPatchInput");		// 패치 시간 입력 (unix)
+		    static	kSplitter		= document.getElementById("ManagerSplitter");		// 왼쪽·오른쪽 사이 세로선
+		    static	kCcuButton		= document.getElementById("ManagerCcuButton");		// 동접 하위 탭
+		    static	kChartButton	= document.getElementById("ManagerChartButton");	// 차트 하위 탭
+		    static	kMonitorButton	= document.getElementById("ManagerMonitorButton");	// 모니터 하위 탭
+		    static	kCcuPanel		= document.getElementById("ManagerCcuPanel");		// 동접 창
+		    static	kCcuRefresh		= document.getElementById("ManagerCcuRefresh");		// 동접 새로 고침
+		    static	kCcuProgress	= document.getElementById("ManagerCcuProgress");	// 동접 조회 진행 팝업
+		    static	kCcuError		= document.getElementById("ManagerCcuError");		// 동접 오류
+		    static	kMaxBody		= document.getElementById("ManagerMaxBody");		// 최고 동접 줄
+		    static	kCcuBody		= document.getElementById("ManagerCcuBody");		// 동접 기록 줄
+		    static	kChartPanel		= document.getElementById("ManagerChartPanel");		// 차트 창
+		    static	kChartError		= document.getElementById("ManagerChartError");		// 차트 오류
+		    static	kMonitorPanel	= document.getElementById("ManagerMonitorPanel");	// 모니터 창
+		    static	kMonitorTitle	= document.getElementById("ManagerMonitorTitle");	// 모니터 창 제목 (서버 키)
+		    static	kMonitorFrame	= document.getElementById("ManagerMonitorFrame");	// XLO 모니터 (서버 URL 클릭)
 
-		    static bOpened		= false;	// 처음 열기 끝 (서버 점검·동접 조회 1번)
-		    static kServerInfo	= null;		// 마지막 /api/manager/server 응답
-		    static arrCcu		= [];		// 마지막 동접 기록 (최신순)
-		    static kChart		= null;		// Chart.js 객체
-		    static kChartLoad	= null;		// Chart.js 불러오기 (Promise, 실패: 다음에 다시)
-		    static sMonitorKey	= "";		// 모니터 창에 연 서버 키 (ip:port)
+		    static	bOpened		= false;	// 처음 열기 끝 (서버 점검·동접 조회 1번)
+		    static	kServerInfo	= null;		// 마지막 /api/manager/server 응답
+		    static	arrCcu		= [];		// 마지막 동접 기록 (최신순)
+		    static	kChart		= null;		// Chart.js 객체
+		    static	kChartLoad	= null;		// Chart.js 불러오기 (Promise, 실패: 다음에 다시)
+		    static	sMonitorKey	= "";		// 모니터 창에 연 서버 키 (ip:port)
 
 		    static Open()	// 운영 탭 버튼: 운영 창 (처음: 서버 점검·동접 조회)
 		    {
@@ -261,11 +261,11 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static async Fetch(sUrl, kOption)	// 요청 → JSON (HTTP 오류: throw 서버 오류 글 sError, 없음: "HTTP 상태")
 		    {
-		        const kResponse = await fetch(sUrl, kOption);
+		        const	kResponse	= await fetch(sUrl, kOption);
 
 		        if (!kResponse.ok)
 		        {
-		            const kData = await kResponse.json().catch(() => ({}));	// 서버 오류 글 (JSON 아님: 없음)
+		            const	kData	= await kResponse.json().catch(() => ({}));	// 서버 오류 글 (JSON 아님: 없음)
 
 		            throw new Error(kData.sError || `HTTP ${kResponse.status}`);
 		        }
@@ -288,7 +288,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static StartProgress(kButton, kProgress, sText)	// 진행 표시 (상자 가운데 팝업 상태 · N초, X초 이상 걸릴 때만, 실행 버튼 꺼짐), 반환: 끝 함수
 		    {
-		        const nBegin = performance.now();	// 시작 (진행 초)
+		        const	nBegin	= performance.now();	// 시작 (진행 초)
 
 		        const funcShow = () =>	// 진행 초 갱신
 		        {
@@ -299,8 +299,8 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		        funcShow();
 
-		        const nTimer = setInterval(funcShow, 1000);
-		        const nPopup = setTimeout(() => { funcShow(); kProgress.hidden = false; }, PROGRESS_DELAY_MS);
+		        const	nTimer	= setInterval(funcShow, 1000);
+		        const	nPopup	= setTimeout(() => { funcShow(); kProgress.hidden = false; }, PROGRESS_DELAY_MS);
 
 		        return () =>
 		        {
@@ -314,21 +314,21 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static GetZoneClass(sZone)	// 존 칩 클래스 (대소문자 무시, 포함 여부: Real 빨강 > Alpha 파랑 > Dev 초록, 그 외·없음: 회색)
 		    {
-		        const sLower = (sZone || "").toLowerCase();
+		        const	sLower	= (sZone || "").toLowerCase();
 
 		        return sLower.includes("real") ? "zone-real" : (sLower.includes("alpha") ? "zone-alpha" : (sLower.includes("dev") ? "zone-dev" : "off"));
 		    }
 
 		    static GetNameNumber(sName)	// 서버 이름의 첫 3자리 이상 숫자 (예: 101 바둑이 → 101, B2_201 → 201, 없음: null)
 		    {
-		        const kMatch = /\d{3,}/.exec(sName || "");
+		        const	kMatch	= /\d{3,}/.exec(sName || "");
 
 		        return kMatch != null ? Number(kMatch[0]) : null;
 		    }
 
 		    static GetNameGroup(sName)	// 이름 숫자 100 단위 (예: 101 → 1, 1101 → 11, 없음: null)
 		    {
-		        const nNumber = Operation.GetNameNumber(sName);
+		        const	nNumber	= Operation.GetNameNumber(sName);
 
 		        return nNumber === null ? null : Math.floor(nNumber / 100);
 		    }
@@ -337,12 +337,12 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		    {
 		        const funcKey = (kServer) =>
 		        {
-		            const nNumber = Operation.GetNameNumber(kServer.sName) ?? Infinity;
+		            const	nNumber	= Operation.GetNameNumber(kServer.sName) ?? Infinity;
 
 		            return [nNumber >= 3300 && nNumber < 3400 ? 1 : (nNumber >= 10000 && nNumber !== Infinity ? 2 : 0), nNumber, kServer.sName, kServer.sIP, kServer.nPort];
 		        };
-		        const arrA = funcKey(kA);
-		        const arrB = funcKey(kB);
+		        const	arrA	= funcKey(kA);
+		        const	arrB	= funcKey(kB);
 
 		        for (let nIndex = 0; nIndex < arrA.length; ++nIndex)
 		        {
@@ -357,7 +357,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static AddChip(kCell, sText, sClass)	// 칩 (Primer Label, textContent)
 		    {
-		        const kChip = document.createElement("span");
+		        const	kChip	= document.createElement("span");
 
 		        kChip.className		= `chip ${sClass}`;
 		        kChip.textContent	= sText;
@@ -377,7 +377,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		            return;
 		        }
 
-		        const kRow = kBody.insertRow();
+		        const	kRow	= kBody.insertRow();
 
 		        kRow.className = "spacer";
 
@@ -391,7 +391,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		            return;
 		        }
 
-		        const funcEnd = Operation.StartProgress(Operation.kRefresh, Operation.kProgress, "서버 갱신 중");
+		        const	funcEnd	= Operation.StartProgress(Operation.kRefresh, Operation.kProgress, "서버 갱신 중");
 
 		        try
 		        {
@@ -411,10 +411,10 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static RenderServer()	// 운영 서버 표 + 미운영 서버 목록 (숫자 정렬, 3300번대 → 10000 이상 맨 아래)
 		    {
-		        const kData		= Operation.kServerInfo;
-		        const arrSorted	= [...kData.listServer].sort(Operation.CompareServer);
-		        const arrUp		= arrSorted.filter(kServer => kServer.bSuccess);
-		        const arrDown	= arrSorted.filter(kServer => !kServer.bSuccess);
+		        const	kData		= Operation.kServerInfo;
+		        const	arrSorted	= [...kData.listServer].sort(Operation.CompareServer);
+		        const	arrUp		= arrSorted.filter(kServer => kServer.bSuccess);
+		        const	arrDown		= arrSorted.filter(kServer => !kServer.bSuccess);
 
 		        Operation.kServerTitle.textContent	= `서버: 운영 ${kData.nOperating} / 전체 ${kData.listServer.length}`;
 		        Operation.kPatchTime.textContent	= kData.nPatchTime ? `${kData.sPatchTime.slice(5)} (${kData.nPatchTime})` : "-";	// MM-dd HH:mm:ss (unix)
@@ -434,9 +434,9 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		        {
 		            Operation.AddSpacer(Operation.kServerBody, arrUp, nIndex, 6);
 
-		            const kRow	= Operation.kServerBody.insertRow();
-		            const kTag	= document.createElement("span");	// 로비·룸
-		            const kLink	= document.createElement("a");		// 모니터 링크 (오른쪽 모니터 창)
+		            const	kRow	= Operation.kServerBody.insertRow();
+		            const	kTag	= document.createElement("span");	// 로비·룸
+		            const	kLink	= document.createElement("a");		// 모니터 링크 (오른쪽 모니터 창)
 
 		            Operation.AddChip(AddCell(kRow, "", ""), kServer.sZone, Operation.GetZoneClass(kServer.sZone));
 
@@ -456,7 +456,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		            Operation.AddChip(AddCell(kRow, "", ""), String(kServer.nAuth), "mono " + (kServer.bLobby && !kServer.bCDS ? "off" : (kServer.nAuth <= kData.nPatchTime ? "before" : "after")));	// AuthKey: 패치 전 빨강·후 초록·CDS 제외 로비 회색
 
-		            const kCds = AddCell(kRow, "", "");
+		            const	kCds	= AddCell(kRow, "", "");
 
 		            if (kServer.bLobby)
 		            {
@@ -473,7 +473,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		        {
 		            Operation.AddSpacer(Operation.kDownBody, arrDown, nIndex, 3);
 
-		            const kRow = Operation.kDownBody.insertRow();
+		            const	kRow	= Operation.kDownBody.insertRow();
 
 		            kRow.className = "down";
 
@@ -493,7 +493,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static async SavePatch()	// 패치 시간 = 입력 unix (이후 기동한 서버 AuthKey: 초록)
 		    {
-		        const nPatchTime = Number(Operation.kPatchInput.value.trim());
+		        const	nPatchTime	= Number(Operation.kPatchInput.value.trim());
 
 		        Operation.kPatchDialog.close();
 
@@ -506,7 +506,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		        try
 		        {
-		            const kData = await Operation.Fetch("/api/manager/patch?" + new URLSearchParams({ nPatchTime }), { method: "POST" });
+		            const	kData	= await Operation.Fetch("/api/manager/patch?" + new URLSearchParams({ nPatchTime }), { method: "POST" });
 
 		            if (Operation.kServerInfo != null)
 		            {
@@ -524,7 +524,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static async CheckCds()	// 모니터 페이지 이동 (CDS 등록·해제 등) 뒤 그 서버 CDS 확인 → 바뀜: 서버 새로 고침
 		    {
-		        const kServer = Operation.kServerInfo?.listServer.find(kItem => kItem.sKey === Operation.sMonitorKey);
+		        const	kServer	= Operation.kServerInfo?.listServer.find(kItem => kItem.sKey === Operation.sMonitorKey);
 
 		        if (kServer == null || !kServer.bLobby || Operation.kRefresh.disabled)	// 로비만 (CDS: 로비 전용), 새로 고침 중: 생략
 		        {
@@ -533,7 +533,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		        try
 		        {
-		            const kData = await Operation.Fetch("/api/manager/cds?" + new URLSearchParams({ sKey: Operation.sMonitorKey }));
+		            const	kData	= await Operation.Fetch("/api/manager/cds?" + new URLSearchParams({ sKey: Operation.sMonitorKey }));
 
 		            if (kData.bSuccess && kData.bCDS !== kServer.bCDS)
 		            {
@@ -553,11 +553,11 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		            return;
 		        }
 
-		        const funcEnd = Operation.StartProgress(Operation.kCcuRefresh, Operation.kCcuProgress, "동접 조회 중");
+		        const	funcEnd	= Operation.StartProgress(Operation.kCcuRefresh, Operation.kCcuProgress, "동접 조회 중");
 
 		        try
 		        {
-		            const kData = await Operation.Fetch("/api/manager/ccu");
+		            const	kData	= await Operation.Fetch("/api/manager/ccu");
 
 		            Operation.arrCcu = kData.listCCU;
 
@@ -586,7 +586,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		        for (const kMax of kData.listMax)
 		        {
-		            const kRow = Operation.kMaxBody.insertRow();
+		            const	kRow	= Operation.kMaxBody.insertRow();
 
 		            AddCell(kRow, Operation.GAME_NAME[kMax.sGame] ?? kMax.sGame, "");
 		            AddCell(kRow, kMax.sTime, "mono");
@@ -600,8 +600,8 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		        for (const kCcu of Operation.arrCcu)
 		        {
-		            const kRow		= Operation.kCcuBody.insertRow();
-		            const kTotal	= document.createElement("b");
+		            const	kRow	= Operation.kCcuBody.insertRow();
+		            const	kTotal	= document.createElement("b");
 
 		            AddCell(kRow, kCcu.sLogTime, "mono");
 
@@ -627,7 +627,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		        {
 		            Operation.kChartLoad = new Promise((funcOk, funcFail) =>
 		            {
-		                const kScript = document.createElement("script");
+		                const	kScript	= document.createElement("script");
 
 		                kScript.src		= Operation.CHART_URL;
 		                kScript.onload	= () => funcOk();
@@ -661,7 +661,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		        Operation.ShowError(Operation.kChartError, "");
 
-		        const arrAsc	= [...Operation.arrCcu].reverse();
+		        const	arrAsc	= [...Operation.arrCcu].reverse();
 		        const kData		=
 		        {
 		            labels:		arrAsc.map(kCcu => kCcu.sLogTime),
@@ -701,7 +701,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		            return;
 		        }
 
-		        const bStack = !Operation.kChart.options.scales.y.stacked;
+		        const	bStack	= !Operation.kChart.options.scales.y.stacked;
 
 		        Operation.kChart.options.scales.x.stacked = bStack;
 		        Operation.kChart.options.scales.y.stacked = bStack;
@@ -716,7 +716,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		            return;
 		        }
 
-		        const sType = Operation.kChart.data.datasets[0].type === "line" ? "bar" : "line";
+		        const	sType	= Operation.kChart.data.datasets[0].type === "line" ? "bar" : "line";
 
 		        Operation.kChart.data.datasets.forEach(kSet => kSet.type = sType);
 		        Operation.kChart.update();
@@ -772,7 +772,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static OnServerClick(kEvent)	// 모니터 링크 (URL): 오른쪽 모니터 창에 표시
 		    {
-		        const kLink = kEvent.target.closest("a[data-key]");
+		        const	kLink	= kEvent.target.closest("a[data-key]");
 
 		        if (kLink == null)
 		        {
@@ -795,10 +795,10 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 
 		    static OnSplitterDown(kEvent)	// 세로선 좌우 드래그: 왼쪽 폭 변경, 오른쪽은 나머지 (각각 최소 SPLIT_MIN px)
 		    {
-		        const kSplitter		= Operation.kSplitter;
-		        const nStartX		= kEvent.clientX;																							// 드래그 시작 위치
-		        const nWidthStart	= kSplitter.previousElementSibling.getBoundingClientRect().width;											// 왼쪽 시작 폭
-		        const nWidthMax		= kManagerPanel.getBoundingClientRect().width - kSplitter.getBoundingClientRect().width - Operation.SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
+		        const	kSplitter	= Operation.kSplitter;
+		        const	nStartX		= kEvent.clientX;	// 드래그 시작 위치
+		        const	nWidthStart	= kSplitter.previousElementSibling.getBoundingClientRect().width;	// 왼쪽 시작 폭
+		        const	nWidthMax	= kManagerPanel.getBoundingClientRect().width - kSplitter.getBoundingClientRect().width - Operation.SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
 
 		        const funcMove = (kMove) =>	// 끈 만큼 왼쪽 폭 변경
 		        {
@@ -850,7 +850,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		        Operation.kServerBody.addEventListener("click", Operation.OnServerClick);	// 모니터 링크: 오른쪽 모니터 창
 		        Operation.kSplitter.addEventListener("pointerdown", Operation.OnSplitterDown);
 
-		        const kGutterObserver = new ResizeObserver(() => requestAnimationFrame(Operation.UpdateGutter));	// 목록·창 크기 바뀜: 바 자리 다시 (다음 그림 때)
+		        const	kGutterObserver	= new ResizeObserver(() => requestAnimationFrame(Operation.UpdateGutter));	// 목록·창 크기 바뀜: 바 자리 다시 (다음 그림 때)
 
 		        for (const kScroll of kManagerPanel.querySelectorAll(".scroll.tall"))
 		        {
@@ -903,7 +903,7 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 	public OperationMonitor()
 	{
-		TimeSpan kTimeout = TimeSpan.FromMilliseconds(Config.GetInt("Manager:nTimeout", m_nTimeoutMs));
+		TimeSpan	kTimeout	= TimeSpan.FromMilliseconds(Config.GetInt("Manager:nTimeout", m_nTimeoutMs));
 
 		m_arrConfig		= LoadConfig();
 		m_kHttp			= new HttpClient(new SocketsHttpHandler { ConnectTimeout = kTimeout }) { Timeout = kTimeout };
@@ -915,7 +915,7 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 	private static OperationServer[] LoadConfig()	// 설정 Manager:ServerList:{Manager:sZone} (Manager.json) → 서버 목록 (sIP 없음·nPort 오류·주소 중복은 제외, 정렬)
 	{
-		string sGroup = TabOperation.GetZone();	// 사용할 존 (Dev | Alpha | Real, Manager:sZone, 없음: sZone)
+		string	sGroup	= TabOperation.GetZone();	// 사용할 존 (Dev | Alpha | Real, Manager:sZone, 없음: sZone)
 
 		if (sGroup == "")	// 존 미설정
 		{
@@ -924,12 +924,12 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 			return Array.Empty<OperationServer>();
 		}
 
-		Dictionary<string, OperationServer>	hmapServer	= new Dictionary<string, OperationServer>();									// 서버 키 → 서버
+		Dictionary<string, OperationServer>	hmapServer	= new Dictionary<string, OperationServer>();	// 서버 키 → 서버
 		IConfigurationSection				kZone		= Config.GetSection(ConfigurationPath.Combine("Manager:ServerList", sGroup));	// 존 서버 (객체: 1대, 배열: 여러 대)
 
 		foreach (IConfigurationSection kSection in kZone["sIP"] != null ? new[] { kZone } : kZone.GetChildren())
 		{
-			string sIP = kSection["sIP"] ?? "";
+			string	sIP	= kSection["sIP"] ?? "";
 
 			if (sIP == "" || !int.TryParse(kSection["nPort"], out int nPort) || nPort <= 0 || nPort > 65535)	// 필수 값 오류
 			{
@@ -982,7 +982,7 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 	private async Task CheckAll()	// 전체 서버 동시 점검 → 결과 교체
 	{
-		OperationServer[] arrServer = await Task.WhenAll(m_arrConfig.Select(CheckServer));	// 입력 순서 유지 (정렬 유지)
+		OperationServer[]	arrServer	= await Task.WhenAll(m_arrConfig.Select(CheckServer));	// 입력 순서 유지 (정렬 유지)
 
 		m_arrServer		= arrServer;
 		m_sCheckTime	= GetNowText();
@@ -1035,7 +1035,7 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 	private static string ParseAuth(string sHome)	// 인증키: 첫 "auth=" 뒤 ' 전까지 (없음: "")
 	{
-		int nStart = sHome.IndexOf("auth=", StringComparison.Ordinal);
+		int	nStart	= sHome.IndexOf("auth=", StringComparison.Ordinal);
 
 		if (nStart < 0)
 		{
@@ -1044,14 +1044,14 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 		nStart += "auth=".Length;
 
-		int nEnd = sHome.IndexOf('\'', nStart);
+		int	nEnd	= sHome.IndexOf('\'', nStart);
 
 		return nEnd < 0 ? "" : sHome.Substring(nStart, nEnd - nStart);
 	}
 
 	private static int ParseUser(string sHome)	// 접속자 수: USER_TEXT 뒤 X자 안의 <font color="#0000FF"> 277 </font> 숫자 (없음: 0)
 	{
-		int nStart = sHome.IndexOf(USER_TEXT, StringComparison.Ordinal);
+		int	nStart	= sHome.IndexOf(USER_TEXT, StringComparison.Ordinal);
 
 		if (nStart < 0)
 		{
@@ -1070,7 +1070,7 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 		nFont += 4;	// FF"> 다음
 
-		int nEnd = sTemp.IndexOf('<', nFont);
+		int	nEnd	= sTemp.IndexOf('<', nFont);
 
 		if (nEnd < 0)
 		{
@@ -1097,7 +1097,7 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 	public async Task<OperationServer?> CheckOne(string sKey)	// 서버 1대 점검 (목록 결과는 그대로) (없는 서버: null)
 	{
-		OperationServer? kServer = Find(sKey);
+		OperationServer?	kServer	= Find(sKey);
 
 		if (kServer == null)
 		{
@@ -1127,14 +1127,14 @@ class OperationMonitor	// 게임 서버 점검: XLO 모니터 페이지로 운�
 
 static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager + 운영 존 + ":", 예: HMX:Manager:Real:patch_start_dttm): patch_start_dttm (패치 시작), daily_날짜 (X분 단위 동접 해시), max_conn (게임별 최고 동접)
 {
-	public const int TICK_MINUTE = 5;	// 동접 기록 주기 (분, 정각 기준)
+	public const int	TICK_MINUTE	= 5;	// 동접 기록 주기 (분, 정각 기준)
 
-	private const int SHOW_DAYS			= 3;	// 동접 기록 조회 기간 (일)
-	private const int DAILY_EXPIRE_DAYS	= 1000;	// daily 해시 만료 (일)
+	private const int	SHOW_DAYS			= 3;	// 동접 기록 조회 기간 (일)
+	private const int	DAILY_EXPIRE_DAYS	= 1000;	// daily 해시 만료 (일)
 
-	private static readonly string[] GAME_LIST = { "Total", "Baduki", "Poker7", "Holdem", "Highlow", "Blackjack" };	// 게임 (동접 JSON 필드명, 소문자 = max_conn 필드 앞)
+	private static readonly string[]	GAME_LIST	= { "Total", "Baduki", "Poker7", "Holdem", "Highlow", "Blackjack" };	// 게임 (동접 JSON 필드명, 소문자 = max_conn 필드 앞)
 
-	private static readonly (string sWord, string sGame)[] GAME_WORD = { ("바둑이", "Baduki"), ("7포커", "Poker7"), ("홀덤", "Holdem"), ("하이로우", "Highlow"), ("럭키랜드", "Blackjack") };	// 서버 이름 포함 단어 → 게임 (앞에서부터 첫 일치)
+	private static readonly (string sWord, string sGame)[]	GAME_WORD	= { ("바둑이", "Baduki"), ("7포커", "Poker7"), ("홀덤", "Holdem"), ("하이로우", "Highlow"), ("럭키랜드", "Blackjack") };	// 서버 이름 포함 단어 → 게임 (앞에서부터 첫 일치)
 
 	private static string GetPrefix()	// 관리 키 앞: 설정 Redis:sManager + 운영 존 (Manager:sZone, 없음: sZone) + ":" (반영 탭 sProcess 와 따로)
 	{
@@ -1143,7 +1143,7 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 
 	public static async Task<long> GetPatchTime()	// 패치 시작 시각 (unix, 없음: 0)
 	{
-		string? sValue = await Redis.GetDb().StringGetAsync(GetPrefix() + "patch_start_dttm");
+		string?	sValue	= await Redis.GetDb().StringGetAsync(GetPrefix() + "patch_start_dttm");
 
 		return long.TryParse(sValue, out long nTime) ? nTime : 0;
 	}
@@ -1162,7 +1162,7 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 
 	public static async Task Record(OperationServer[] arrServer, string sLogTime)	// 동접 기록: 운영중 로비 접속자 게임별 합산 → daily 해시 + 최고 동접 갱신
 	{
-		Dictionary<string, int> hmapCCU = GAME_LIST.ToDictionary(sGame => sGame, sGame => 0);	// 게임 → 접속자
+		Dictionary<string, int>	hmapCCU	= GAME_LIST.ToDictionary(sGame => sGame, sGame => 0);	// 게임 → 접속자
 
 		foreach (OperationServer kServer in arrServer)
 		{
@@ -1171,7 +1171,7 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 				continue;
 			}
 
-			string sGame = GetGame(kServer.sName);
+			string	sGame	= GetGame(kServer.sName);
 
 			if (sGame != "")
 			{
@@ -1189,11 +1189,11 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 		await kDb.HashSetAsync(sDaily, sLogTime, sJson);
 		await kDb.KeyExpireAsync(sDaily, TimeSpan.FromDays(DAILY_EXPIRE_DAYS));
 
-		Dictionary<string, string> hmapMax = ToMap(await kDb.HashGetAllAsync(sPrefix + "max_conn"));	// max_conn 필드 → 값
+		Dictionary<string, string>	hmapMax	= ToMap(await kDb.HashGetAllAsync(sPrefix + "max_conn"));	// max_conn 필드 → 값
 
 		foreach (KeyValuePair<string, int> kPair in hmapCCU)	// 최고 동접 갱신 (게임_time = 기록시각_게임, 게임_cnt = 접속자)
 		{
-			string sGame = kPair.Key.ToLowerInvariant();
+			string	sGame	= kPair.Key.ToLowerInvariant();
 
 			if (kPair.Value <= (int.TryParse(hmapMax.GetValueOrDefault(sGame + "_cnt"), out int nMax) ? nMax : 0))
 			{
@@ -1213,13 +1213,13 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 		DateTimeOffset	kNow	= GetNow();
 		string			sFrom	= kNow.AddDays(-SHOW_DAYS).ToString("yyyy-MM-dd HH:mm");	// 조회 시작 시각
 
-		List<OperationCCU> listCCU = new List<OperationCCU>();
+		List<OperationCCU>	listCCU	= new List<OperationCCU>();
 
 		for (int nDay = SHOW_DAYS; nDay >= 0; --nDay)	// 날짜별 해시 (SHOW_DAYS 일 전 ~ 오늘)
 		{
 			foreach (HashEntry kEntry in await kDb.HashGetAllAsync(sPrefix + "daily_" + kNow.AddDays(-nDay).ToString("yyyy-MM-dd")))
 			{
-				OperationCCU? kCCU = ParseCCU(kEntry.Name.ToString(), kEntry.Value.ToString());
+				OperationCCU?	kCCU	= ParseCCU(kEntry.Name.ToString(), kEntry.Value.ToString());
 
 				if (kCCU == null || string.CompareOrdinal(kCCU.sLogTime, sFrom) < 0)	// 형식 오류·조회 기간 이전
 				{
@@ -1230,7 +1230,7 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 			}
 		}
 
-		Dictionary<string, string> hmapMax = ToMap(await kDb.HashGetAllAsync(sPrefix + "max_conn"));	// max_conn 필드 → 값
+		Dictionary<string, string>	hmapMax	= ToMap(await kDb.HashGetAllAsync(sPrefix + "max_conn"));	// max_conn 필드 → 값
 
 		return new
 		{
@@ -1248,7 +1248,7 @@ static class OperationRedis	// 운영 Redis 데이터 (키 앞: Redis:sManager +
 	{
 		try
 		{
-			Dictionary<string, int>? hmapCCU = JsonSerializer.Deserialize<Dictionary<string, int>>(sJson);
+			Dictionary<string, int>?	hmapCCU	= JsonSerializer.Deserialize<Dictionary<string, int>>(sJson);
 
 			if (hmapCCU == null)
 			{

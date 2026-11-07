@@ -1,8 +1,11 @@
 static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그인 검사·로그인 API·로그인 페이지, 계정 (관리 계정 + aAccount)·계정 메뉴 검사, 외부 API 토큰 검사
 {
-	private const string	CLAIM_STAMP		= "sStamp";		// 인증 쿠키 항목: 계정 해시 (계정 변경: 기존 쿠키 무효)
-	public const string	LOGIN_PATH		= "/api/login";	// 로그인 API (미인증 허용)
-	private const string	LOGIN_ERROR		= "계정 또는 비번 오류";	// 로그인 창 오류 문구 (모든 실패 같음, 사유: 로그만)
+	private const string	CLAIM_STAMP	= "sStamp";	// 인증 쿠키 항목: 계정 해시 (계정 변경: 기존 쿠키 무효)
+
+	public const string	LOGIN_PATH	= "/api/login";	// 로그인 API (미인증 허용)
+
+	private const string	LOGIN_ERROR	= "계정 또는 비번 오류";	// 로그인 창 오류 문구 (모든 실패 같음, 사유: 로그만)
+
 	public const string	LOGOUT_PATH		= "/api/logout";	// 로그아웃 API
 	public const string	ACCOUNT_PATH	= "/api/account";	// 계정 API (계정 팝업 목록·추가·수정·삭제)
 	public const string	MENU_LOG		= "로그";			// 계정 aAPI 로그 수신 권한 (외부 API /api/external/log/키/토큰)
@@ -18,11 +21,13 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	private static readonly object	m_kAccountLock	= new object();	// 계정 추가·수정·삭제 1건씩 (설정 파일 쓰기)
 	private static bool				m_bAuth;						// 로그인 사용 (설정 bAuth, 시작 때)
 	private static readonly object	m_kUnlockLock	= new object();	// 마스터 키 입력 1건씩 (설정 다시 로딩)
-	private const int				m_nKeyLength	= 20;			// 계정 키 sKey 글자 수 (외부 API 경로 키, 페이지 ACCOUNT_KEY_LENGTH 와 같음)
-	private static readonly object	m_kKeyLock		= new object();	// 키 맵 다시 만들기 1건씩
-	private static int				m_nKeyVersion	= -1;			// 키 맵 만든 설정 버전 (다름: 다시 만듦)
-	private static Dictionary<string, KeyAccount>	m_hmapKey	= new Dictionary<string, KeyAccount>(StringComparer.Ordinal);	// 외부 API 키 맵: 계정 sKey → 계정 (GetKeyMap)
-	private static readonly string[]	m_arrApiMenu		= { API_QUERY, API_SEARCH, MENU_LOG };	// 계정 aAPI 고를 외부 API 권한 (계정 팝업 외부 줄, 이 순서)
+
+	private const int	m_nKeyLength	= 20;	// 계정 키 sKey 글자 수 (외부 API 경로 키, 페이지 ACCOUNT_KEY_LENGTH 와 같음)
+
+	private static readonly object					m_kKeyLock		= new object();													// 키 맵 다시 만들기 1건씩
+	private static int								m_nKeyVersion	= -1;															// 키 맵 만든 설정 버전 (다름: 다시 만듦)
+	private static Dictionary<string, KeyAccount>	m_hmapKey		= new Dictionary<string, KeyAccount>(StringComparer.Ordinal);	// 외부 API 키 맵: 계정 sKey → 계정 (GetKeyMap)
+	private static readonly string[]				m_arrApiMenu	= { API_QUERY, API_SEARCH, MENU_LOG };							// 계정 aAPI 고를 외부 API 권한 (계정 팝업 외부 줄, 이 순서)
 
 	private static readonly (string sPath, string[] arrTab)[]	m_arrMenuPath	=	// 라우트 → 탭 (계정 aMenu 검사, 앞쪽 우선, 없음: 공통 → 통과)
 	{
@@ -68,7 +73,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	{
 		WebApp.Use(async (HttpContext kContext, RequestDelegate funcNext) =>
 		{
-			string[]? arrTab = GetRouteTab((kContext.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "");	// 그 라우트 탭 (공통: null)
+			string[]?	arrTab	= GetRouteTab((kContext.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "");	// 그 라우트 탭 (공통: null)
 
 			if (arrTab != null && !GetMenu(kContext).Any(arrTab.Contains))
 			{
@@ -181,7 +186,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static bool IsLogin(HttpContext kContext)	// 인증 쿠키 유효: 쿠키 아이디 계정 있음 + 발급 당시 계정 표시 = 지금 계정 표시 (비밀번호 바뀜·계정 삭제: false) + 접근 메뉴 있음
 	{
-		AccountInfo? kAccount = FindAccount(kContext.User.Identity?.Name ?? "");
+		AccountInfo?	kAccount	= FindAccount(kContext.User.Identity?.Name ?? "");
 
 		return kAccount != null && kAccount.arrMenu.Length > 0 && IsSame(kContext.User.FindFirst(CLAIM_STAMP)?.Value ?? "", GetStamp(kAccount));
 	}
@@ -193,7 +198,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	public static bool IsExternalPath(HttpContext kContext)	// 외부 API 경로 (/api/external/..., /api/external 도: 목록에 없음 → 토큰 불일치)
 	{
-		string sPath = kContext.Request.Path.Value ?? "";
+		string	sPath	= kContext.Request.Path.Value ?? "";
 
 		return sPath.StartsWith(API.EXTERNAL_PATH, StringComparison.OrdinalIgnoreCase) || sPath.Equals(API.EXTERNAL_PATH.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 	}
@@ -205,14 +210,14 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			return kContext.Request.Path.ToString();
 		}
 
-		int nIndex = FindExternal(kContext);
+		int	nIndex	= FindExternal(kContext);
 
 		return (nIndex < 0 ? API.EXTERNAL_PATH : API.m_arrExternal[nIndex].sPath) + "****";
 	}
 
 	private static int FindExternal(HttpContext kContext)	// 경로 맞는 외부 API 목록 번호 (없음: -1)
 	{
-		string sPath = kContext.Request.Path.Value ?? "";
+		string	sPath	= kContext.Request.Path.Value ?? "";
 
 		return Array.FindIndex(API.m_arrExternal, kApi => sPath.StartsWith(kApi.sPath, StringComparison.OrdinalIgnoreCase));
 	}
@@ -224,7 +229,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static KeyAccount? FindKeyAccount(HttpContext kContext)	// 외부 API 계정: 목록 경로 뒤 "키/토큰" → 키 맵에서 계정 (관리 계정·aAccount) → 그 API 권한 (aAPI) 있음 + 토큰을 그 계정 sRand 키로 복호화 = 그 계정 sCode (끝 '/' 1개 허용, %2F: '/', 목록에 없음·없는 키·권한 없음·불일치: null)
 	{
-		int nIndex = FindExternal(kContext);
+		int	nIndex	= FindExternal(kContext);
 
 		if (nIndex < 0)
 		{
@@ -232,18 +237,18 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		}
 
 		string	sRest	= (kContext.Request.Path.Value ?? "").Substring(API.m_arrExternal[nIndex].sPath.Length).Replace("%2F", "/", StringComparison.OrdinalIgnoreCase);	// 경로 뒤 키/토큰 (없음: "", 경로 '/' 인코딩: 되돌림)
-		int		nSlash	= sRest.IndexOf('/');																																// 키 끝 (키: '/' 없음)
-		string	sKey	= nSlash < 0 ? sRest : sRest[..nSlash];																												// 계정 키 (sKey)
-		string	sToken	= nSlash < 0 ? "" : sRest[(nSlash + 1)..];																											// 토큰 ('/' 포함 가능)
-		string	sTrim	= sToken.EndsWith('/') ? sToken[..^1] : sToken;																										// 끝 '/' 뗀 토큰 (토큰 끝 '/': 원래 그대로도 확인)
-		string	sMenu	= API.m_arrExternal[nIndex].sMenu;																													// 그 API 권한 메뉴
+		int		nSlash	= sRest.IndexOf('/');							// 키 끝 (키: '/' 없음)
+		string	sKey	= nSlash < 0 ? sRest : sRest[..nSlash];			// 계정 키 (sKey)
+		string	sToken	= nSlash < 0 ? "" : sRest[(nSlash + 1)..];		// 토큰 ('/' 포함 가능)
+		string	sTrim	= sToken.EndsWith('/') ? sToken[..^1] : sToken;	// 끝 '/' 뗀 토큰 (토큰 끝 '/': 원래 그대로도 확인)
+		string	sMenu	= API.m_arrExternal[nIndex].sMenu;				// 그 API 권한 메뉴
 
 		if (!GetKeyMap().TryGetValue(sKey, out KeyAccount? kAccount) || !(kAccount.bMain || kAccount.arrApi.Contains(sMenu)))	// 없는 키·권한 없음 (aAPI: 관리 계정 전체)
 		{
 			return null;
 		}
 
-		bool bMatch = IsSame(AES.Decrypt(FromUrlToken(sToken), kAccount.sRand) ?? "", kAccount.sCode) | IsSame(AES.Decrypt(FromUrlToken(sTrim), kAccount.sRand) ?? "", kAccount.sCode);	// URL 용·예전 표준 형식 모두, 복호화 실패: "" → 불일치
+		bool	bMatch	= IsSame(AES.Decrypt(FromUrlToken(sToken), kAccount.sRand) ?? "", kAccount.sCode) | IsSame(AES.Decrypt(FromUrlToken(sTrim), kAccount.sRand) ?? "", kAccount.sCode);	// URL 용·예전 표준 형식 모두, 복호화 실패: "" → 불일치
 
 		return bMatch ? kAccount : null;
 	}
@@ -268,7 +273,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			return true;
 		}
 
-		ClaimsIdentity kIdentity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, kAccount.sID), new Claim(CLAIM_STAMP, GetStamp(kAccount)) }, CookieAuthenticationDefaults.AuthenticationScheme);	// 아이디 + 계정 표시 (OnLogin 과 같음)
+		ClaimsIdentity	kIdentity	= new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, kAccount.sID), new Claim(CLAIM_STAMP, GetStamp(kAccount)) }, CookieAuthenticationDefaults.AuthenticationScheme);	// 아이디 + 계정 표시 (OnLogin 과 같음)
 
 		await kContext.SignInAsync(new ClaimsPrincipal(kIdentity));
 
@@ -299,10 +304,10 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 			foreach (IConfigurationSection kSection in Config.GetChildren("aAccount"))
 			{
-				string sID		= kSection["sID"]?.Trim() ?? "";
-				string sCode	= kSection["sCode"] ?? "";
-				string sKey		= kSection["sKey"] ?? "";
-				string sRand	= kSection["sRand"] ?? "";
+				string	sID		= kSection["sID"]?.Trim() ?? "";
+				string	sCode	= kSection["sCode"] ?? "";
+				string	sKey	= kSection["sKey"] ?? "";
+				string	sRand	= kSection["sRand"] ?? "";
 
 				if (sID != "" && sCode != "" && sKey != "" && sRand != "" && !string.Equals(sID, sMainID, StringComparison.OrdinalIgnoreCase) && !hmapKey.ContainsKey(sKey))
 				{
@@ -334,15 +339,15 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static string FromUrlToken(string sToken)	// 받은 토큰 → 표준 base64 (URL 용: - → +, _ → /, = 채움, 예전 표준 형식: 그대로)
 	{
-		string sBase = sToken.Replace('-', '+').Replace('_', '/');	// URL 용 글자 되돌림
+		string	sBase	= sToken.Replace('-', '+').Replace('_', '/');	// URL 용 글자 되돌림
 
 		return sBase.Length % 4 == 0 ? sBase : sBase.PadRight(sBase.Length + 4 - sBase.Length % 4, '=');	// 뺀 = 채움
 	}
 
 	public static string GetMainPath()	// 관리 계정 외부 API "키/토큰" (알람 메일·훅 쿼리 링크, 관리 계정·키·sRand 없음: "")
 	{
-		string sMainKey		= Config.GetString("sKey");
-		string sMainToken	= GetUrlToken(Config.GetString("sRand"), Config.GetString("sCode"));	// 훅 링크: URL 용 (sRand·sCode 없음: "")
+		string	sMainKey	= Config.GetString("sKey");
+		string	sMainToken	= GetUrlToken(Config.GetString("sRand"), Config.GetString("sCode"));	// 훅 링크: URL 용 (sRand·sCode 없음: "")
 
 		return Config.GetString("sID") != "" && sMainKey != "" && sMainToken != "" ? sMainKey + "/" + sMainToken : "";
 	}
@@ -400,15 +405,15 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 		foreach (IConfigurationSection kSection in Config.GetChildren("aAccount"))
 		{
-			string sID		= kSection["sID"]?.Trim() ?? "";
-			string sPass	= kSection["sPass"] ?? "";	// sCode 복호화 값 (실패: 없음)
+			string	sID		= kSection["sID"]?.Trim() ?? "";
+			string	sPass	= kSection["sPass"] ?? "";	// sCode 복호화 값 (실패: 없음)
 
 			if (sID == "" || sPass == "" || listAccount.Any(kAccount => string.Equals(kAccount.sID, sID, StringComparison.OrdinalIgnoreCase)))
 			{
 				continue;
 			}
 
-			string[] arrMenu = GetConfigMenu(kSection);	// 설정 aMenu (없음: 전체)
+			string[]	arrMenu	= GetConfigMenu(kSection);	// 설정 aMenu (없음: 전체)
 
 			listAccount.Add(new AccountInfo(sID, sPass, arrMenu, arrMenu.Length == 0 ? Main.GetMenu() : Main.GetMenu().Where(arrMenu.Contains).ToArray(), false));
 		}
@@ -446,15 +451,15 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static async Task<IResult> OnLogin(HttpRequest kRequest)	// 로그인: POST 폼 id·pass 가 계정 (관리 계정·aAccount) 일치 + 접근 메뉴 있음 → 인증 쿠키 발급 (서버 오픈 뒤 첫 접속: 계정 + 마스터 키 key)
 	{
-		HttpContext kContext = kRequest.HttpContext;	// HttpContext 인자: RequestDelegate 로 바인딩되어 IResult 버려짐 → HttpRequest 인자
-		IFormCollection? kForm = kRequest.HasFormContentType ? await kRequest.ReadFormAsync() : null;	// 폼 아님: 불일치 처리
-		string sID = kForm?["id"].LastOrDefault() ?? "";
-		string sPass = kForm?["pass"].LastOrDefault() ?? "";
-		string sAddr = Web.GetAddr(kContext);
+		HttpContext			kContext	= kRequest.HttpContext;	// HttpContext 인자: RequestDelegate 로 바인딩되어 IResult 버려짐 → HttpRequest 인자
+		IFormCollection?	kForm		= kRequest.HasFormContentType ? await kRequest.ReadFormAsync() : null;	// 폼 아님: 불일치 처리
+		string				sID			= kForm?["id"].LastOrDefault() ?? "";
+		string				sPass		= kForm?["pass"].LastOrDefault() ?? "";
+		string				sAddr		= Web.GetAddr(kContext);
 
 		if (GetMasterKey() == "" && !Unlock(sID, sPass, kForm?["key"].LastOrDefault() ?? ""))	// 첫 접속: 계정 (관리 계정·aAccount) 아이디·비밀번호·마스터 키 (마스터 키·비밀번호 로그 미기록)
 		{
-			string sError = GetMasterError();	// 줄 번호 (로그만, 응답: LOGIN_ERROR)
+			string	sError	= GetMasterError();	// 줄 번호 (로그만, 응답: LOGIN_ERROR)
 
 			Log.Write(WARN_, sError);
 
@@ -463,7 +468,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			return Results.Json(new { success = false, error = LOGIN_ERROR });
 		}
 
-		AccountInfo? kAccount = GetAccountList().FirstOrDefault(kItem => IsSame(sID, kItem.sID) & IsSame(sPass, kItem.sPass));	// 맞는 계정 (& : 둘 다 비교)
+		AccountInfo?	kAccount	= GetAccountList().FirstOrDefault(kItem => IsSame(sID, kItem.sID) & IsSame(sPass, kItem.sPass));	// 맞는 계정 (& : 둘 다 비교)
 
 		if (kAccount == null || kAccount.arrMenu.Length == 0)	// 계정 없음·불일치·접근 메뉴 없음 (비밀번호 로그 미기록)
 		{
@@ -474,7 +479,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			return Results.Json(new { success = false, error = LOGIN_ERROR });
 		}
 
-		ClaimsIdentity kIdentity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, kAccount.sID), new Claim(CLAIM_STAMP, GetStamp(kAccount)) }, CookieAuthenticationDefaults.AuthenticationScheme);	// 아이디 + 계정 표시
+		ClaimsIdentity	kIdentity	= new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, kAccount.sID), new Claim(CLAIM_STAMP, GetStamp(kAccount)) }, CookieAuthenticationDefaults.AuthenticationScheme);	// 아이디 + 계정 표시
 
 		await kContext.SignInAsync(new ClaimsPrincipal(kIdentity));	// 세션 쿠키 (브라우저 종료 시 삭제)
 
@@ -485,11 +490,11 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static bool Unlock(string sID, string sPass, string sKey)	// 마스터 키 입력 (서버 오픈 뒤 첫 접속 1회): 계정 (관리 계정·aAccount) 아이디 일치 + 그 계정 sCode 를 입력 키로 복호화 = 입력 비밀번호 → 마스터 키 메모리 + 설정 다시 로딩 (모든 sCode → sPass 메모리)
 	{
-		bool bMatch = false;	// 맞는 계정 있음
+		bool	bMatch	= false;	// 맞는 계정 있음
 
 		foreach ((string sCodeID, string sCode) in GetCodeList())	// 모두 비교 (비교 시간 일정)
 		{
-			string? sCodePass = sKey == "" ? null : AES.Decrypt(sCode, sKey);	// 입력 키로 푼 비밀번호 (실패: null)
+			string?	sCodePass	= sKey == "" ? null : AES.Decrypt(sCode, sKey);	// 입력 키로 푼 비밀번호 (실패: null)
 
 			bMatch |= sCodePass != null & IsSame(sID, sCodeID) & IsSame(sPass, sCodePass ?? "");
 		}
@@ -524,8 +529,8 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	private static List<(string sID, string sCode)> GetCodeList()	// 마스터 키 확인 계정 아이디·sCode (암호화 값 그대로): 관리 계정 + aAccount (빈 값·아이디 겹침: 뺌, GetAccountList 와 같은 규칙)
 	{
 		List<(string sID, string sCode)>	listCode	= new List<(string sID, string sCode)>();
-		string								sMainID		= Config.GetString("sID");
-		string								sMainCode	= Config.GetString("sCode");
+		string	sMainID		= Config.GetString("sID");
+		string	sMainCode	= Config.GetString("sCode");
 
 		if (sMainID != "" && sMainCode != "")
 		{
@@ -534,8 +539,8 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 		foreach (IConfigurationSection kSection in Config.GetChildren("aAccount"))
 		{
-			string sID		= kSection["sID"]?.Trim() ?? "";
-			string sCode	= kSection["sCode"] ?? "";
+			string	sID		= kSection["sID"]?.Trim() ?? "";
+			string	sCode	= kSection["sCode"] ?? "";
 
 			if (sID == "" || sCode == "" || string.Equals(sID, sMainID, StringComparison.OrdinalIgnoreCase) || listCode.Any(kCode => string.Equals(kCode.sID, sID, StringComparison.OrdinalIgnoreCase)))
 			{
@@ -593,7 +598,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		{
 			lock (m_kAccountLock)
 			{
-				List<IConfigurationSection>	listSection	= Config.GetChildren("aAccount").ToList();	// 설정 aAccount (빠진 항목 포함)
+				List<IConfigurationSection>	listSection	= Config.GetChildren("aAccount").ToList();				// 설정 aAccount (빠진 항목 포함)
 				int							nOld		= sOldID == "" ? -1 : FindSection(listSection, sOldID);	// 수정할 자리
 				int							nSame		= FindSection(listSection, sID);						// 같은 아이디
 
@@ -607,7 +612,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 				}
 				else
 				{
-					JsonArray	kArray	= new JsonArray(listSection.Select(ToNode).ToArray());	// 저장할 목록
+					JsonArray	kArray	= new JsonArray(listSection.Select(ToNode).ToArray());				// 저장할 목록
 					string		sCode	= sPass != "" ? AES.Encrypt(sPass) : GetCode(listSection[nOld]);	// 수정 비움: 그대로
 					JsonObject	kNode	= new JsonObject
 					{
@@ -646,8 +651,8 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static async Task<IResult> OnAccountDelete(AccountParam kParam, HttpRequest kRequest)	// 계정 삭제: 관리 계정·관리 비밀번호 → Account.json aAccount 에서 뺌 + 모든 알람 메일·SMS 받는 계정에서 뺌 (없는 아이디: 오류, 그 계정 쿠키: 무효, 요청자 IP 로그)
 	{
-		string sID		= kParam.sID?.Trim() ?? "";
-		string sError	= await CheckAdmin(kParam.sAdmin, kRequest.HttpContext);
+		string	sID		= kParam.sID?.Trim() ?? "";
+		string	sError	= await CheckAdmin(kParam.sAdmin, kRequest.HttpContext);
 
 		if (sError == "")
 		{
@@ -684,9 +689,9 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static async Task<IResult> OnAccountKey(AccountParam kParam, HttpRequest kRequest)	// 계정 외부 API 키 적용 (키는 여기서만 바뀜): 관리 계정·관리 비밀번호 → 그 계정 sKey = 수정 창 새 키 (영문·숫자 X자리, 없음: 서버가 만듦, 다른 계정 키와 겹침: 오류) + sToken 다시 + sKey 밑 sRand 무작위 X자리 새로 (화면 안 보임) (관리 계정: Account.json 최상위 sKey·sRand·sToken, aAccount: 그 항목) → 저장 (예전 키·링크: 못 씀, 요청자 IP 로그) → {sError, arrAccount}
 	{
-		string sID		= kParam.sID?.Trim() ?? "";
-		string sKey		= kParam.sKey?.Trim() ?? "";	// 적용할 키 (없음: 서버가 만듦)
-		string sError	= await CheckAdmin(kParam.sAdmin, kRequest.HttpContext);	// 관리 계정 로그인 + 관리 비밀번호 (불일치: X초 지연)
+		string	sID		= kParam.sID?.Trim() ?? "";
+		string	sKey	= kParam.sKey?.Trim() ?? "";	// 적용할 키 (없음: 서버가 만듦)
+		string	sError	= await CheckAdmin(kParam.sAdmin, kRequest.HttpContext);	// 관리 계정 로그인 + 관리 비밀번호 (불일치: X초 지연)
 
 		if (sError == "" && sKey == "")
 		{
@@ -712,7 +717,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		{
 			if (sID != "" && string.Equals(sID, Config.GetString("sID"), StringComparison.Ordinal))	// 관리 계정: Account.json 최상위 sToken·sKey
 			{
-				string sRand = NewKey();	// sKey 밑 무작위 X자리 (화면 안 보임, 토큰 암호화 키)
+				string	sRand	= NewKey();	// sKey 밑 무작위 X자리 (화면 안 보임, 토큰 암호화 키)
 
 				sError = Config.SetValue("sKey", sKey);
 
@@ -737,9 +742,9 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 				}
 				else
 				{
-					JsonArray kArray = new JsonArray(listSection.Select(ToNode).ToArray());	// 저장할 목록
+					JsonArray	kArray	= new JsonArray(listSection.Select(ToNode).ToArray());	// 저장할 목록
 
-					string sRand = NewKey();	// sKey 밑 무작위 X자리 (화면 안 보임, 토큰 암호화 키)
+					string	sRand	= NewKey();	// sKey 밑 무작위 X자리 (화면 안 보임, 토큰 암호화 키)
 
 					kArray[nOld]!["sKey"]	= sKey;
 					kArray[nOld]!["sRand"]	= sRand;
@@ -760,7 +765,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static async Task<string> CheckAdmin(string? sAdmin, HttpContext kContext)	// 관리 계정 로그인 + 관리 비밀번호 (관리 계정 sCode 복호화 값) 확인 (반환: 오류, 통과: "", 다른 계정: 경고 로그, 비밀번호 불일치: X초 지연·경고 로그)
 	{
-		string sMainPass = Config.GetString("sPass");
+		string	sMainPass	= Config.GetString("sPass");
 
 		if (!IsAdmin(kContext))	// 관리 계정 아님
 		{
@@ -818,7 +823,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static string SetAccounts(JsonArray kArray)	// 설정 aAccount 저장 (Account.json, sID 오름차순: 숫자 크기 순, 반환: 오류, 성공: "")
 	{
-		List<JsonNode?> listNode = kArray.ToList();	// 항목 (부모 떼고 다시 담음)
+		List<JsonNode?>	listNode	= kArray.ToList();	// 항목 (부모 떼고 다시 담음)
 
 		kArray.Clear();
 
@@ -829,7 +834,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 	{
 		string		sID		= kSection["sID"] ?? "";
 		string		sCode	= GetCode(kSection);
-		string[]	arrRaw	= GetConfigMenu(kSection);							// 설정 aMenu (예전: 로그 포함)
+		string[]	arrRaw	= GetConfigMenu(kSection);	// 설정 aMenu (예전: 로그 포함)
 		string[]	arrTab	= arrRaw.Where(sMenu => sMenu != MENU_LOG).ToArray();	// 탭만 (로그: aAPI 로)
 
 		return new JsonObject
@@ -848,21 +853,21 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static string GetCode(IConfigurationSection kSection)	// 설정 aAccount 항목 sCode (없음: 평문 sPass → 암호화, 둘 다 없음: "")
 	{
-		string sPass = kSection["sPass"] ?? "";	// sCode 있음: 복호화 값, 없음: 파일 평문
+		string	sPass	= kSection["sPass"] ?? "";	// sCode 있음: 복호화 값, 없음: 파일 평문
 
 		return kSection["sCode"] ?? (sPass != "" ? AES.Encrypt(sPass) : "");
 	}
 
 	private static object[] GetAccountView()	// 계정 목록 응답 (아이디·메일·전화·설정 aMenu·관리 계정·외부 API 키·토큰 (키 없음: ""), 비밀번호 빼고, 관리 계정 팝업만)
 	{
-		Dictionary<string, (string sKey, string sToken)> hmapKey = new Dictionary<string, (string sKey, string sToken)>(StringComparer.Ordinal);	// 아이디 → 키·토큰
+		Dictionary<string, (string sKey, string sToken)>	hmapKey	= new Dictionary<string, (string sKey, string sToken)>(StringComparer.Ordinal);	// 아이디 → 키·토큰
 
 		foreach (KeyValuePair<string, KeyAccount> kPair in GetKeyMap())
 		{
 			hmapKey.TryAdd(kPair.Value.sID, (kPair.Key, GetUrlToken(kPair.Value.sRand, kPair.Value.sCode)));	// 계정 팝업 표시: URL 용
 		}
 
-		Dictionary<string, (string sMail, string sPhone, string[] arrApi)> hmapInfo = new Dictionary<string, (string sMail, string sPhone, string[] arrApi)>(StringComparer.Ordinal);	// 아이디 → 메일·전화·외부 API 권한 (aAccount)
+		Dictionary<string, (string sMail, string sPhone, string[] arrApi)>	hmapInfo	= new Dictionary<string, (string sMail, string sPhone, string[] arrApi)>(StringComparer.Ordinal);	// 아이디 → 메일·전화·외부 API 권한 (aAccount)
 
 		foreach (IConfigurationSection kSection in Config.GetChildren("aAccount"))
 		{
@@ -880,7 +885,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static async Task<IResult> OnLogout(HttpRequest kRequest)	// 로그아웃: 인증 쿠키 삭제 (이 브라우저만, 요청자 IP 로그)
 	{
-		HttpContext kContext = kRequest.HttpContext;	// HttpContext 인자: RequestDelegate 로 바인딩되어 IResult 버려짐 → HttpRequest 인자
+		HttpContext	kContext	= kRequest.HttpContext;	// HttpContext 인자: RequestDelegate 로 바인딩되어 IResult 버려짐 → HttpRequest 인자
 
 		await kContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -896,7 +901,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 
 	private static string LoginHtml()	// 로그인 페이지 HTML (로그인 주소 = form action: ToolManager 경유 주소 변환 대응, 성공: 새로고침 → 요청 페이지, 마스터 키 입력 전: 마스터 키 칸)
 	{
-		string sTitle	= System.Net.WebUtility.HtmlEncode(Web.GetTitle());
+		string	sTitle	= System.Net.WebUtility.HtmlEncode(Web.GetTitle());
 		string sKeyHtml	= GetMasterKey() != "" ? "" : """<label for="key">마스터 키</label><input id="key" type="password" autocomplete="off">""";	// 첫 접속만
 
 		return $$"""
@@ -930,7 +935,7 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 		document.getElementById('login').addEventListener('submit', async kEvent => {
 			kEvent.preventDefault();
 
-			const kId = document.getElementById('id'), kPass = document.getElementById('pass'), kKey = document.getElementById('key'), kErr = document.getElementById('err'), kBtn = document.getElementById('btn');
+			const	kId	= document.getElementById('id'), kPass = document.getElementById('pass'), kKey = document.getElementById('key'), kErr = document.getElementById('err'), kBtn = document.getElementById('btn');
 
 			if (kPass.value === '') {	// 아이디 Enter: 비밀번호로 이동
 				kPass.focus();
@@ -947,8 +952,8 @@ static class Auth	// 웹 로그인 (설정 bAuth): 쿠키 인증 등록·로그�
 			kBtn.disabled = true;
 
 			try {
-				const kRes = await fetch(kEvent.target.action, { method: 'POST', body: new URLSearchParams({ id: kId.value.trim(), pass: kPass.value, key: kKey?.value ?? '' }) });
-				const kData = await kRes.json();
+				const	kRes	= await fetch(kEvent.target.action, { method: 'POST', body: new URLSearchParams({ id: kId.value.trim(), pass: kPass.value, key: kKey?.value ?? '' }) });
+				const	kData	= await kRes.json();
 
 				if (kData.success) {	// 새로고침 → 요청 페이지
 					location.reload();

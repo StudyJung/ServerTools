@@ -1,6 +1,6 @@
 class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다운 지시 (Redis 서버 목록 → 머신별 HMXClient 가 Git 갱신·실행·종료)·등록·편집·삭제·이름 변경·작업 로그·에러 (HMXServer 이식, API: Process, 페이지 쪽: ProcessHTML)
 {
-	private readonly Process m_kProcess;	// 반영 API
+	private readonly Process	m_kProcess;	// 반영 API
 
 	public TabProcess()
 	{
@@ -17,63 +17,63 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		return """
 		class Process	// 반영 탭: 게임 서버 목록 (Redis) 시작·정지·다운·등록·편집·복제·삭제·이름 변경·작업 로그·에러 (HMXServer 이식, this 없음 → 메서드를 이벤트 처리기로 바로 넘김, innerHTML 값: Escape)
 		{
-		    static POLL_MS			= 1000;					// 목록 갱신 주기 (ms, 반영 탭 보일 때만, 첫 로딩·순차 작업 중: 계속)
-		    static PAGE_SIZE		= 300;					// 로그·에러 한 페이지 (서버 PAGE_LIMIT 와 같음)
-		    static TRY_COUNT		= 3;					// 시작·정지·다운 요청 시도 횟수
-		    static STALE_WAIT_MS	= 1500;					// 버전 불일치 배너 뒤 다시 읽기 (ms)
-		    static TOAST_MS			= 3500;					// 토스트 표시 (ms)
-		    static TOAST_FAIL_MS	= 6000;					// 실패 토스트 표시 (ms)
-		    static FLASH_MS			= 1700;					// 찾아간 줄 깜빡임 (ms)
-		    static LIST_MAX			= 5;					// 토스트 대상 이름 최대 (넘음: 외 N)
-		    static BLOCK_MAX		= 6;					// 확인 팝업 제외 목록 최대 (넘음: 외 N)
-		    static EXPAND_KEY		= "HMX.ProcessExpand";	// 펼친 중분류 localStorage 키
-		    static SUMMARY_KEY		= "HMX.ProcessSummary";	// 현황 펼침 localStorage 키 ("1": 펼침)
-		    static STATE_NAME		= { running: "Running", starting: "Starting", stopping: "Stopping", stopped: "Stopped", failed: "Failed", downloading: "Downloading" };	// 상태 배지 이름
-		    static OP				= { On: { sName: "시작", sIcon: "▶" }, Off: { sName: "정지", sIcon: "■" }, Down: { sName: "다운로드", sIcon: "↓" } };	// 작업 이름·아이콘 글자
-		    static LOG_TYPE			= { all: "전체", action: "조작", edit: "설정 변경", system: "상태 변경", login: "로그인", error: "경고·오류" };	// 로그 종류 칩
-		    static LOG_RANGE		= [["15m", "15분", 15], ["1h", "1시간", 60], ["6h", "6시간", 360], ["today", "오늘", 0], ["1d", "24시간", 1440], ["7d", "7일", 10080]];	// 로그 기간 칩 [키, 이름, 분 (오늘: 0시부터)]
+		    static	POLL_MS			= 1000;					// 목록 갱신 주기 (ms, 반영 탭 보일 때만, 첫 로딩·순차 작업 중: 계속)
+		    static	PAGE_SIZE		= 300;					// 로그·에러 한 페이지 (서버 PAGE_LIMIT 와 같음)
+		    static	TRY_COUNT		= 3;					// 시작·정지·다운 요청 시도 횟수
+		    static	STALE_WAIT_MS	= 1500;					// 버전 불일치 배너 뒤 다시 읽기 (ms)
+		    static	TOAST_MS		= 3500;					// 토스트 표시 (ms)
+		    static	TOAST_FAIL_MS	= 6000;					// 실패 토스트 표시 (ms)
+		    static	FLASH_MS		= 1700;					// 찾아간 줄 깜빡임 (ms)
+		    static	LIST_MAX		= 5;					// 토스트 대상 이름 최대 (넘음: 외 N)
+		    static	BLOCK_MAX		= 6;					// 확인 팝업 제외 목록 최대 (넘음: 외 N)
+		    static	EXPAND_KEY		= "HMX.ProcessExpand";	// 펼친 중분류 localStorage 키
+		    static	SUMMARY_KEY		= "HMX.ProcessSummary";	// 현황 펼침 localStorage 키 ("1": 펼침)
+		    static	STATE_NAME		= { running: "Running", starting: "Starting", stopping: "Stopping", stopped: "Stopped", failed: "Failed", downloading: "Downloading" };	// 상태 배지 이름
+		    static	OP				= { On: { sName: "시작", sIcon: "▶" }, Off: { sName: "정지", sIcon: "■" }, Down: { sName: "다운로드", sIcon: "↓" } };	// 작업 이름·아이콘 글자
+		    static	LOG_TYPE		= { all: "전체", action: "조작", edit: "설정 변경", system: "상태 변경", login: "로그인", error: "경고·오류" };	// 로그 종류 칩
+		    static	LOG_RANGE		= [["15m", "15분", 15], ["1h", "1시간", 60], ["6h", "6시간", 360], ["today", "오늘", 0], ["1d", "24시간", 1440], ["7d", "7일", 10080]];	// 로그 기간 칩 [키, 이름, 분 (오늘: 0시부터)]
 
-		    static kStale			= document.getElementById("ProcessStale");			// 버전 불일치 배너
-		    static kStaleText		= document.getElementById("ProcessStaleText");		// 배너 서버·화면 버전
-		    static kSummary			= document.getElementById("ProcessSummary");		// 현황·필터 (현황 버튼 펼침)
-		    static kSummaryButton	= document.getElementById("ProcessSummaryButton");	// 현황 버튼 (펼침: 존 색)
-		    static kCards			= document.getElementById("ProcessCards");			// 요약 카드 (대분류마다)
-		    static kSearch			= document.getElementById("ProcessSearch");			// 검색칸
-		    static kChips			= document.getElementById("ProcessChips");			// 상태 칩
-		    static kMachine			= document.getElementById("ProcessMachine");		// 머신 드롭 박스
-		    static kVersion			= document.getElementById("ProcessVersion");		// 설정 버전 Ver.N
-		    static kTest			= document.getElementById("ProcessTest");			// TestOn·TestOff (설정 bTest)
-		    static kError			= document.getElementById("ProcessError");			// 목록 오류
-		    static kTables			= document.getElementById("ProcessTables");			// 서버 표 (대분류마다 상자)
-		    static kDrawer			= document.getElementById("ProcessDrawer");			// 상세 패널 (오른쪽 서랍)
-		    static kMenu			= document.getElementById("ProcessMenu");			// 줄 메뉴 (⋯)
-		    static kDialog			= document.getElementById("ProcessDialog");			// 공통 팝업 (확인·폼·이름 변경·로그·에러)
-		    static kToasts			= document.getElementById("ProcessToasts");			// 토스트 (다른 탭에서도 보임)
-		    static kDeleteYes		= document.getElementById("DeleteYes");				// 삭제 확인 삭제 (실행 중: 꺼짐)
-		    static kDeleteStop		= document.getElementById("ProcessDeleteStop");		// 삭제 확인 먼저 정지 (Running 만)
+		    static	kStale			= document.getElementById("ProcessStale");			// 버전 불일치 배너
+		    static	kStaleText		= document.getElementById("ProcessStaleText");		// 배너 서버·화면 버전
+		    static	kSummary		= document.getElementById("ProcessSummary");		// 현황·필터 (현황 버튼 펼침)
+		    static	kSummaryButton	= document.getElementById("ProcessSummaryButton");	// 현황 버튼 (펼침: 존 색)
+		    static	kCards			= document.getElementById("ProcessCards");			// 요약 카드 (대분류마다)
+		    static	kSearch			= document.getElementById("ProcessSearch");			// 검색칸
+		    static	kChips			= document.getElementById("ProcessChips");			// 상태 칩
+		    static	kMachine		= document.getElementById("ProcessMachine");		// 머신 드롭 박스
+		    static	kVersion		= document.getElementById("ProcessVersion");		// 설정 버전 Ver.N
+		    static	kTest			= document.getElementById("ProcessTest");			// TestOn·TestOff (설정 bTest)
+		    static	kError			= document.getElementById("ProcessError");			// 목록 오류
+		    static	kTables			= document.getElementById("ProcessTables");			// 서버 표 (대분류마다 상자)
+		    static	kDrawer			= document.getElementById("ProcessDrawer");			// 상세 패널 (오른쪽 서랍)
+		    static	kMenu			= document.getElementById("ProcessMenu");			// 줄 메뉴 (⋯)
+		    static	kDialog			= document.getElementById("ProcessDialog");			// 공통 팝업 (확인·폼·이름 변경·로그·에러)
+		    static	kToasts			= document.getElementById("ProcessToasts");			// 토스트 (다른 탭에서도 보임)
+		    static	kDeleteYes		= document.getElementById("DeleteYes");				// 삭제 확인 삭제 (실행 중: 꺼짐)
+		    static	kDeleteStop		= document.getElementById("ProcessDeleteStop");		// 삭제 확인 먼저 정지 (Running 만)
 
-		    static bOpened		= false;		// 처음 열기 끝 (첫 로딩·폴링 시작)
-		    static bStarted		= false;		// 첫 목록 끝 (빈 목록 안내: 불러오는 중 → 등록된 서버 없음)
-		    static bListError	= false;		// 목록 요청 실패 (작업 버튼 잠금)
-		    static kLoad		= null;			// 목록 요청 중 (Promise, 겹침 방지)
-		    static nVersion		= 0;			// 화면 설정 버전 (등록·수정·삭제·이름 변경 검증)
-		    static arrRow		= [];			// 서버 목록 [{ sField, sValue }] (서버 정렬 순서)
-		    static sRawList		= "";			// 직전 목록 응답 (바뀜만 다시 그림)
-		    static setJob		= new Set();	// 진행 중 순차 작업 { sTitle, sResult } (여러 대분류 겹침 가능, 끝: 뺌)
-		    static kStart		= null;			// 첫 로딩 (Promise, Ctrl·Alt+클릭 새 창 버튼: 끝난 뒤 실행)
-		    static sDrawer		= null;			// 상세 패널 서버 키
-		    static sSelect		= null;			// 선택 줄 서버 키
-		    static setExpand	= new Set();	// 펼친 중분류 ("g:대분류,중분류")
-		    static kFilter		= { sKey: "", sState: "all", sMachine: "" };	// 검색어·상태 칩·머신
-		    static funcModal	= null;			// 확인 팝업 결과 대기 (resolve)
-		    static kRename		= null;			// 이름 변경 대상 { sScope, arrList, funcKey }
-		    static sLogNew		= "";			// 로그 최신 커서 (▲ 더 최신)
-		    static sLogOld		= "";			// 로그 최과거 커서 (더 과거 ▼)
-		    static arrLog		= [];			// 지금 로그 페이지 줄
-		    static kLogState	= { sRange: "1h", sType: "all", sKey: "" };	// 로그 기간·종류·검색
-		    static nErrOffset	= 0;			// 에러 페이지 시작 (0: 최신)
-		    static arrErr		= [];			// 지금 에러 페이지
-		    static kErrState	= { sMachine: "", sLevel: "", sKey: "" };	// 에러 머신·레벨·검색
+		    static	bOpened		= false;		// 처음 열기 끝 (첫 로딩·폴링 시작)
+		    static	bStarted	= false;		// 첫 목록 끝 (빈 목록 안내: 불러오는 중 → 등록된 서버 없음)
+		    static	bListError	= false;		// 목록 요청 실패 (작업 버튼 잠금)
+		    static	kLoad		= null;			// 목록 요청 중 (Promise, 겹침 방지)
+		    static	nVersion	= 0;			// 화면 설정 버전 (등록·수정·삭제·이름 변경 검증)
+		    static	arrRow		= [];			// 서버 목록 [{ sField, sValue }] (서버 정렬 순서)
+		    static	sRawList	= "";			// 직전 목록 응답 (바뀜만 다시 그림)
+		    static	setJob		= new Set();	// 진행 중 순차 작업 { sTitle, sResult } (여러 대분류 겹침 가능, 끝: 뺌)
+		    static	kStart		= null;			// 첫 로딩 (Promise, Ctrl·Alt+클릭 새 창 버튼: 끝난 뒤 실행)
+		    static	sDrawer		= null;			// 상세 패널 서버 키
+		    static	sSelect		= null;			// 선택 줄 서버 키
+		    static	setExpand	= new Set();	// 펼친 중분류 ("g:대분류,중분류")
+		    static	kFilter		= { sKey: "", sState: "all", sMachine: "" };	// 검색어·상태 칩·머신
+		    static	funcModal	= null;			// 확인 팝업 결과 대기 (resolve)
+		    static	kRename		= null;			// 이름 변경 대상 { sScope, arrList, funcKey }
+		    static	sLogNew		= "";			// 로그 최신 커서 (▲ 더 최신)
+		    static	sLogOld		= "";			// 로그 최과거 커서 (더 과거 ▼)
+		    static	arrLog		= [];			// 지금 로그 페이지 줄
+		    static	kLogState	= { sRange: "1h", sType: "all", sKey: "" };	// 로그 기간·종류·검색
+		    static	nErrOffset	= 0;			// 에러 페이지 시작 (0: 최신)
+		    static	arrErr		= [];			// 지금 에러 페이지
+		    static	kErrState	= { sMachine: "", sLevel: "", sKey: "" };	// 에러 머신·레벨·검색
 
 		    static Open()	// 반영 탭 버튼: 반영 창 (처음: 버전·목록 로딩 + 폴링, 다시 열기: 바로 갱신)
 		    {
@@ -124,21 +124,21 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static GetInfo(kRow)	// 값 파트: 상태,적용,PID,커밋,머신,다운폴더,깃헙폴더,Sync,Mode,실행파일+인자들
 		    {
-		        const arrPart = kRow.sValue.split(",");
+		        const	arrPart	= kRow.sValue.split(",");
 
 		        return { sStatus: arrPart[0] || "", sApply: arrPart[1] || "", nPid: parseInt(arrPart[2], 10), sCommit: arrPart[3] || "", sMachine: arrPart[4] || "", sFolder: arrPart[5] || "", sRepo: arrPart[6] || "", sSync: arrPart[7] || "", sMode: arrPart[8] || "", sCmd: arrPart.slice(9).join(",") };
 		    }
 
 		    static BuildValue(sValue, sStatus, sApply)	// 상태,적용만 바꾼 값 (뒤 파트 유지)
 		    {
-		        const sRest = sValue.split(",").slice(2).join(",");
+		        const	sRest	= sValue.split(",").slice(2).join(",");
 
 		        return `${sStatus},${sApply}${sRest !== "" ? "," + sRest : ""}`;
 		    }
 
 		    static GetState(kRow)	// 상태 (On·Down 재요청: 이전 실패 PID 보다 우선, PID 음수: 실패, Down,True: 정지)
 		    {
-		        const kInfo = Process.GetInfo(kRow);
+		        const	kInfo	= Process.GetInfo(kRow);
 
 		        if (kInfo.sApply === "False" && (kInfo.sStatus === "On" || kInfo.sStatus === "Down"))
 		        {
@@ -165,21 +165,21 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static Badge(kRow)	// 상태 배지 (Primer Label + 점)
 		    {
-		        const sState = Process.GetState(kRow);
+		        const	sState	= Process.GetState(kRow);
 
 		        return `<span class="badge ${sState}">${Process.STATE_NAME[sState]}</span>`;
 		    }
 
 		    static GetGroup(sField)	// 중분류 키: 첫째·둘째 값
 		    {
-		        const arrPart = sField.split(",");
+		        const	arrPart	= sField.split(",");
 
 		        return arrPart.length >= 2 ? arrPart[0] + "," + arrPart[1] : sField;
 		    }
 
 		    static GetLabel(sField)	// 서버 이름: 셋째 값부터
 		    {
-		        const arrPart = sField.split(",");
+		        const	arrPart	= sField.split(",");
 
 		        return arrPart.length >= 3 ? arrPart.slice(2).join(",").trim() : sField;
 		    }
@@ -201,13 +201,13 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static GetModel()	// 대분류: 중분류 첫 숫자 100 단위 (이름: 첫 그룹 첫째 값, 숫자 자연 정렬) → [{ sId, nNumber, sLabel, arrGroup: [{ sId, sLabel, arrRow }], arrRow }]
 		    {
-		        const mapGroup	= new Map();	// 중분류 → 서버 (목록 순서)
-		        const arrSec	= [];
-		        let kSec		= null;
+		        const	mapGroup	= new Map();	// 중분류 → 서버 (목록 순서)
+		        const	arrSec		= [];
+		        let		kSec		= null;
 
 		        for (const kRow of Process.arrRow)
 		        {
-		            const sGroup = Process.GetGroup(kRow.sField);
+		            const	sGroup	= Process.GetGroup(kRow.sField);
 
 		            if (!mapGroup.has(sGroup))
 		            {
@@ -217,12 +217,12 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            mapGroup.get(sGroup).push(kRow);
 		        }
 
-		        const arrGroup = [...mapGroup.keys()].sort((sA, sB) => sA === sB ? 0 : (sA === "" ? 1 : (sB === "" ? -1 : sA.localeCompare(sB, undefined, { numeric: true }))));	// 빈 그룹: 맨 뒤
+		        const	arrGroup	= [...mapGroup.keys()].sort((sA, sB) => sA === sB ? 0 : (sA === "" ? 1 : (sB === "" ? -1 : sA.localeCompare(sB, undefined, { numeric: true }))));	// 빈 그룹: 맨 뒤
 
 		        for (const sGroup of arrGroup)
 		        {
-		            const nNumber	= parseInt(sGroup, 10);
-		            const sId		= isNaN(nNumber) ? "x" : String(Math.floor(nNumber / 100));
+		            const	nNumber	= parseInt(sGroup, 10);
+		            const	sId		= isNaN(nNumber) ? "x" : String(Math.floor(nNumber / 100));
 
 		            if (kSec == null || kSec.sId !== sId)
 		            {
@@ -250,11 +250,11 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static GetCount(arrList)	// 상태별 수 (transit: 진행 중)
 		    {
-		        const kCount = { total: arrList.length, transit: 0, running: 0, starting: 0, stopping: 0, stopped: 0, failed: 0, downloading: 0 };
+		        const	kCount	= { total: arrList.length, transit: 0, running: 0, starting: 0, stopping: 0, stopped: 0, failed: 0, downloading: 0 };
 
 		        for (const kRow of arrList)
 		        {
-		            const sState = Process.GetState(kRow);
+		            const	sState	= Process.GetState(kRow);
 
 		            ++kCount[sState];
 
@@ -269,11 +269,11 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static GetMajority(arrList)	// 다수 커밋
 		    {
-		        const kCount = {};	// 커밋 → 서버 수 (객체: 같은 수 → 숫자 커밋 먼저, 원본과 같은 순서)
+		        const	kCount	= {};	// 커밋 → 서버 수 (객체: 같은 수 → 숫자 커밋 먼저, 원본과 같은 순서)
 
 		        for (const kRow of arrList)
 		        {
-		            const sCommit = Process.GetInfo(kRow).sCommit;
+		            const	sCommit	= Process.GetInfo(kRow).sCommit;
 
 		            kCount[sCommit] = (kCount[sCommit] ?? 0) + 1;
 		        }
@@ -283,7 +283,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static GetDrift(arrList)	// 커밋 불일치 서버 (다수 커밋과 다름)
 		    {
-		        const sMajor = Process.GetMajority(arrList);
+		        const	sMajor	= Process.GetMajority(arrList);
 
 		        return arrList.filter(kRow => Process.GetInfo(kRow).sCommit !== sMajor);
 		    }
@@ -324,7 +324,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    {
 		        try
 		        {
-		            const kResponse = await fetch("api/process?action=version");
+		            const	kResponse	= await fetch("api/process?action=version");
 
 		            if (kResponse.ok)
 		            {
@@ -377,7 +377,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ApplyLocal(sField, sValue)	// 내 변경 성공: 다음 갱신 전 바로 반영
 		    {
-		        const kRow = Process.FindRow(sField);
+		        const	kRow	= Process.FindRow(sField);
 
 		        if (kRow != null)
 		        {
@@ -389,11 +389,11 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ParseList(sText)	// 목록 응답 "필드|값" 줄 → [{ sField, sValue }]
 		    {
-		        const arrRow = [];
+		        const	arrRow	= [];
 
 		        for (const sLine of sText.trim().split("\n"))
 		        {
-		            const nBar = sLine.indexOf("|");
+		            const	nBar	= sLine.indexOf("|");
 
 		            if (nBar > 0)
 		            {
@@ -437,14 +437,14 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    {
 		        try
 		        {
-		            const kResponse = await fetch("api/process");
+		            const	kResponse	= await fetch("api/process");
 
 		            if (!kResponse.ok)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            const sText = await kResponse.text();
+		            const	sText	= await kResponse.text();
 
 		            if (sText.startsWith("오류:"))	// Redis 오류 등: 서버 오류 글
 		            {
@@ -497,8 +497,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    {
 		        Process.kCards.innerHTML = Process.GetModel().map(kSec =>
 		        {
-		            const kCount	= Process.GetCount(kSec.arrRow);
-		            const nDrift	= kSec.arrGroup.reduce((nSum, kGroup) => nSum + Process.GetDrift(kGroup.arrRow).length, 0);
+		            const	kCount	= Process.GetCount(kSec.arrRow);
+		            const	nDrift	= kSec.arrGroup.reduce((nSum, kGroup) => nSum + Process.GetDrift(kGroup.arrRow).length, 0);
 		            const sTag		= (kCount.failed ? `<span class="tag fail">✕ Failed ${kCount.failed}</span>` : "")
 		                + (kCount.transit ? `<span class="tag start"><span class="spin"></span> 진행 중 ${kCount.transit}</span>` : "")
 		                + (nDrift ? `<span class="tag warn" title="그룹 다수와 다른 커밋">⚠ 커밋 불일치 ${nDrift}</span>` : "")
@@ -511,10 +511,10 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static RenderChips()	// 상태 칩 (+ 개수, 선택: 존 색) + 머신 드롭 박스 (머신 바뀜만 다시)
 		    {
-		        const kCount		= Process.GetCount(Process.arrRow);
-		        const arrChip		= [["all", "전체", kCount.total], ["running", "Running", kCount.running], ["transit", "진행 중", kCount.transit], ["stopped", "Stopped", kCount.stopped], ["failed", "Failed", kCount.failed], ["drift", "커밋 불일치", Process.arrRow.filter(kRow => Process.IsDrift(kRow)).length]];
-		        const arrMachine	= [...new Set(Process.arrRow.map(kRow => Process.GetInfo(kRow).sMachine).filter(Boolean))].sort();
-		        const sSignature	= arrMachine.join("|");
+		        const	kCount		= Process.GetCount(Process.arrRow);
+		        const	arrChip		= [["all", "전체", kCount.total], ["running", "Running", kCount.running], ["transit", "진행 중", kCount.transit], ["stopped", "Stopped", kCount.stopped], ["failed", "Failed", kCount.failed], ["drift", "커밋 불일치", Process.arrRow.filter(kRow => Process.IsDrift(kRow)).length]];
+		        const	arrMachine	= [...new Set(Process.arrRow.map(kRow => Process.GetInfo(kRow).sMachine).filter(Boolean))].sort();
+		        const	sSignature	= arrMachine.join("|");
 
 		        Process.kChips.innerHTML = arrChip.map(([sId, sName, nCount]) => `<button type="button" class="chip${Process.kFilter.sState === sId ? " cur" : ""}" data-act="state" data-id="${sId}">${sName} <span class="n">${nCount}</span></button>`).join("");
 
@@ -528,10 +528,10 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static IsMatch(kRow)	// 필터 맞음 (상태 칩·머신·검색어: 키·머신·커밋·실행 명령 부분 일치, 대소문자 무시)
 		    {
-		        const sState	= Process.GetState(kRow);
-		        const kInfo		= Process.GetInfo(kRow);
-		        const sFilter	= Process.kFilter.sState;
-		        const sKey		= Process.kFilter.sKey.toLowerCase();
+		        const	sState	= Process.GetState(kRow);
+		        const	kInfo	= Process.GetInfo(kRow);
+		        const	sFilter	= Process.kFilter.sState;
+		        const	sKey	= Process.kFilter.sKey.toLowerCase();
 
 		        if (sFilter === "transit" ? !Process.IsTransit(sState) : (sFilter === "drift" ? !Process.IsDrift(kRow) : (sFilter !== "all" && sFilter !== sState)))
 		        {
@@ -553,13 +553,13 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static PairButtons(sScope, sId, arrList)	// 시작·정지 버튼 쌍: 지금 상태 쪽 불 (서버 진행 중: 잠금)
 		    {
-		        const kCount	= Process.GetCount(arrList);
-		        const bAllOn	= kCount.running === kCount.total;
-		        const bAllOff	= kCount.stopped + kCount.failed === kCount.total;
-		        const sOn		= "on" + (bAllOn ? " lit" : (kCount.running > 0 ? " part" : "")) + (kCount.starting ? " pend" : "");
-		        const sOff		= "off" + (bAllOff ? " lit" : "") + (kCount.failed ? " fail" : "") + (kCount.stopping ? " pend" : "");
-		        const sLock		= sScope === "srv" && kCount.transit ? " disabled" : "";
-		        const sKey		= Process.Escape(sId);
+		        const	kCount	= Process.GetCount(arrList);
+		        const	bAllOn	= kCount.running === kCount.total;
+		        const	bAllOff	= kCount.stopped + kCount.failed === kCount.total;
+		        const	sOn		= "on" + (bAllOn ? " lit" : (kCount.running > 0 ? " part" : "")) + (kCount.starting ? " pend" : "");
+		        const	sOff	= "off" + (bAllOff ? " lit" : "") + (kCount.failed ? " fail" : "") + (kCount.stopping ? " pend" : "");
+		        const	sLock	= sScope === "srv" && kCount.transit ? " disabled" : "";
+		        const	sKey	= Process.Escape(sId);
 
 		        return `<span class="pair"><button type="button" class="pbtn ${sOn} needs-conn" data-act="op" data-op="On" data-scope="${sScope}" data-id="${sKey}"${sLock} title="시작${bAllOn ? "(이미 실행 중)" : ""}" aria-label="시작">▶</button>`
 		            + `<button type="button" class="pbtn ${sOff} needs-conn" data-act="op" data-op="Off" data-scope="${sScope}" data-id="${sKey}"${sLock} title="정지${bAllOff ? "(이미 정지됨)" : ""}" aria-label="정지">■</button></span>`;
@@ -567,7 +567,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static DownButton(sScope, sId, arrList)	// 다운 버튼 (다운 중: 보라 깜빡임, 서버 진행 중: 잠금)
 		    {
-		        const kCount = Process.GetCount(arrList);
+		        const	kCount	= Process.GetCount(arrList);
 
 		        return `<button type="button" class="pbtn down${kCount.downloading ? " pend" : ""} needs-conn" data-act="op" data-op="Down" data-scope="${sScope}" data-id="${Process.Escape(sId)}"${sScope === "srv" && kCount.transit ? " disabled" : ""} title="다운(Git 갱신, 실행 중 불가)" aria-label="다운">↓</button>`;
 		    }
@@ -579,10 +579,10 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static RenderTable()	// 서버 표: 대분류마다 상자, 대분류 → 중분류 → 서버 줄 (필터 중: 맞는 서버 그룹 모두 펼침, 1000번대 바뀜: 간격 세 배)
 		    {
-		        const bFilter		= Process.IsFiltering();
+		        const	bFilter	= Process.IsFiltering();
 		        const sHead			= `<thead><tr><th class="c-btn"><button type="button" class="th-help" data-act="legend" title="범례(힌트)">작업 ⓘ</button></th><th class="c-name">이름</th><th class="c-state">상태</th><th class="c-machine">머신</th><th class="c-pid">PID</th><th class="c-commit">커밋</th><th class="c-act"></th></tr></thead>`;
-		        let sHtml			= "";
-		        let nPrevThousand	= null;	// 앞 상자 1000 단위
+		        let	sHtml			= "";
+		        let	nPrevThousand	= null;	// 앞 상자 1000 단위
 
 		        for (const kSec of Process.GetModel())
 		        {
@@ -591,9 +591,9 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		                continue;
 		            }
 
-		            const bOpen		= bFilter || kSec.arrGroup.every(kGroup => Process.setExpand.has("g:" + kGroup.sId));	// 대분류 펼침 표시: 하위 중분류 모두 펼침
-		            const kCount	= Process.GetCount(kSec.arrRow);
-		            const sSecId	= Process.Escape(kSec.sId);
+		            const	bOpen	= bFilter || kSec.arrGroup.every(kGroup => Process.setExpand.has("g:" + kGroup.sId));	// 대분류 펼침 표시: 하위 중분류 모두 펼침
+		            const	kCount	= Process.GetCount(kSec.arrRow);
+		            const	sSecId	= Process.Escape(kSec.sId);
 		            let sRows		= `<tr class="sec-row${bOpen ? " open" : ""}${kSec.nNumber >= 10000 ? " gray" : ""}" data-act="secToggle" data-id="${sSecId}" id="ProcessSec-${sSecId}"><td colspan="7"><div class="row-head">${Process.PairButtons("sec", kSec.sId, kSec.arrRow)}`
 		                + `<span class="chev">▶</span><span class="sec-name">${Process.Escape(kSec.sLabel)}</span><span><b>${kCount.running}</b><span class="muted"> / ${kCount.total}</span></span>`
 		                + (kCount.failed ? `<span class="tag fail">✕ Failed ${kCount.failed}</span>` : "") + (kCount.transit ? `<span class="tag start"><span class="spin"></span> 진행 중 ${kCount.transit}</span>` : "")
@@ -601,17 +601,17 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		            for (const kGroup of kSec.arrGroup)
 		            {
-		                const arrShow = kGroup.arrRow.filter(kRow => Process.IsMatch(kRow));
+		                const	arrShow	= kGroup.arrRow.filter(kRow => Process.IsMatch(kRow));
 
 		                if (bFilter && arrShow.length === 0)
 		                {
 		                    continue;
 		                }
 
-		                const bGroupOpen	= bFilter || Process.setExpand.has("g:" + kGroup.sId);
-		                const kGroupCount	= Process.GetCount(kGroup.arrRow);
-		                const nDrift		= Process.GetDrift(kGroup.arrRow).length;
-		                const sMajor		= Process.GetMajority(kGroup.arrRow);
+		                const	bGroupOpen	= bFilter || Process.setExpand.has("g:" + kGroup.sId);
+		                const	kGroupCount	= Process.GetCount(kGroup.arrRow);
+		                const	nDrift		= Process.GetDrift(kGroup.arrRow).length;
+		                const	sMajor		= Process.GetMajority(kGroup.arrRow);
 
 		                sRows += `<tr class="grp-row${bGroupOpen ? " open" : ""}" data-act="toggle" data-id="g:${Process.Escape(kGroup.sId)}"><td colspan="7"><div class="row-head">${Process.PairButtons("grp", kGroup.sId, kGroup.arrRow)}`
 		                    + `<span class="chev">▶</span><span class="grp-name">${Process.Escape(kGroup.sLabel)}</span><span class="muted">${kGroupCount.running}/${kGroupCount.total}</span>`
@@ -625,9 +625,9 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		                for (const kRow of arrShow)
 		                {
-		                    const sState	= Process.GetState(kRow);
-		                    const kInfo		= Process.GetInfo(kRow);
-		                    const sKey		= Process.Escape(kRow.sField);
+		                    const	sState	= Process.GetState(kRow);
+		                    const	kInfo	= Process.GetInfo(kRow);
+		                    const	sKey	= Process.Escape(kRow.sField);
 		                    const sPid		= kInfo.nPid > 0 ? String(kInfo.nPid) : `<span class="muted">${Process.Escape(isNaN(kInfo.nPid) ? "—" : kInfo.nPid)}</span>`;
 		                    const sCommit	= kInfo.sCommit !== sMajor ? `<span class="commit drift" title="그룹 다수 커밋: ${Process.Escape(sMajor)}">⚠ ${Process.Escape(kInfo.sCommit)}</span>` : `<span class="commit">${Process.Escape(kInfo.sCommit)}</span>`;
 
@@ -638,8 +638,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		                }
 		            }
 
-		            const nThousand	= isNaN(kSec.nNumber) ? null : Math.floor(kSec.nNumber / 1000);
-		            const bTierGap	= nPrevThousand !== null && nThousand !== null && nThousand !== nPrevThousand;
+		            const	nThousand	= isNaN(kSec.nNumber) ? null : Math.floor(kSec.nNumber / 1000);
+		            const	bTierGap	= nPrevThousand !== null && nThousand !== null && nThousand !== nPrevThousand;
 
 		            nPrevThousand = nThousand;
 
@@ -656,14 +656,14 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static CopyBox(sValue)	// 값 상자 + 복사 버튼
 		    {
-		        const sText = Process.Escape(sValue);
+		        const	sText	= Process.Escape(sValue);
 
 		        return `<div class="codebox"><span>${sText}</span><button type="button" class="copy" data-act="copy" data-id="${sText}" title="복사" aria-label="복사">⧉</button></div>`;
 		    }
 
 		    static RenderDrawer()	// 상세 패널: 머리 (이름·닫기) + 경로·배지·실패·커밋 불일치 안내 + 상태·Redis 키·실행 설정·원본 값 + 아래 작업 버튼 (서버 사라짐: 닫음)
 		    {
-		        const kRow = Process.FindRow(Process.sDrawer);
+		        const	kRow	= Process.FindRow(Process.sDrawer);
 
 		        if (kRow == null)
 		        {
@@ -672,13 +672,13 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const sState	= Process.GetState(kRow);
-		        const kInfo		= Process.GetInfo(kRow);
-		        const sGroup	= Process.GetGroup(kRow.sField);
-		        const sMajor	= Process.GetMajority(Process.GetGroupRows(sGroup));
-		        const bDrift	= kInfo.sCommit !== sMajor;
-		        const sKey		= Process.Escape(kRow.sField);
-		        const sTarget	= Process.Escape(Process.GetTarget(kRow.sField));
+		        const	sState	= Process.GetState(kRow);
+		        const	kInfo	= Process.GetInfo(kRow);
+		        const	sGroup	= Process.GetGroup(kRow.sField);
+		        const	sMajor	= Process.GetMajority(Process.GetGroupRows(sGroup));
+		        const	bDrift	= kInfo.sCommit !== sMajor;
+		        const	sKey	= Process.Escape(kRow.sField);
+		        const	sTarget	= Process.Escape(Process.GetTarget(kRow.sField));
 
 		        Process.kDrawer.innerHTML = `<div class="resulthead"><div class="title">${Process.Escape(Process.GetLabel(kRow.sField))}</div><div class="toolright"><button type="button" data-act="closeDrawer" title="닫기(Esc)">닫기</button></div></div>`
 		            + `<div class="d-body"><div class="crumb">${Process.Escape(sGroup.split(",").map(sPart => sPart.trim()).join(" › "))}</div><div class="d-badge">${Process.Badge(kRow)}</div>`
@@ -750,7 +750,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ResolveModal(bResult)	// 확인 대기 끝
 		    {
-		        const funcResolve = Process.funcModal;
+		        const	funcResolve	= Process.funcModal;
 
 		        Process.funcModal = null;
 
@@ -779,11 +779,11 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ConfirmOp(sOp, sTitle, arrItem, arrBlock, sTypeName, arrStage)	// 실행 전 확인: 대상·그룹·제외 수, 실행 순서, 대상 목록 (그룹별), 제외 이유, sTypeName: 이름 입력 일치 → 실행 켜짐 (반환: Promise 확인 여부)
 		    {
-		        const mapGroup = new Map();	// 그룹 → 대상
+		        const	mapGroup	= new Map();	// 그룹 → 대상
 
 		        for (const kRow of arrItem)
 		        {
-		            const sGroup = Process.GetGroup(kRow.sField);
+		            const	sGroup	= Process.GetGroup(kRow.sField);
 
 		            if (!mapGroup.has(sGroup))
 		            {
@@ -793,7 +793,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            mapGroup.get(sGroup).push(kRow);
 		        }
 
-		        const kOp		= Process.OP[sOp];
+		        const	kOp	= Process.OP[sOp];
 		        const sFlow		= arrStage != null && arrStage.length > 1 ? `<div class="flow"><span class="muted">실행 순서</span>${arrStage.map(kStage => `<span class="st">${Process.Escape(kStage.sName)} <span class="muted">${kStage.arrItem.length}</span></span>`).join(`<span class="ar">→</span>`)}<span class="muted">· 그룹이 모두 ${sOp === "On" ? "Running" : "Stopped"}이 되면 다음 그룹 진행${sOp === "On" ? ", 실패 시 중단" : ""}</span></div>` : "";
 		        const sList		= [...mapGroup].map(([sGroup, arrList]) => `<div class="tg">${Process.Escape(Process.GetTarget(sGroup))} <span class="muted">${arrList.length}</span></div><div class="ti">${arrList.map(kRow => `<span>${Process.Escape(Process.GetLabel(kRow.sField))}</span>`).join("")}</div>`).join("");
 		        const sBlock	= arrBlock.length > 0 ? `<div class="notice warn"><b>제외 ${arrBlock.length}개</b><ul>${arrBlock.slice(0, Process.BLOCK_MAX).map(([kRow, sWhy]) => `<li>${Process.Escape(Process.GetLabel(kRow.sField))} — ${Process.Escape(sWhy)}</li>`).join("")}${arrBlock.length > Process.BLOCK_MAX ? `<li>외 ${arrBlock.length - Process.BLOCK_MAX}개</li>` : ""}</ul></div>` : "";
@@ -803,8 +803,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        if (sTypeName)	// 이름 입력: 일치 → 실행 켜짐, Enter: 일치 시 실행 (한글 조합 중 제외)
 		        {
-		            const kInput	= kDialog.querySelector("#ProcessTypeInput");
-		            const kOk		= kDialog.querySelector("#ProcessOk");
+		            const	kInput	= kDialog.querySelector("#ProcessTypeInput");
+		            const	kOk		= kDialog.querySelector("#ProcessOk");
 
 		            kInput.addEventListener("input", () => kOk.disabled = kInput.value.trim() !== sTypeName);
 
@@ -842,14 +842,14 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async RunOp(sOp, sScope, sId)	// 시작·정지·다운: 대상 = 적용 대기 아님 + 지금 상태와 다름 (적용 대기: 제외), 확인 → 상태,False → HMXClient 처리, 대분류: 그룹 순차 (이름 입력 확인)
 		    {
-		        const arrAll = Process.GetTargets(sScope, sId);
+		        const	arrAll	= Process.GetTargets(sScope, sId);
 
 		        if (arrAll.length === 0)
 		        {
 		            return;
 		        }
 
-		        const sName = Process.GetScopeName(sScope, sId);
+		        const	sName	= Process.GetScopeName(sScope, sId);
 
 		        if (sOp === "Down")
 		        {
@@ -860,7 +860,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        if (sScope === "srv")	// 불 켜진 버튼·적용 대기: 안내만
 		        {
-		            const kInfo = Process.GetInfo(arrAll[0]);
+		            const	kInfo	= Process.GetInfo(arrAll[0]);
 
 		            if (kInfo.sStatus === sOp)
 		            {
@@ -877,8 +877,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            }
 		        }
 
-		        const arrItem	= arrAll.filter(kRow => Process.GetInfo(kRow).sApply !== "False" && Process.GetInfo(kRow).sStatus !== sOp);
-		        const arrBlock	= arrAll.filter(kRow => Process.GetInfo(kRow).sApply === "False").map(kRow => [kRow, "적용 대기 중"]);
+		        const	arrItem		= arrAll.filter(kRow => Process.GetInfo(kRow).sApply !== "False" && Process.GetInfo(kRow).sStatus !== sOp);
+		        const	arrBlock	= arrAll.filter(kRow => Process.GetInfo(kRow).sApply === "False").map(kRow => [kRow, "적용 대기 중"]);
 
 		        if (arrItem.length === 0)
 		        {
@@ -887,13 +887,13 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const bSequence	= sScope === "sec";
+		        const	bSequence	= sScope === "sec";
 		        const sTitle	= `${sName}${bSequence ? " 전체" : ""} ${Process.OP[sOp].sName}`;
-		        let arrStage	= [{ sName, arrItem }];
+		        let	arrStage	= [{ sName, arrItem }];
 
 		        if (bSequence)	// 화면 순서 그룹 (정지: 아래 그룹부터)
 		        {
-		            const arrOrder = [];
+		            const	arrOrder	= [];
 
 		            for (const kSec of Process.GetModel())
 		            {
@@ -933,7 +933,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async SetToggle(sField, sValue)	// 시작·정지·다운 값 저장 (실패: TRY_COUNT 번까지, 반환: 마지막 응답)
 		    {
-		        let kData = { success: false, error: "" };
+		        let	kData	= { success: false, error: "" };
 
 		        for (let nTry = 0; nTry < Process.TRY_COUNT; ++nTry)
 		        {
@@ -957,12 +957,12 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async ApplyAll(arrItem, sOp)	// 대상 모두 "상태,False" (뒤 파트 유지) → HMXClient 처리 후 True, 반환: 실패 목록 (토스트 X건 + 외 N건)
 		    {
-		        const arrFail = [];
+		        const	arrFail	= [];
 
 		        await Promise.all(arrItem.map(async (kRow) =>
 		        {
-		            const sValue	= Process.BuildValue(kRow.sValue, sOp, "False");
-		            const kData		= await Process.SetToggle(kRow.sField, sValue);
+		            const	sValue	= Process.BuildValue(kRow.sValue, sOp, "False");
+		            const	kData	= await Process.SetToggle(kRow.sField, sValue);
 
 		            if (kData.success)
 		            {
@@ -988,20 +988,20 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        {
 		            const nTimer = setInterval(() =>
 		            {
-		                let nDone	= 0;
-		                let bFail	= false;
+		                let	nDone	= 0;
+		                let	bFail	= false;
 
 		                for (const sField of arrField)
 		                {
-		                    const kRow = Process.FindRow(sField);
+		                    const	kRow	= Process.FindRow(sField);
 
 		                    if (kRow == null)
 		                    {
 		                        continue;
 		                    }
 
-		                    const kInfo	= Process.GetInfo(kRow);
-		                    const sHead	= kInfo.sStatus + "," + kInfo.sApply;
+		                    const	kInfo	= Process.GetInfo(kRow);
+		                    const	sHead	= kInfo.sStatus + "," + kInfo.sApply;
 
 		                    if (sOp === "On" && sHead === "Off,True")	// 실행 실패로 되돌아감
 		                    {
@@ -1025,7 +1025,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async RunJob(sTitle, sOp, arrStage)	// 대분류 전체 순차: 그룹 시작 때 다시 확인 → 적용 → 모두 Running·Stopped: 다음 그룹, 요청 실패·시작 실패: 중단 + 뒤 그룹 건너뜀 (진행 팝업 없음, 끝: 토스트)
 		    {
-		        const kJob = { sTitle, sResult: "" };
+		        const	kJob	= { sTitle, sResult: "" };
 
 		        Process.setJob.add(kJob);
 
@@ -1033,15 +1033,15 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        {
 		            for (const kStage of arrStage)
 		            {
-		                const arrLive = kStage.arrItem.map(kRow => Process.FindRow(kRow.sField)).filter(kRow => kRow != null && Process.GetInfo(kRow).sApply !== "False" && Process.GetInfo(kRow).sStatus !== sOp);	// 그사이 바뀐 서버 뺌
+		                const	arrLive	= kStage.arrItem.map(kRow => Process.FindRow(kRow.sField)).filter(kRow => kRow != null && Process.GetInfo(kRow).sApply !== "False" && Process.GetInfo(kRow).sStatus !== sOp);	// 그사이 바뀐 서버 뺌
 
 		                if (arrLive.length === 0)
 		                {
 		                    continue;
 		                }
 
-		                const arrFail	= await Process.ApplyAll(arrLive, sOp);
-		                const sWait		= arrFail.length > 0 ? "setfail" : await Process.WaitGroup(arrLive.map(kRow => kRow.sField), sOp);	// 요청 실패: 대기 안 함
+		                const	arrFail	= await Process.ApplyAll(arrLive, sOp);
+		                const	sWait	= arrFail.length > 0 ? "setfail" : await Process.WaitGroup(arrLive.map(kRow => kRow.sField), sOp);	// 요청 실패: 대기 안 함
 
 		                if (sWait === "ok")
 		                {
@@ -1070,7 +1070,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async RunDown(sScope, sId, arrAll, sName)	// 다운 (Git 갱신만, 프로세스 미실행): 실행 중 (On) 있음 → 전체 안 함, 적용 대기: 제외, 대분류: 이름 입력 확인 → Down,False
 		    {
-		        const arrRun = arrAll.filter(kRow => Process.GetInfo(kRow).sStatus === "On");
+		        const	arrRun	= arrAll.filter(kRow => Process.GetInfo(kRow).sStatus === "On");
 
 		        if (arrRun.length > 0)
 		        {
@@ -1079,8 +1079,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const arrItem	= arrAll.filter(kRow => Process.GetInfo(kRow).sApply === "True");
-		        const arrBlock	= arrAll.filter(kRow => Process.GetInfo(kRow).sApply !== "True").map(kRow => [kRow, "적용 대기 중"]);
+		        const	arrItem		= arrAll.filter(kRow => Process.GetInfo(kRow).sApply === "True");
+		        const	arrBlock	= arrAll.filter(kRow => Process.GetInfo(kRow).sApply !== "True").map(kRow => [kRow, "적용 대기 중"]);
 
 		        if (arrItem.length === 0)
 		        {
@@ -1103,7 +1103,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    {
 		        const arrItem = Process.arrRow.filter(kRow =>
 		        {
-		            const arrPart = kRow.sValue.split(",");
+		            const	arrPart	= kRow.sValue.split(",");
 
 		            return bOn ? `${arrPart[0]},${arrPart[1]}` !== "On,True" : `${arrPart[0]},${arrPart[1]},${arrPart[2]}` !== "Off,True,0";
 		        });
@@ -1122,13 +1122,13 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        await Promise.all(arrItem.map(async (kRow) =>
 		        {
-		            const arrPart = kRow.sValue.split(",");
+		            const	arrPart	= kRow.sValue.split(",");
 
 		            arrPart[0] = "Off";
 		            arrPart[1] = "True";
 		            arrPart[2] = "0";
 
-		            const sValue = bOn ? Process.BuildValue(kRow.sValue, "On", "True") : arrPart.join(",");
+		            const	sValue	= bOn ? Process.BuildValue(kRow.sValue, "On", "True") : arrPart.join(",");
 
 		            try
 		            {
@@ -1150,19 +1150,19 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const bEdit			= sMode === "edit";
-		        const arrKey		= kSrc != null ? kSrc.sField.split(",") : ["", "", ""];
-		        const kInfo			= kSrc != null ? Process.GetInfo(kSrc) : { sMachine: "", sFolder: "", sRepo: "", sSync: "1", sMode: "0", sCmd: "" };
-		        const sState		= bEdit ? kSrc.sValue.split(",").slice(0, 4).join(",") : "Off,True,0,0";
-		        const bRunning		= bEdit && Process.GetState(kSrc) !== "stopped" && Process.GetState(kSrc) !== "failed";
-		        const sName			= arrKey.slice(2).join(",") + (sMode === "clone" ? "_copy" : "");
-		        const arrSec		= [...new Set(Process.arrRow.map(kRow => kRow.sField.split(",")[0]))];
-		        const arrGroup		= [...new Set(Process.arrRow.map(kRow => kRow.sField.split(",")[1]).filter(sPart => sPart !== undefined))];
-		        const mapMachine	= new Map();	// 머신 → 서버 수
+		        const	bEdit		= sMode === "edit";
+		        const	arrKey		= kSrc != null ? kSrc.sField.split(",") : ["", "", ""];
+		        const	kInfo		= kSrc != null ? Process.GetInfo(kSrc) : { sMachine: "", sFolder: "", sRepo: "", sSync: "1", sMode: "0", sCmd: "" };
+		        const	sState		= bEdit ? kSrc.sValue.split(",").slice(0, 4).join(",") : "Off,True,0,0";
+		        const	bRunning	= bEdit && Process.GetState(kSrc) !== "stopped" && Process.GetState(kSrc) !== "failed";
+		        const	sName		= arrKey.slice(2).join(",") + (sMode === "clone" ? "_copy" : "");
+		        const	arrSec		= [...new Set(Process.arrRow.map(kRow => kRow.sField.split(",")[0]))];
+		        const	arrGroup	= [...new Set(Process.arrRow.map(kRow => kRow.sField.split(",")[1]).filter(sPart => sPart !== undefined))];
+		        const	mapMachine	= new Map();	// 머신 → 서버 수
 
 		        for (const kRow of Process.arrRow)
 		        {
-		            const sMachine = Process.GetInfo(kRow).sMachine;
+		            const	sMachine	= Process.GetInfo(kRow).sMachine;
 
 		            if (sMachine !== "")
 		            {
@@ -1170,7 +1170,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            }
 		        }
 
-		        const arrMachine	= [...mapMachine].sort((arrA, arrB) => arrA[0].localeCompare(arrB[0]));	// [[머신, 서버 수]]
+		        const	arrMachine	= [...mapMachine].sort((arrA, arrB) => arrA[0].localeCompare(arrB[0]));	// [[머신, 서버 수]]
 		        const funcOption	= (arrValue) => arrValue.map(sValue => `<option value="${Process.Escape(sValue)}">`).join("");
 		        const kDialog		= Process.OpenModal(`<div class="title">${bEdit ? "서버 설정 편집" : (sMode === "clone" ? "서버 복제하여 등록" : "서버 등록")}</div><form id="ProcessForm" class="setting" autocomplete="off">`
 		            + (bEdit ? "" : `<label for="ProcessFormClone">기존 서버에서 값 가져오기 <span class="opt">(선택)</span></label><div class="field"><select id="ProcessFormClone"><option value="">— 빈 양식으로 시작 —</option>${Process.arrRow.map(kRow => `<option${kSrc != null && kSrc.sField === kRow.sField ? " selected" : ""}>${Process.Escape(kRow.sField)}</option>`).join("")}</select></div>`)
@@ -1190,12 +1190,12 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            + `<details class="adv"><summary>고급 — State 직접 편집 (상태,적용,PID,커밋해시)</summary><div class="muted">State는 HMXClient가 관리합니다. 꼬였을 때만 수정하세요.</div><label class="switch"><input type="checkbox" id="ProcessFormUnlock"> 직접 편집 허용</label><div class="field"><input class="mono" id="ProcessFormState" value="${Process.Escape(sState)}" spellcheck="false" autocapitalize="off" readonly><span class="err">State는 비울 수 없습니다</span></div></details>`
 		            + `<div class="preview" id="ProcessFormPreview"></div></form>`
 		            + `<div class="toolright"><button type="button" class="primary" data-act="saveForm" data-id="${bEdit ? Process.Escape(kSrc.sField) : ""}" title="저장(Enter)">${bEdit ? "저장" : "등록"}</button><button type="button" data-act="modalCancel" title="취소(Esc)">취소</button></div>`, "wide");
-		        const kForm			= kDialog.querySelector("#ProcessForm");
-		        const kPreview		= kDialog.querySelector("#ProcessFormPreview");
+		        const	kForm		= kDialog.querySelector("#ProcessForm");
+		        const	kPreview	= kDialog.querySelector("#ProcessFormPreview");
 
 		        const funcPreview = () =>	// 미리보기: String·값
 		        {
-		            const kRead = Process.ReadForm(kDialog);
+		            const	kRead	= Process.ReadForm(kDialog);
 
 		            kPreview.innerHTML = `<div><b>String</b>${Process.Escape(kRead.sField)}</div><div><b>값</b>${Process.Escape(kRead.sFull)}</div>`;
 		        };
@@ -1223,25 +1223,25 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static BindCombo(kInput, arrItem)	// 콤보 입력 (머신이름): 직접 입력 + 누름·▾·↓ 전체 목록 (값 + 서버 수), 입력: 부분 일치, ↑↓ 이동·Enter 고름 (저장 대신)·Esc 목록만 닫기, 아래 공간 부족: 위로
 		    {
-		        const kBox		= kInput.parentElement;
-		        const kList		= kBox.querySelector(".cb-list");
-		        let nIndex		= -1;	// 고른 줄 (-1: 없음)
-		        const funcRows	= () => kList.querySelectorAll("[data-v]");
+		        const	kBox		= kInput.parentElement;
+		        const	kList		= kBox.querySelector(".cb-list");
+		        let		nIndex		= -1;	// 고른 줄 (-1: 없음)
+		        const	funcRows	= () => kList.querySelectorAll("[data-v]");
 
 		        const funcShow = (bAll) =>	// 목록 펼침 (bAll: 전체, 아님: 입력 부분 일치)
 		        {
-		            const sNow		= kInput.value.trim();
-		            const sKey		= bAll ? "" : sNow.toLowerCase();
-		            const arrHit	= arrItem.filter(([sValue]) => sValue.toLowerCase().includes(sKey));
+		            const	sNow	= kInput.value.trim();
+		            const	sKey	= bAll ? "" : sNow.toLowerCase();
+		            const	arrHit	= arrItem.filter(([sValue]) => sValue.toLowerCase().includes(sKey));
 
 		            nIndex = arrHit.findIndex(([sValue]) => sValue === sNow);
 
 		            kList.innerHTML	= arrHit.length > 0 ? arrHit.map(([sValue, nCount], nRow) => `<div class="${nRow === nIndex ? "on cur" : ""}" data-v="${Process.Escape(sValue)}"><span>${Process.Escape(sValue)}</span><small>${nCount}개</small></div>`).join("") : `<p class="cb-empty">일치하는 머신 없음 — 입력값 그대로 사용</p>`;
 		            kList.hidden	= false;
 
-		            const kRect		= kInput.getBoundingClientRect();
-		            const nHeight	= kList.offsetHeight;
-		            const bUp		= kRect.bottom + 2 + nHeight > innerHeight && kRect.top - 2 - nHeight > 0;	// 아래 공간 부족: 위로
+		            const	kRect	= kInput.getBoundingClientRect();
+		            const	nHeight	= kList.offsetHeight;
+		            const	bUp		= kRect.bottom + 2 + nHeight > innerHeight && kRect.top - 2 - nHeight > 0;	// 아래 공간 부족: 위로
 
 		            kList.style.top		= bUp ? "auto" : "calc(100% + 2px)";
 		            kList.style.bottom	= bUp ? "calc(100% + 2px)" : "auto";
@@ -1265,7 +1265,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        const funcMove = (nStep) =>	// ↑↓ 이동 (끝: 반대쪽)
 		        {
-		            const arrRow = funcRows();
+		            const	arrRow	= funcRows();
 
 		            if (arrRow.length === 0)
 		            {
@@ -1297,7 +1297,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        {
 		            kEvent.preventDefault();
 
-		            const kItem = kEvent.target.closest("[data-v]");
+		            const	kItem	= kEvent.target.closest("[data-v]");
 
 		            if (kItem != null)
 		            {
@@ -1355,25 +1355,25 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ReadForm(kDialog)	// 폼 값 → { arrKey, sField, arrValue, sState, sFull (State + 값) }
 		    {
-		        const funcGet	= (sId) => kDialog.querySelector("#" + sId);
-		        const arrKey	= [funcGet("ProcessFormSec").value, funcGet("ProcessFormGroup").value, funcGet("ProcessFormName").value];
-		        const arrValue	= [funcGet("ProcessFormMachine").value.trim(), funcGet("ProcessFormFolder").value.trim(), funcGet("ProcessFormRepo").value.trim(), funcGet("ProcessFormSync").checked ? "1" : "0", kDialog.querySelector("input[name=ProcessFormMode]:checked").value, funcGet("ProcessFormCmd").value.trim()];
-		        const sValue	= arrValue.some(sPart => sPart !== "") ? arrValue.join(",") : "";
-		        const sState	= funcGet("ProcessFormState").value.trim();
+		        const	funcGet		= (sId) => kDialog.querySelector("#" + sId);
+		        const	arrKey		= [funcGet("ProcessFormSec").value, funcGet("ProcessFormGroup").value, funcGet("ProcessFormName").value];
+		        const	arrValue	= [funcGet("ProcessFormMachine").value.trim(), funcGet("ProcessFormFolder").value.trim(), funcGet("ProcessFormRepo").value.trim(), funcGet("ProcessFormSync").checked ? "1" : "0", kDialog.querySelector("input[name=ProcessFormMode]:checked").value, funcGet("ProcessFormCmd").value.trim()];
+		        const	sValue		= arrValue.some(sPart => sPart !== "") ? arrValue.join(",") : "";
+		        const	sState		= funcGet("ProcessFormState").value.trim();
 
 		        return { arrKey, sField: arrKey.join(",").trim(), arrValue, sState, sFull: sState + (sValue !== "" ? "," + sValue : "") };
 		    }
 
 		    static async SaveForm(sOldField)	// 등록·수정 저장: 검사 (빈칸·같은 키·다운폴더 드라이브 경로·State) → 틀림: 빨강 + 첫 칸 포커스 (팝업 유지), 키 바뀜: 이름 변경 후 저장 → 성공: 그 중분류 펼침 + 다시 읽기 + 토스트
 		    {
-		        const kDialog		= Process.kDialog;
-		        const kRead			= Process.ReadForm(kDialog);
-		        const bDuplicate	= kRead.sField !== sOldField && Process.FindRow(kRead.sField) != null;
-		        let bBad			= false;
+		        const	kDialog		= Process.kDialog;
+		        const	kRead		= Process.ReadForm(kDialog);
+		        const	bDuplicate	= kRead.sField !== sOldField && Process.FindRow(kRead.sField) != null;
+		        let		bBad		= false;
 
 		        const funcMark = (sId, bWrong, sText) =>	// 칸 오류 표시 (sText: 오류 글 바꿈)
 		        {
-		            const kField = kDialog.querySelector("#" + sId).closest(".field");
+		            const	kField	= kDialog.querySelector("#" + sId).closest(".field");
 
 		            kField.classList.toggle("invalid", bWrong);
 
@@ -1390,7 +1390,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const funcChar = (sText) => /[:|]/.test(sText);	// 키 금지 글자 (: 존 구분·| 목록 구분)
+		        const	funcChar	= (sText) => /[:|]/.test(sText);	// 키 금지 글자 (: 존 구분·| 목록 구분)
 
 		        bBad = funcMark("ProcessFormSec", kRead.arrKey[0].trim() === "" || funcChar(kRead.arrKey[0]), funcChar(kRead.arrKey[0]) ? "':'·'|' 사용 불가" : "대분류를 입력하세요") || bBad;
 		        bBad = funcMark("ProcessFormGroup", kRead.arrKey[1].trim() === "" || funcChar(kRead.arrKey[1]), funcChar(kRead.arrKey[1]) ? "':'·'|' 사용 불가" : "중분류를 입력하세요") || bBad;
@@ -1413,7 +1413,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const kSave = kDialog.querySelector("[data-act=saveForm]");
+		        const	kSave	= kDialog.querySelector("[data-act=saveForm]");
 
 		        kSave.disabled			= true;
 		        kDialog.dataset.locked	= "saving";
@@ -1422,7 +1422,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        {
 		            if (sOldField !== "" && kRead.sField !== sOldField)	// 키 바뀜: 이름 변경 먼저 (버전 검증)
 		            {
-		                const kRename = await Process.Api("action=rename&field=" + encodeURIComponent(sOldField) + "&newfield=" + encodeURIComponent(kRead.sField) + "&version=" + Process.nVersion);
+		                const	kRename	= await Process.Api("action=rename&field=" + encodeURIComponent(sOldField) + "&newfield=" + encodeURIComponent(kRead.sField) + "&version=" + Process.nVersion);
 
 		                if (Process.CheckStale(kRename))
 		                {
@@ -1440,7 +1440,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		                }
 		            }
 
-		            const kData = await Process.SetField(kRead.sField, kRead.sFull, sOldField !== "" ? "edit" : "add", true);
+		            const	kData	= await Process.SetField(kRead.sField, kRead.sFull, sOldField !== "" ? "edit" : "add", true);
 
 		            if (Process.CheckStale(kData))
 		            {
@@ -1469,16 +1469,16 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static OpenDelete(sField)	// 서버 삭제 확인 (HMX 삭제 팝업, Enter: 취소), 실행 중·적용 대기: 삭제 꺼짐 (Running: 먼저 정지 버튼)
 		    {
-		        const kRow = Process.FindRow(sField);
+		        const	kRow	= Process.FindRow(sField);
 
 		        if (kRow == null)
 		        {
 		            return;
 		        }
 
-		        const sState	= Process.GetState(kRow);
-		        const kInfo		= Process.GetInfo(kRow);
-		        const bBlock	= kInfo.sStatus === "On" || Process.IsTransit(sState);
+		        const	sState	= Process.GetState(kRow);
+		        const	kInfo	= Process.GetInfo(kRow);
+		        const	bBlock	= kInfo.sStatus === "On" || Process.IsTransit(sState);
 
 		        AskDelete("서버 삭제", Process.GetLabel(sField), bBlock ? `${Process.STATE_NAME[sState]} · 실행 중이거나 적용 대기 중인 서버는 삭제할 수 없습니다. 삭제하면 프로세스는 계속 떠 있는데 HMX에서 관리할 수 없게 됩니다. 먼저 정지하세요.` : `String: ${sField} · 머신: ${kInfo.sMachine} · 다운폴더: ${kInfo.sFolder} · HMX 목록(Redis 키)만 삭제됩니다. 머신의 폴더와 파일은 그대로 남습니다.`, () => Process.RunDelete(sField));
 
@@ -1491,7 +1491,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    {
 		        try
 		        {
-		            const kData = await Process.Api("action=del&field=" + encodeURIComponent(sField) + "&version=" + Process.nVersion);
+		            const	kData	= await Process.Api("action=del&field=" + encodeURIComponent(sField) + "&version=" + Process.nVersion);
 
 		            if (Process.CheckStale(kData))
 		            {
@@ -1515,12 +1515,12 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static OpenRename(sScope, sId)	// 대분류 (첫째 값)·중분류 (둘째 값, 앞 공백 유지) 이름 변경: 새 이름 + 하위 키 미리보기 (기존 → 새 키)
 		    {
-		        const arrList	= sScope === "sec" ? (Process.FindSec(sId)?.arrRow ?? []) : Process.GetGroupRows(sId);
-		        const sNow		= sScope === "sec" ? (Process.FindSec(sId)?.sLabel ?? "") : Process.GetGroupLabel(sId);
+		        const	arrList	= sScope === "sec" ? (Process.FindSec(sId)?.arrRow ?? []) : Process.GetGroupRows(sId);
+		        const	sNow	= sScope === "sec" ? (Process.FindSec(sId)?.sLabel ?? "") : Process.GetGroupLabel(sId);
 
 		        const funcKey = (sField, sValue) =>	// 새 키
 		        {
-		            const arrPart = sField.split(",");
+		            const	arrPart	= sField.split(",");
 
 		            if (sScope === "sec")
 		            {
@@ -1538,12 +1538,12 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        const kDialog	= Process.OpenModal(`<div class="title">${sScope === "sec" ? "대분류" : "중분류"} 이름 변경</div><div class="setting"><label for="ProcessRenameInput">새 이름 <span class="opt">(String ${sScope === "sec" ? "첫번째" : "두번째"} 값)</span></label><div class="field"><input class="mono" id="ProcessRenameInput" value="${Process.Escape(sNow)}" autocomplete="off" spellcheck="false" autocapitalize="off" autofocus><span class="err">새 이름을 입력하세요</span></div></div>`
 		            + `<div class="muted">하위 ${arrList.length}개 키가 함께 바뀝니다</div><div class="tlist mono" id="ProcessRenamePreview"></div><div class="toolright"><button type="button" class="primary" data-act="renameOk" title="키 변경(Enter)">키 변경</button><button type="button" data-act="modalCancel" title="취소(Esc)">취소</button></div>`);
-		        const kInput	= kDialog.querySelector("#ProcessRenameInput");
-		        const kPreview	= kDialog.querySelector("#ProcessRenamePreview");
+		        const	kInput		= kDialog.querySelector("#ProcessRenameInput");
+		        const	kPreview	= kDialog.querySelector("#ProcessRenamePreview");
 
 		        const funcPreview = () =>	// 하위 키: 기존 → 새 키
 		        {
-		            const sValue = kInput.value.trim() || "?";
+		            const	sValue	= kInput.value.trim() || "?";
 
 		            kPreview.innerHTML = arrList.map(kRow => `<div class="ti">${Process.Escape(kRow.sField)} <span class="muted">→</span> <b>${Process.Escape(funcKey(kRow.sField, sValue))}</b></div>`).join("");
 		        };
@@ -1563,9 +1563,9 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async RunRename()	// 이름 변경: 한 번 요청·버전 검증으로 일괄 (중복 실행 막음) → 다시 읽기 + 토스트
 		    {
-		        const kDialog	= Process.kDialog;
-		        const kInput	= kDialog.querySelector("#ProcessRenameInput");
-		        const sValue	= kInput.value.trim();
+		        const	kDialog	= Process.kDialog;
+		        const	kInput	= kDialog.querySelector("#ProcessRenameInput");
+		        const	sValue	= kInput.value.trim();
 
 		        if (sValue === "" || /[:|]/.test(sValue))	// 빈 값·키 금지 글자 (: 존 구분·| 목록 구분)
 		        {
@@ -1575,8 +1575,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        }
 
 		        const { sScope, arrList, funcKey } = Process.kRename;
-		        const arrRename = arrList.map(kRow => ({ sOld: kRow.sField, sNew: funcKey(kRow.sField, sValue) })).filter(kItem => kItem.sOld !== kItem.sNew);
-		        let sError		= "";
+		        const	arrRename	= arrList.map(kRow => ({ sOld: kRow.sField, sNew: funcKey(kRow.sField, sValue) })).filter(kItem => kItem.sOld !== kItem.sNew);
+		        let		sError		= "";
 
 		        if (arrRename.length === 0)
 		        {
@@ -1595,7 +1595,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        try
 		        {
-		            const kData = await Process.Api("action=rename" + arrRename.map(kItem => "&field=" + encodeURIComponent(kItem.sOld) + "&newfield=" + encodeURIComponent(kItem.sNew)).join("") + "&version=" + Process.nVersion);
+		            const	kData	= await Process.Api("action=rename" + arrRename.map(kItem => "&field=" + encodeURIComponent(kItem.sOld) + "&newfield=" + encodeURIComponent(kItem.sNew)).join("") + "&version=" + Process.nVersion);
 
 		            if (Process.CheckStale(kData))
 		            {
@@ -1657,9 +1657,9 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static SetLogRange(sRange)	// 기간 칩 → S·E (끝: 지금, 오늘: 0시부터)
 		    {
-		        const kNow		= new Date();
-		        const nMinute	= Process.LOG_RANGE.find(([sId]) => sId === sRange)?.[2] ?? 60;
-		        const kStart	= sRange === "today" ? new Date(kNow.getFullYear(), kNow.getMonth(), kNow.getDate()) : new Date(kNow.getTime() - nMinute * 60000);
+		        const	kNow	= new Date();
+		        const	nMinute	= Process.LOG_RANGE.find(([sId]) => sId === sRange)?.[2] ?? 60;
+		        const	kStart	= sRange === "today" ? new Date(kNow.getFullYear(), kNow.getMonth(), kNow.getDate()) : new Date(kNow.getTime() - nMinute * 60000);
 
 		        Process.SetLogPick("Start", kStart);
 		        Process.SetLogPick("End", kNow);
@@ -1706,7 +1706,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static StartProgress(kProgress, sText)	// 진행 표시 (상자 가운데 팝업 상태 · N초, X초 이상 걸릴 때만), 반환: 끝 함수
 		    {
-		        const nBegin = performance.now();
+		        const	nBegin	= performance.now();
 
 		        const funcShow = () =>	// 진행 초 갱신
 		        {
@@ -1715,8 +1715,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        funcShow();
 
-		        const nTimer = setInterval(funcShow, 1000);
-		        const nPopup = setTimeout(() => { funcShow(); kProgress.hidden = false; }, PROGRESS_DELAY_MS);
+		        const	nTimer	= setInterval(funcShow, 1000);
+		        const	nPopup	= setTimeout(() => { funcShow(); kProgress.hidden = false; }, PROGRESS_DELAY_MS);
 
 		        return () =>
 		        {
@@ -1729,8 +1729,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static async LoadLog(sDirection)	// 로그 조회 ("": 최신부터, next: 더 과거, prev: 더 최신, 없음: 토스트·안내)
 		    {
-		        const sStart	= Process.GetLogPick("Start");
-		        const sEnd		= Process.GetLogPick("End");
+		        const	sStart	= Process.GetLogPick("Start");
+		        const	sEnd	= Process.GetLogPick("End");
 
 		        if (sStart === "" || sEnd === "")
 		        {
@@ -1739,7 +1739,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        let sUrl = "api/process?action=log&start=" + encodeURIComponent(sStart) + "&end=" + encodeURIComponent(sEnd);
+		        let	sUrl	= "api/process?action=log&start=" + encodeURIComponent(sStart) + "&end=" + encodeURIComponent(sEnd);
 
 		        if (sDirection === "next" && Process.sLogOld !== "")
 		        {
@@ -1750,18 +1750,18 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            sUrl += "&dir=prev&cursor=" + encodeURIComponent(Process.sLogNew);
 		        }
 
-		        const funcEnd = Process.StartProgress(document.getElementById("ProcessLogProgress"), "로그 조회 중");
+		        const	funcEnd	= Process.StartProgress(document.getElementById("ProcessLogProgress"), "로그 조회 중");
 
 		        try
 		        {
-		            const kResponse = await fetch(sUrl);
+		            const	kResponse	= await fetch(sUrl);
 
 		            if (!kResponse.ok)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            const sText = await kResponse.text();
+		            const	sText	= await kResponse.text();
 
 		            if (sText[0] !== "#")	// 메타 줄 없음: 결과 없음 (범위 오류 글)
 		            {
@@ -1781,8 +1781,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		                return;
 		            }
 
-		            const nLine		= sText.indexOf("\n");
-		            const arrCursor	= sText.substring(1, nLine).split("|");	// "#최신 커서|최과거 커서"
+		            const	nLine		= sText.indexOf("\n");
+		            const	arrCursor	= sText.substring(1, nLine).split("|");	// "#최신 커서|최과거 커서"
 
 		            Process.sLogNew	= arrCursor[0] || "";
 		            Process.sLogOld	= arrCursor[1] || "";
@@ -1790,7 +1790,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		            Process.RenderLog();
 
-		            const kScroll = document.getElementById("ProcessLogScroll");
+		            const	kScroll	= document.getElementById("ProcessLogScroll");
 
 		            if (kScroll != null)
 		            {
@@ -1809,31 +1809,31 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ParseLogLine(sLine)	// 로그 줄 → { sTime, sLevel, sType, sText } (예: [2026/10/02 11:39:38.707] [HMX_][INFO_] [v.28] 개별: 111_DEV,3_MPAgent,Minor,On → (계정@IP), 레벨 앞 sTitle 태그: 건너뜀, 예전: [INFO_] [HMX_][v.28])
 		    {
-		        const kMatch = sLine.match(/^\[([^\]]+)\] \S*?\[(\w+)\] (?:\[HMX_\])?(?:\[v\.(\d+)\])? ?(.*)$/);
+		        const	kMatch	= sLine.match(/^\[([^\]]+)\] \S*?\[(\w+)\] (?:\[HMX_\])?(?:\[v\.(\d+)\])? ?(.*)$/);
 
 		        if (kMatch == null)
 		        {
 		            return { sTime: "", sLevel: "", sType: "system", sText: sLine };
 		        }
 
-		        const sText		= kMatch[4];
-		        const sLevel	= kMatch[2].replace(/_$/, "");
-		        const sType		= sLevel === "ERROR" || sLevel === "WARN" ? "error" : (/^(개별|그룹|전체|선택):/.test(sText) ? "action" : (/^(등록|수정|이름|삭제):/.test(sText) ? "edit" : (/^로그인/.test(sText) ? "login" : "system")));
+		        const	sText	= kMatch[4];
+		        const	sLevel	= kMatch[2].replace(/_$/, "");
+		        const	sType	= sLevel === "ERROR" || sLevel === "WARN" ? "error" : (/^(개별|그룹|전체|선택):/.test(sText) ? "action" : (/^(등록|수정|이름|삭제):/.test(sText) ? "edit" : (/^로그인/.test(sText) ? "login" : "system")));
 
 		        return { sTime: kMatch[1], sLevel, sType, sText };
 		    }
 
 		    static RenderLog(sEmpty)	// 로그 표 (종류 칩 + 개수, 검색: 지금 페이지 안), 아래 이 페이지 N줄 중 M줄
 		    {
-		        const kTypes = document.getElementById("ProcessLogTypes");
+		        const	kTypes	= document.getElementById("ProcessLogTypes");
 
 		        if (kTypes == null)	// 팝업 닫힘
 		        {
 		            return;
 		        }
 
-		        const sKey		= Process.kLogState.sKey.toLowerCase();
-		        const arrShow	= Process.arrLog.filter(kLine => (Process.kLogState.sType === "all" || kLine.sType === Process.kLogState.sType) && (sKey === "" || (kLine.sText + kLine.sTime).toLowerCase().includes(sKey)));
+		        const	sKey	= Process.kLogState.sKey.toLowerCase();
+		        const	arrShow	= Process.arrLog.filter(kLine => (Process.kLogState.sType === "all" || kLine.sType === Process.kLogState.sType) && (sKey === "" || (kLine.sText + kLine.sTime).toLowerCase().includes(sKey)));
 
 		        kTypes.innerHTML = Object.entries(Process.LOG_TYPE).map(([sId, sName]) => `<button type="button" class="chip${Process.kLogState.sType === sId ? " cur" : ""}" data-act="logType" data-id="${sId}">${sName} <span class="n">${sId === "all" ? Process.arrLog.length : Process.arrLog.filter(kLine => kLine.sType === sId).length}</span></button>`).join("");
 
@@ -1856,7 +1856,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            + `<div class="filter"><select id="ProcessErrMachine" title="머신"><option value="">모든 머신</option></select><select id="ProcessErrLevel" title="레벨"><option value="">모든 레벨</option><option>ERROR</option><option>FATAL</option></select><input type="text" id="ProcessErrKey" title="검색(서버, 경로)" value="${Process.Escape(Process.kErrState.sKey)}" autocomplete="off" spellcheck="false" autocapitalize="off"></div>`
 		            + `<div class="scrollwrap"><div class="scroll" id="ProcessErrScroll"><div id="ProcessErrBody"></div></div><div class="progress" id="ProcessErrProgress" hidden></div></div>`
 		            + `<div class="toolright"><span class="hint" id="ProcessErrCount"></span><button type="button" data-act="errPage" data-id="prev">▲ 더 최신</button><button type="button" data-act="errPage" data-id="next">더 과거 ▼</button><button type="button" data-act="modalCancel" autofocus>닫기</button></div>`, "xl");
-		        const kLevel = kDialog.querySelector("#ProcessErrLevel");
+		        const	kLevel	= kDialog.querySelector("#ProcessErrLevel");
 
 		        kLevel.value = Process.kErrState.sLevel;
 
@@ -1876,19 +1876,19 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            return;
 		        }
 
-		        const nOffset	= sDirection === "next" ? Process.nErrOffset + Process.PAGE_SIZE : (sDirection === "prev" ? Math.max(0, Process.nErrOffset - Process.PAGE_SIZE) : 0);
-		        const funcEnd	= Process.StartProgress(document.getElementById("ProcessErrProgress"), "에러 조회 중");
+		        const	nOffset	= sDirection === "next" ? Process.nErrOffset + Process.PAGE_SIZE : (sDirection === "prev" ? Math.max(0, Process.nErrOffset - Process.PAGE_SIZE) : 0);
+		        const	funcEnd	= Process.StartProgress(document.getElementById("ProcessErrProgress"), "에러 조회 중");
 
 		        try
 		        {
-		            const kResponse = await fetch("api/process?action=errlog&offset=" + nOffset);
+		            const	kResponse	= await fetch("api/process?action=errlog&offset=" + nOffset);
 
 		            if (!kResponse.ok)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            const sText = await kResponse.text();
+		            const	sText	= await kResponse.text();
 
 		            if (sText.startsWith("{"))	// Redis 오류 등: JSON 오류 응답
 		            {
@@ -1919,7 +1919,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		            Process.RenderErr();
 
-		            const kScroll = document.getElementById("ProcessErrScroll");
+		            const	kScroll	= document.getElementById("ProcessErrScroll");
 
 		            if (kScroll != null)
 		            {
@@ -1938,33 +1938,33 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ParseErrLine(sLine)	// 에러 줄 → { sMachine, sTime, sLevel, sKind, sTarget, sLine } (예: [머신] [2026/10/02 10:29:30.873] [HMX_][ERROR] Execute Error Crash: 999_,2_Game,Holdem_Lobby(경로)(명령)(0), 레벨 앞 클라 sTitle 태그: 건너뜀, 예전: [ERROR] [HMX_])
 		    {
-		        const kMatch = sLine.match(/^\[([^\]]+)\] \[([^\]]+)\] \S*?\[(\w+)\] (?:\[HMX_\] )?(.*)$/);
+		        const	kMatch	= sLine.match(/^\[([^\]]+)\] \[([^\]]+)\] \S*?\[(\w+)\] (?:\[HMX_\] )?(.*)$/);
 
 		        if (kMatch == null)
 		        {
 		            return { sMachine: "-", sTime: "", sLevel: "ERROR", sKind: sLine.slice(0, 60), sTarget: "", sLine };
 		        }
 
-		        const sText		= kMatch[4];
-		        const nColon	= sText.indexOf(":");
-		        const sKind		= nColon > 0 ? sText.slice(0, nColon) : sText;
-		        const sRest		= nColon > 0 ? sText.slice(nColon + 1).trim() : "";
+		        const	sText	= kMatch[4];
+		        const	nColon	= sText.indexOf(":");
+		        const	sKind	= nColon > 0 ? sText.slice(0, nColon) : sText;
+		        const	sRest	= nColon > 0 ? sText.slice(nColon + 1).trim() : "";
 
 		        return { sMachine: kMatch[1], sTime: kMatch[2], sLevel: kMatch[3].replace(/_$/, ""), sKind, sTarget: sKind.includes("Crash") ? sRest.split("(")[0] : sRest.replace(/\s*\(-?\d+\)$/, ""), sLine };
 		    }
 
 		    static RenderErr(sEmpty)	// 에러 묶음 (레벨·종류·대상·× 건수·머신·첫 ~ 마지막 시간, 누름: 원문 펼침, 서버 보기·목록에 없음)
 		    {
-		        const kBody = document.getElementById("ProcessErrBody");
+		        const	kBody	= document.getElementById("ProcessErrBody");
 
 		        if (kBody == null)	// 팝업 닫힘
 		        {
 		            return;
 		        }
 
-		        const sKey		= Process.kErrState.sKey.toLowerCase();
-		        const arrShow	= Process.arrErr.filter(kErr => (Process.kErrState.sMachine === "" || kErr.sMachine === Process.kErrState.sMachine) && (Process.kErrState.sLevel === "" || kErr.sLevel === Process.kErrState.sLevel) && (sKey === "" || kErr.sLine.toLowerCase().includes(sKey)));
-		        const mapGroup	= new Map();	// 묶음 키 → { 첫 에러, arrItem }
+		        const	sKey		= Process.kErrState.sKey.toLowerCase();
+		        const	arrShow		= Process.arrErr.filter(kErr => (Process.kErrState.sMachine === "" || kErr.sMachine === Process.kErrState.sMachine) && (Process.kErrState.sLevel === "" || kErr.sLevel === Process.kErrState.sLevel) && (sKey === "" || kErr.sLine.toLowerCase().includes(sKey)));
+		        const	mapGroup	= new Map();	// 묶음 키 → { 첫 에러, arrItem }
 
 		        for (const kErr of arrShow)
 		        {
@@ -1980,9 +1980,9 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        kBody.innerHTML = [...mapGroup.values()].map(kGroup =>
 		        {
-		            const kRow		= Process.FindRow(kGroup.sTarget) ?? Process.arrRow.find(kItem => Process.GetTarget(kItem.sField) === Process.GetTarget(kGroup.sTarget));
-		            const sLast		= kGroup.arrItem[0].sTime;
-		            const sFirst	= kGroup.arrItem[kGroup.arrItem.length - 1].sTime;
+		            const	kRow	= Process.FindRow(kGroup.sTarget) ?? Process.arrRow.find(kItem => Process.GetTarget(kItem.sField) === Process.GetTarget(kGroup.sTarget));
+		            const	sLast	= kGroup.arrItem[0].sTime;
+		            const	sFirst	= kGroup.arrItem[kGroup.arrItem.length - 1].sTime;
 		            const sGoto		= kRow != null ? `<button type="button" data-act="errGoto" data-id="${Process.Escape(kRow.sField)}">서버 보기</button>` : (kGroup.sTarget.includes(",") ? `<span class="tag off" title="목록에 없는 서버(삭제, 이름 변경)">목록에 없음</span>` : "");
 
 		            return `<div class="eg"><div class="eg-head" data-act="errToggle"><span class="lv ${Process.Escape(kGroup.sLevel)}">${Process.Escape(kGroup.sLevel)}</span><div class="eg-title"><b>${Process.Escape(kGroup.sKind)}</b><span class="mono">${Process.Escape(kGroup.sTarget)}</span></div>`
@@ -1995,7 +1995,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static GotoServer(sField)	// 에러 서버 보기: 팝업 닫고 필터 초기화·중분류 펼침·상세 패널·줄 깜빡임
 		    {
-		        const kRow = Process.FindRow(sField);
+		        const	kRow	= Process.FindRow(sField);
 
 		        Process.CloseModal();
 
@@ -2018,14 +2018,14 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static OpenMenu(kButton, sScope, sId)	// 줄 메뉴 (⋯): 서버 → 설정 편집·복제하여 등록·상세 보기·로그에서 찾기 | 삭제, 대분류·중분류 → 이름 변경·로그에서 찾기 (누른 버튼 오른쪽 끝 맞춤, 아래 공간 부족: 위로)
 		    {
-		        const arrItem = sScope === "srv" ? [["edit", "설정 편집"], ["clone", "복제하여 등록"], ["detail", "상세 보기"], ["logOf", "로그에서 찾기"], null, ["del", "삭제", "danger"]] : [["rename", sScope === "sec" ? "대분류 이름 변경" : "중분류 이름 변경"], ["logOf", "로그에서 찾기"]];
+		        const	arrItem	= sScope === "srv" ? [["edit", "설정 편집"], ["clone", "복제하여 등록"], ["detail", "상세 보기"], ["logOf", "로그에서 찾기"], null, ["del", "삭제", "danger"]] : [["rename", sScope === "sec" ? "대분류 이름 변경" : "중분류 이름 변경"], ["logOf", "로그에서 찾기"]];
 
 		        Process.kMenu.innerHTML	= arrItem.map(arrMenu => arrMenu == null ? "<hr>" : `<button type="button" class="${arrMenu[2] ?? ""}" data-act="menuItem" data-cmd="${arrMenu[0]}" data-scope="${sScope}" data-id="${Process.Escape(sId)}">${arrMenu[1]}</button>`).join("");
 		        Process.kMenu.hidden	= false;
 
-		        const kRect		= kButton.getBoundingClientRect();
-		        const nWidth	= Process.kMenu.offsetWidth;
-		        const nHeight	= Process.kMenu.offsetHeight;
+		        const	kRect	= kButton.getBoundingClientRect();
+		        const	nWidth	= Process.kMenu.offsetWidth;
+		        const	nHeight	= Process.kMenu.offsetHeight;
 
 		        Process.kMenu.style.left	= Math.max(8, Math.min(innerWidth - nWidth - 8, kRect.right - nWidth)) + "px";
 		        Process.kMenu.style.top		= (kRect.bottom + nHeight + 8 > innerHeight ? kRect.top - nHeight - 4 : kRect.bottom + 4) + "px";
@@ -2038,9 +2038,9 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static OnMenuItem(kItem)	// 줄 메뉴 항목
 		    {
-		        const sCmd		= kItem.dataset.cmd;
-		        const sScope	= kItem.dataset.scope;
-		        const sId		= kItem.dataset.id;
+		        const	sCmd	= kItem.dataset.cmd;
+		        const	sScope	= kItem.dataset.scope;
+		        const	sId		= kItem.dataset.id;
 
 		        if (sCmd === "edit" || sCmd === "clone")
 		        {
@@ -2066,7 +2066,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static Toast(sText, sTone = "info")	// 토스트 (오른쪽 위 쌓임, 왼쪽 색 줄: ok 초록·fail 빨강·warn 주황·info 파랑, X초 뒤 사라짐, 실패: 더 오래, 팝업 위: top layer)
 		    {
-		        const kToast = document.createElement("div");
+		        const	kToast	= document.createElement("div");
 
 		        kToast.className	= "toast " + sTone;
 		        kToast.textContent	= sText;
@@ -2105,7 +2105,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static FlashRow(sField)	// 찾아간 서버 줄: 깜빡임 + 가운데 스크롤
 		    {
-		        const kRow = [...Process.kTables.querySelectorAll("tr.srv-row")].find(kItem => kItem.dataset.key === sField);
+		        const	kRow	= [...Process.kTables.querySelectorAll("tr.srv-row")].find(kItem => kItem.dataset.key === sField);
 
 		        if (kRow == null)
 		        {
@@ -2145,7 +2145,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    {
 		        try
 		        {
-		            const arrExpand = JSON.parse(localStorage.getItem(Process.EXPAND_KEY) ?? "null");
+		            const	arrExpand	= JSON.parse(localStorage.getItem(Process.EXPAND_KEY) ?? "null");
 
 		            if (Array.isArray(arrExpand))
 		            {
@@ -2167,7 +2167,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        {
 		            for (const kGroup of kSec.arrGroup)
 		            {
-		                const kCount = Process.GetCount(kGroup.arrRow);
+		                const	kCount	= Process.GetCount(kGroup.arrRow);
 
 		                if (kCount.failed || kCount.transit || Process.GetDrift(kGroup.arrRow).length > 0)
 		                {
@@ -2207,8 +2207,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static ToggleSec(sId)	// 대분류 줄: 하위 중분류 모두 펼침 ↔ 접기
 		    {
-		        const arrId	= (Process.FindSec(sId)?.arrGroup ?? []).map(kGroup => "g:" + kGroup.sId);
-		        const bAll	= arrId.every(sGroup => Process.setExpand.has(sGroup));
+		        const	arrId	= (Process.FindSec(sId)?.arrGroup ?? []).map(kGroup => "g:" + kGroup.sId);
+		        const	bAll	= arrId.every(sGroup => Process.setExpand.has(sGroup));
 
 		        for (const sGroup of arrId)
 		        {
@@ -2302,7 +2302,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		    static OnClick(kEvent)	// 반영 창 누름 (서랍·메뉴·팝업 포함): data-act 동작, 메뉴 밖: 메뉴 닫음
 		    {
-		        const kItem = kEvent.target.closest("[data-act]");
+		        const	kItem	= kEvent.target.closest("[data-act]");
 
 		        if (kItem == null)
 		        {
@@ -2395,7 +2395,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        Process.kDeleteStop.addEventListener("click", () =>	// 삭제 확인 먼저 정지: 닫고 정지 확인
 		        {
-		            const sField = Process.kDeleteStop.dataset.id;
+		            const	sField	= Process.kDeleteStop.dataset.id;
 
 		            kDeleteDialog.close();
 

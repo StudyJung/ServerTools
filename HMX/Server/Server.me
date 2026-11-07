@@ -12,8 +12,8 @@
 ## 구조
 | 경로 | 설명 |
 |---|---|
-| Source/Server.cs | 진입 소스: `#:` 지시문 (`#:include` 로 같은 폴더 클래스별 .cs·../../Common 포함)·`// ReadMe.cs 반드시 참조`·global using·진입 `return Main.Run(args);`·Main |
-| Source/ReadMe.cs | 명세 주석만 (구조·저장 형식·API·UI/UX 가이드, Server.cs 머리에서 옮김, 컴파일 영향 없음) |
+| Source/Server.cs | 진입 소스: `#:` 지시문 (`#:include` 로 같은 폴더 클래스별 .cs·../../Common 포함)·`// Source.md 반드시 참조`·global using·진입 `return Main.Run(args);`·Main |
+| Source/Source.md | 명세 (마크다운: 구조·저장 형식·API·UI/UX 가이드, Server.cs 머리에서 옮김) |
 | Source/{클래스}.cs | 클래스별 소스 (코드 구성 참고, 내장 HTML·JS: Web 공통 + 탭별 *HTML 함수) |
 | ../Common/*.cs | 클라와 같이 쓰는 공통 클래스 → [Common.md](../Common/Common.md) |
 | Server.csproj | Web SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시, web.config 변환 안 함 (참조 Server.html·wwwroot: 폴더에 없음) |
@@ -31,7 +31,7 @@
 ## 코드 구성
 | 파일 | 클래스 | 역할 |
 |---|---|---|
-| ReadMe.cs | (주석만) | 구조·저장 형식·API·UI 규칙 명세 |
+| Source.md | (문서) | 구조·저장 형식·API·UI 규칙 명세 |
 | Server.cs | Main | 진입점 + 공통·기능 연결 (Create: TCP 수신·공통 API·탭 생성, MapRoute: 기본 페이지 → 공통 API → 탭 → 로그인, StartTCP·WaitTCP: 웹 ↔ TCP, OnMinute·OnTick: 타이머 → TCP·쿼리, Shutdown) |
 | ../Common | Global·Config·Log·AES·Count·Define | 공통 (전역 함수·메모리 조회, 설정·설정 쓰기, 시간별 로그, AES 복호화, 받은 진행, 상수·데이터 정의: FieldRule·LogBatch·SEARCH_OP·*Param·AlarmItem·RelayException 등) |
 | Server.cs (Main 상수) | m_nDefaultPort·m_sPeerOff·m_sSelfError·m_arrConfigSplit | 프로젝트별 값 (기본 웹 포트 800·오류 문구 Client Off·Server Error → 공통 Global, 따로 관리 설정 aQuery·aSearch·aAlarm·aField → 공통 Config) |

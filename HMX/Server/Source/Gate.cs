@@ -6,7 +6,7 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 	[ThreadStatic] private static long	m_nYieldSlice;	// 이 스레드 연속 실행 시작 (Stopwatch)
 	[ThreadStatic] private static long	m_nYieldLast;	// 이 스레드 마지막 Yield (Stopwatch, 0: 처음)
 
-	private readonly SemaphoreSlim									m_kAll;	// 전체 자리
+	private readonly SemaphoreSlim	m_kAll;	// 전체 자리
 	private readonly ConcurrentDictionary<string, SemaphoreSlim>	m_hmapSession	= new ConcurrentDictionary<string, SemaphoreSlim>();	// 세션 → 1건 자리
 
 	public Gate(int nAll)
@@ -16,7 +16,7 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 
 	public static string GetSession(HttpContext kContext)	// 세션 키: 로그인 계정, 없음: IP
 	{
-		string sID = kContext.User.Identity?.Name ?? "";
+		string	sID	= kContext.User.Identity?.Name ?? "";
 
 		return sID != "" ? sID : Web.GetAddr(kContext);
 	}
@@ -40,7 +40,7 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 
 	public async Task<IDisposable> EnterAsync(string sSession, CancellationToken kStop)	// 자리 잡음: 세션 → 전체 (배경 작업: 세션 키·토큰 직접)
 	{
-		SemaphoreSlim kSession = m_hmapSession.GetOrAdd(sSession, _ => new SemaphoreSlim(1, 1));
+		SemaphoreSlim	kSession	= m_hmapSession.GetOrAdd(sSession, _ => new SemaphoreSlim(1, 1));
 
 		await kSession.WaitAsync(kStop);
 
@@ -62,7 +62,7 @@ class Gate	// 부하 자리 (쿼리·서치·보기·덤프 다운·파일 다�
 	{
 		kStop.ThrowIfCancellationRequested();
 
-		long nNow = Stopwatch.GetTimestamp();
+		long	nNow	= Stopwatch.GetTimestamp();
 
 		if (m_nYieldLast == 0 || Stopwatch.GetElapsedTime(m_nYieldLast, nNow).TotalMilliseconds >= m_nYieldBusyMs)
 		{

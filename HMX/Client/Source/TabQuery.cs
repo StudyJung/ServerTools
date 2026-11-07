@@ -1,35 +1,41 @@
 static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신 시간 로그 aLogType 줄 → 서버 전송)·받은 진행 (Count) 동기화·줄 필드 (서버 aField)
 {
-	private const int	m_nFieldKeyMax		= 32;	// aField 키 최대 글자 (서버와 같음)
-	private const int	m_nFieldValueMax	= 260;	// aField 고정값 최대 글자 (서버 필드 값 최대와 같음)
-	private const int	m_nFieldRegexMax	= 500;	// aField 정규식 최대 글자
-	private const int	m_nFieldRegexMs		= 100;	// aField 정규식 한 줄 제한 (ms, 넘음: 값 없음)
+	private const int	m_nFieldKeyMax		= 32;		// aField 키 최대 글자 (서버와 같음)
+	private const int	m_nFieldValueMax	= 260;		// aField 고정값 최대 글자 (서버 필드 값 최대와 같음)
+	private const int	m_nFieldRegexMax	= 500;		// aField 정규식 최대 글자
+	private const int	m_nFieldRegexMs		= 100;		// aField 정규식 한 줄 제한 (ms, 넘음: 값 없음)
 	private const int	m_nLogWatchMs		= 1000;		// 로그 감시 주기 (ms)
 	private const int	m_nNextCheckMs		= 2000;		// 다음 시간 파일 찾기 주기 (ms, 감시 파일 시간 경과 후)
 	private const int	m_nLogScanMs		= 60000;	// 쿼리·서치 대상 폴더 탐색 주기 (ms)
 	private const int	m_nCountWaitSec		= 10;		// 접속 때 서버 Count 답 대기 (초, 없음: 보정 없이 로그 전송)
 	private const int	m_nLogTextMax		= 10000;	// 로그 감시 줄 최대 글자 (초과: "…")
 
-	private static readonly Encoding				m_kUtf8			= new UTF8Encoding(false);	// UTF-8 (BOM 없음, 재사용)
-	public static readonly TaskCompletionSource				m_kLogReady		= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);	// 쿼리 준비 끝 (준비 순서: 쿼리 → 서치)
-	public static string[]							m_arrBlockQuery = Array.Empty<string>();	// aBlockQuery 막는 경로 (전체 경로·\이름\, 자신·하위: 쿼리 감시 제외, 다른 탭: 그대로)
-	private static readonly List<string>						m_listLogTarget	= new List<string>();	// 찾은 대상 폴더 전체 (막기 전, 로그 감시 스레드 전용)
-	private static readonly List<LogWatch>						m_listLogWatch	= new List<LogWatch>();	// 로그 감시 (대상 폴더마다, aBlockQuery 제외, 로그 감시 스레드 전용)
-	private static readonly List<string>						m_listCountDel	= new List<string>();	// 사라진 감시 폴더 (서버 관리 제외 알릴 것, 로그 감시 스레드 전용)
-	private static string										m_sLogScanError	= "";	// 마지막 대상 폴더 탐색 오류 (같은 오류 반복 출력 방지)
-	private static string[]							m_arrLogType = Array.Empty<string>();	// 보낼 로그 종류 (두 번째 [] 안, 예: ERROR)
-	private static volatile LogField[]							m_arrField		= Array.Empty<LogField>();	// 보낼 줄 필드 (서버 Count 답·얼라이브 답 aField, 접속마다 새로, 바꿀 때 배열 통째로)
-	private static volatile string?							m_sServerField;	// 마지막 받은 서버 aField 글자 (같음: 다시 안 만듦, null: 이 접속 아직)
-	private static bool										m_bCountLoaded;	// 시작 때 로그 감시 상태 읽음 (뒤에 생긴 대상: 바로 읽음, 로그 감시 스레드 전용)
-	private static volatile string[]							m_arrCountFolder	= Array.Empty<string>();	// 로그 감시 대상 폴더 (접속 때 서버로, 탐색 시 새 배열로 교체 → 다른 스레드 읽기)
+	private static readonly Encoding	m_kUtf8	= new UTF8Encoding(false);	// UTF-8 (BOM 없음, 재사용)
+
+	public static readonly TaskCompletionSource	m_kLogReady		= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);	// 쿼리 준비 끝 (준비 순서: 쿼리 → 서치)
+	public static string[]						m_arrBlockQuery	= Array.Empty<string>();	// aBlockQuery 막는 경로 (전체 경로·\이름\, 자신·하위: 쿼리 감시 제외, 다른 탭: 그대로)
+
+	private static readonly List<string>	m_listLogTarget		= new List<string>();		// 찾은 대상 폴더 전체 (막기 전, 로그 감시 스레드 전용)
+	private static readonly List<LogWatch>	m_listLogWatch		= new List<LogWatch>();		// 로그 감시 (대상 폴더마다, aBlockQuery 제외, 로그 감시 스레드 전용)
+	private static readonly List<string>	m_listCountDel		= new List<string>();		// 사라진 감시 폴더 (서버 관리 제외 알릴 것, 로그 감시 스레드 전용)
+	private static string					m_sLogScanError		= "";						// 마지막 대상 폴더 탐색 오류 (같은 오류 반복 출력 방지)
+	private static string[]					m_arrLogType		= Array.Empty<string>();	// 보낼 로그 종류 (두 번째 [] 안, 예: ERROR)
+	private static volatile LogField[]		m_arrField			= Array.Empty<LogField>();	// 보낼 줄 필드 (서버 Count 답·얼라이브 답 aField, 접속마다 새로, 바꿀 때 배열 통째로)
+	private static volatile string?			m_sServerField;									// 마지막 받은 서버 aField 글자 (같음: 다시 안 만듦, null: 이 접속 아직)
+	private static bool						m_bCountLoaded;									// 시작 때 로그 감시 상태 읽음 (뒤에 생긴 대상: 바로 읽음, 로그 감시 스레드 전용)
+	private static volatile string[]		m_arrCountFolder	= Array.Empty<string>();	// 로그 감시 대상 폴더 (접속 때 서버로, 탐색 시 새 배열로 교체 → 다른 스레드 읽기)
+
 	public static readonly ConcurrentQueue<(long nGen, string[] arrFolder, Dictionary<string, (string sRel, long nLine)> hmapCount)>	m_queServerCount	= new ConcurrentQueue<(long nGen, string[] arrFolder, Dictionary<string, (string sRel, long nLine)> hmapCount)>();	// 서버 답 (접속 Count·발견 CountAdd: 접속 번호·등록 폴더·받은 진행, 로그 감시 스레드가 꺼내 등록·보정)
 	public static volatile TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>?	m_kCountReply;	// 접속 때 Count 답 기다림 (수신 처리가 채움)
-	public static long										m_nCountGen;		// 접속 번호 (Count 동기화마다 +1, 등록 기준: 접속 바뀜 → 모두 미등록)
-	private static volatile bool								m_bCountServer;		// 서버 Count 지원 (이 접속 Count 답 받음, 예전 서버: false → 등록 없이 모두 전송)
-	public static volatile LineWriter?						m_kLogWriter;	// 로그 감시 전송 (접속 중: Hello 뒤 설정, 끊김: null → 로그 감시 쉼)
-	public static volatile bool								m_bLogPause;	// 서버 Pause 받음 (분당 상위 클라만, Resume·재접속: 해제, 수신 루프가 순서대로 바꿈)
-	private static int								m_nLogSend;		// 설정 nLogSend
-	private static int								m_nLogRead;		// 설정 nLogRead
+	public static long	m_nCountGen;	// 접속 번호 (Count 동기화마다 +1, 등록 기준: 접속 바뀜 → 모두 미등록)
+
+	private static volatile bool	m_bCountServer;	// 서버 Count 지원 (이 접속 Count 답 받음, 예전 서버: false → 등록 없이 모두 전송)
+
+	public static volatile LineWriter?	m_kLogWriter;	// 로그 감시 전송 (접속 중: Hello 뒤 설정, 끊김: null → 로그 감시 쉼)
+	public static volatile bool			m_bLogPause;	// 서버 Pause 받음 (분당 상위 클라만, Resume·재접속: 해제, 수신 루프가 순서대로 바꿈)
+
+	private static int	m_nLogSend;	// 설정 nLogSend
+	private static int	m_nLogRead;	// 설정 nLogRead
 
 	public static void Init(string[] arrBlockQuery, string[] arrLogType, int nLogSend, int nLogRead)	// 설정 → 막는 경로 (aBlockQuery)·보낼 로그 종류·전송·읽기 줄 수 (Main.Create)
 	{
@@ -41,7 +47,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	public static async Task LogWatchLoop(CancellationToken kStop)	// 로그 감시: m_nLogWatchMs 마다 대상 폴더별 감시 파일 새 줄 검사 → aLogType 줄 전송 (aLogType 없음: 대상 탐색만)
 	{
-		bool bSend = m_arrLogType.Length > 0;
+		bool	bSend	= m_arrLogType.Length > 0;
 
 		Log.Write(INFO_, bSend ? $"쿼리 정보: aLogFolder {Tab.m_arrLogRoot.Length}개, aLogType {string.Join("·", m_arrLogType)}" : $"쿼리 안 함: aLogType 없음 (aLogFolder {Tab.m_arrLogRoot.Length}개, 서치 대상 탐색만)");
 
@@ -59,7 +65,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 		m_kLogReady.TrySetResult();
 
-		long nScanTick = Environment.TickCount64;
+		long	nScanTick	= Environment.TickCount64;
 
 		try
 		{
@@ -74,11 +80,11 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 				CloseMissingLog();	// 감시 파일 사라짐: 핸들 바로 닫음 (접속 여부 무관)
 
-				LineWriter? kWriter = m_kLogWriter;	// 접속 안 됨·Pause: 이번 주기 쉼 (위치 유지)
+				LineWriter?	kWriter	= m_kLogWriter;	// 접속 안 됨·Pause: 이번 주기 쉼 (위치 유지)
 
 				if (bSend && kWriter != null && !m_bLogPause)
 				{
-					long nGen = ApplyServerCount();	// 서버 등록·받은 진행으로 보정 (접속 Count·발견 CountAdd 답, 첫 검사 전), 반환: 이 접속 번호
+					long	nGen	= ApplyServerCount();	// 서버 등록·받은 진행으로 보정 (접속 Count·발견 CountAdd 답, 첫 검사 전), 반환: 이 접속 번호
 
 					await RequestCountDel(kWriter, kStop);			// 사라진 폴더: 서버 관리 제외 알림
 					await RequestCountAdd(kWriter, nGen, kStop);	// 새로 발견한 폴더: 서버 등록 요청 (답 오면 그 폴더도 전송)
@@ -132,12 +138,12 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	private static void ScanLogFolder()	// 대상 폴더 탐색: aLogFolder 자신·하위 중 바로 아래 날짜 폴더 가진 폴더 → 감시 추가 (기존 폴더 유지, 사라진 폴더: 감시 정리·서버 관리 제외, 새 폴더: 상태 있음 → 이어서, 없음: 최신 파일 끝부터)
 	{
-		bool bPruned = PruneLogFolder();	// 사라진 대상: 먼저 뺌
+		bool	bPruned	= PruneLogFolder();	// 사라진 대상: 먼저 뺌
 
 		try
 		{
-			EnumerationOptions kDirOption	= new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint };																											// 바로 아래만 (날짜 폴더 확인)
-			EnumerationOptions kScanOption	= new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint, RecurseSubdirectories = true, MaxRecursionDepth = Define.m_nLogScanDepth };	// 하위 폴더 (깊이 제한)
+			EnumerationOptions	kDirOption	= new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint };	// 바로 아래만 (날짜 폴더 확인)
+			EnumerationOptions	kScanOption	= new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint, RecurseSubdirectories = true, MaxRecursionDepth = Define.m_nLogScanDepth };	// 하위 폴더 (깊이 제한)
 
 			foreach (string sRoot in Tab.m_arrLogRoot)
 			{
@@ -168,7 +174,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 					}
 					else
 					{
-						LogWatch kWatch = new LogWatch(sFolder);
+						LogWatch	kWatch	= new LogWatch(sFolder);
 
 						m_listLogWatch.Add(kWatch);
 
@@ -204,7 +210,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 			m_arrCountFolder = m_listLogWatch.Select(kWatch => kWatch.m_sFolder).ToArray();
 		}
 
-		string[] arrSearch = m_listLogTarget.Where(sFolder => !Tab.IsBlocked(sFolder, TabSearch.m_arrBlockSearch)).ToArray();	// 서치 대상 (aBlockSearch 제외)
+		string[]	arrSearch	= m_listLogTarget.Where(sFolder => !Tab.IsBlocked(sFolder, TabSearch.m_arrBlockSearch)).ToArray();	// 서치 대상 (aBlockSearch 제외)
 
 		if (bPruned || TabSearch.m_arrLogFolder.Length != arrSearch.Length)	// 바뀜 (추가·사라짐): 서치 대상 새 배열
 		{
@@ -214,13 +220,13 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	private static bool PruneLogFolder()	// 사라진 대상 폴더 (삭제·이름 변경): 감시 핸들·상태 파일 닫고 목록에서 뺌 → 서버 관리 제외 알림 대기 (상태 파일: 남김 → 다시 생기면 이어서), 반환: 뺀 것 있음
 	{
-		List<string> listGone = m_listLogTarget.Where(sFolder => !Directory.Exists(sFolder)).ToList();	// 사라진 대상 폴더
+		List<string>	listGone	= m_listLogTarget.Where(sFolder => !Directory.Exists(sFolder)).ToList();	// 사라진 대상 폴더
 
 		foreach (string sFolder in listGone)
 		{
 			m_listLogTarget.Remove(sFolder);
 
-			LogWatch? kWatch = m_listLogWatch.Find(kItem => string.Equals(kItem.m_sFolder, sFolder, StringComparison.OrdinalIgnoreCase));	// 그 폴더 감시 (aBlockQuery: 없음)
+			LogWatch?	kWatch	= m_listLogWatch.Find(kItem => string.Equals(kItem.m_sFolder, sFolder, StringComparison.OrdinalIgnoreCase));	// 그 폴더 감시 (aBlockQuery: 없음)
 
 			if (kWatch == null)
 			{
@@ -259,7 +265,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 			return;
 		}
 
-		string[] arrFolder = m_listCountDel.ToArray();
+		string[]	arrFolder	= m_listCountDel.ToArray();
 
 		m_listCountDel.Clear();
 
@@ -309,8 +315,8 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 		Count.DeleteUnused(GetMachine(), m_listLogWatch.Select(kWatch => kWatch.m_kCount.m_sFile));	// 감시 대상 아닌 폴더 (대상 밖·aBlockQuery) 상태
 
-		string		sOld		= GetOldStateFile();
-		string[]	arrOld		= [sOld, sOld + ".tmp", Path.ChangeExtension(sOld, ".txt")];	// 예전 파일 (LMClient.data·임시 파일·LMClient.txt)
+		string		sOld	= GetOldStateFile();
+		string[]	arrOld	= [sOld, sOld + ".tmp", Path.ChangeExtension(sOld, ".txt")];	// 예전 파일 (LMClient.data·임시 파일·LMClient.txt)
 
 		if (!bMoved || !arrOld.Any(File.Exists))
 		{
@@ -351,10 +357,10 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 			foreach (string sState in File.ReadAllLines(sFile, m_kUtf8))
 			{
-				string[]	arrPart	= sState.Trim().Split('\t', 2);								// 전체 경로, 줄 번호
-				string		sPath	= arrPart[0].Trim();										// 감시 파일 전체 경로
-				string?		sDate	= Path.GetDirectoryName(sPath);								// 날짜 폴더
-				string?		sFolder	= sDate == null ? null : Path.GetDirectoryName(sDate);		// 대상 폴더 (대상\날짜\파일)
+				string[]	arrPart	= sState.Trim().Split('\t', 2);							// 전체 경로, 줄 번호
+				string		sPath	= arrPart[0].Trim();									// 감시 파일 전체 경로
+				string?		sDate	= Path.GetDirectoryName(sPath);							// 날짜 폴더
+				string?		sFolder	= sDate == null ? null : Path.GetDirectoryName(sDate);	// 대상 폴더 (대상\날짜\파일)
 
 				if (sFolder != null)
 				{
@@ -375,7 +381,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 	private static bool LoadCount(LogWatch kWatch, string? sOld)	// 대상 폴더 상태 읽기 (Count, 없음: 예전 상태 줄 → 새 파일에 씀) → 본 줄 다음부터 (반환: 실패 false)
 	//   줄 번호만 깨짐: 그 파일 마지막 줄까지 본 것으로 복구 (파일 없음: 다음 시간 파일 처음부터), 상태 없음·경로 깨짐: 최신 파일 끝부터
 	{
-		bool bDone = kWatch.m_kCount.Load(sOld, out string sRel, out long nLine);
+		bool	bDone	= kWatch.m_kCount.Load(sOld, out string sRel, out long nLine);
 
 		if (sRel == "")	// 상태 없음·경로 깨짐
 		{
@@ -407,7 +413,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	private static long ApplyServerCount()	// 서버 답 (접속 Count·발견 CountAdd) → 답 폴더 등록 (이 접속 전송) + 받은 진행 있음: 그 위치부터 (서버 앞섬 → 건너뜀 (중복 방지), 뒤짐 → 다시 보냄 (유실 방지), 없음: 그대로 (지난 답도 없음 + 그 뒤 보냄: 서버 저장 전 끊김 → 그 뒤 처음 보낸 위치부터 다시)), 지난 접속 답: 버림 (반환: 이 접속 번호)
 	{
-		long nGen = Interlocked.Read(ref m_nCountGen);	// 이 접속 번호
+		long	nGen	= Interlocked.Read(ref m_nCountGen);	// 이 접속 번호
 
 		while (m_queServerCount.TryDequeue(out (long nGen, string[] arrFolder, Dictionary<string, (string sRel, long nLine)> hmapCount) kReply))
 		{
@@ -416,13 +422,13 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 				continue;
 			}
 
-			HashSet<string> setFolder = kReply.arrFolder.ToHashSet(StringComparer.OrdinalIgnoreCase);	// 등록된 폴더
+			HashSet<string>	setFolder	= kReply.arrFolder.ToHashSet(StringComparer.OrdinalIgnoreCase);	// 등록된 폴더
 
 			foreach (LogWatch kWatch in m_listLogWatch.Where(kWatch => setFolder.Contains(kWatch.m_sFolder)))
 			{
 				kWatch.m_nServerGen = nGen;	// 등록: 이 접속 동안 전송
 
-				string sNow = string.IsNullOrEmpty(kWatch.m_sPath) ? "" : Path.GetRelativePath(kWatch.m_sFolder, kWatch.m_sPath);	// 지금 위치 (날짜 폴더\파일)
+				string	sNow	= string.IsNullOrEmpty(kWatch.m_sPath) ? "" : Path.GetRelativePath(kWatch.m_sFolder, kWatch.m_sPath);	// 지금 위치 (날짜 폴더\파일)
 
 				if (!kReply.hmapCount.TryGetValue(kWatch.m_sFolder, out (string sRel, long nLine) kServer) || kServer.nLine < 0 || Count.GetDateHour(kServer.sRel) < 0)	// 서버 받은 진행 없음·형식 오류
 				{
@@ -467,14 +473,14 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 			return;
 		}
 
-		List<LogWatch> listNew = m_listLogWatch.Where(kWatch => kWatch.m_nServerGen != nGen && kWatch.m_nRequestGen != nGen).ToList();	// 등록 요청할 폴더
+		List<LogWatch>	listNew	= m_listLogWatch.Where(kWatch => kWatch.m_nServerGen != nGen && kWatch.m_nRequestGen != nGen).ToList();	// 등록 요청할 폴더
 
 		if (listNew.Count == 0)
 		{
 			return;
 		}
 
-		string[] arrFolder = listNew.Select(kWatch => kWatch.m_sFolder).ToArray();
+		string[]	arrFolder	= listNew.Select(kWatch => kWatch.m_sFolder).ToArray();
 
 		try
 		{
@@ -516,7 +522,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 		{
 			if (!string.IsNullOrEmpty(kWatch.m_sPath))	// 이전 파일: 남은 줄 모두 전송 (시간 무관, 최대 줄 수·전송 실패: 다음 주기 이어서, 열기 실패: 넘어감)
 			{
-				bool bOpen = File.Exists(kWatch.m_sPath);	// 없음: 바로 넘어감
+				bool	bOpen	= File.Exists(kWatch.m_sPath);	// 없음: 바로 넘어감
 
 				try
 				{
@@ -581,7 +587,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 		if (listLine.Count > 0)
 		{
-			LogField[] arrField = m_arrField;	// 줄 필드 (이 건 동안 같은 것)
+			LogField[]	arrField	= m_arrField;	// 줄 필드 (이 건 동안 같은 것)
 
 			string sLine = JsonSerializer.Serialize(new
 			{
@@ -611,7 +617,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	private static Dictionary<string, string> GetLineField(LogField[] arrField, string sLine)	// 한 줄 aField 값 {키: 값} (고정값: 그대로, 정규식 첫 () 값, 없음: 맞은 부분, 빈 값·시간 초과: 제외)
 	{
-		Dictionary<string, string> hmapField = new Dictionary<string, string>();	// 값 있는 키만
+		Dictionary<string, string>	hmapField	= new Dictionary<string, string>();	// 값 있는 키만
 
 		foreach (LogField kField in arrField)
 		{
@@ -678,12 +684,12 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 		DateTimeOffset	kNow		= GetNow();
 		long			nCutoff		= bAll ? long.MaxValue : ((((kNow.Year * 100L + kNow.Month) * 100 + kNow.Day) * 100 + kNow.Hour) * 100 + kNow.Minute) * 100 + kNow.Second;	// 기준 시각 (yyyyMMddHHmmss, 이 시각 전 줄만)
 		List<string>	listLine	= new List<string>();
-		List<long>		listNo		= new List<long>();					// 보낼 줄 번호 (파일 첫 줄 1)
-		bool			bStop		= false;							// 멈춤 (기준 시각 이후 줄·최대 줄 수)
-		bool			bMore		= false;							// 최대 줄 수라 남은 줄 있음
+		List<long>		listNo		= new List<long>();	// 보낼 줄 번호 (파일 첫 줄 1)
+		bool			bStop		= false;			// 멈춤 (기준 시각 이후 줄·최대 줄 수)
+		bool			bMore		= false;			// 최대 줄 수라 남은 줄 있음
 		int				nCheck		= 0;
-		long			nOffset		= kWatch.m_nOffset;					// 다음 읽기 위치
-		long			nLine		= kWatch.m_nLine;					// 본 줄까지
+		long			nOffset		= kWatch.m_nOffset;	// 다음 읽기 위치
+		long			nLine		= kWatch.m_nLine;	// 본 줄까지
 
 		if (nLength < nOffset)	// 파일이 줄어듦 (다시 씀): 처음부터
 		{
@@ -696,26 +702,26 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 			return (listLine, listNo, nOffset, nLine, nCheck, nLength != nOffset);
 		}
 
-		byte[] arrBytes = ArrayPool<byte>.Shared.Rent(Define.m_nBlockBytes);
-		char[] arrChars = ArrayPool<char>.Shared.Rent(Define.m_nBlockBytes);	// 글자 수 ≤ 바이트 수
+		byte[]	arrBytes	= ArrayPool<byte>.Shared.Rent(Define.m_nBlockBytes);
+		char[]	arrChars	= ArrayPool<char>.Shared.Rent(Define.m_nBlockBytes);	// 글자 수 ≤ 바이트 수
 
 		try
 		{
 			while (!bStop && nOffset < nLength)
 			{
-				int nRead = RandomAccess.Read(kHandle, arrBytes.AsSpan(0, (int)Math.Min(Define.m_nBlockBytes, nLength - nOffset)), nOffset);
+				int	nRead	= RandomAccess.Read(kHandle, arrBytes.AsSpan(0, (int)Math.Min(Define.m_nBlockBytes, nLength - nOffset)), nOffset);
 
 				if (nRead <= 0)
 				{
 					break;
 				}
 
-				ReadOnlySpan<byte>	kBlock	= arrBytes.AsSpan(0, nRead);
-				bool				bEnd	= nOffset + nRead >= nLength;											// 파일 끝까지 읽음
-				int					nBom	= nOffset == 0 && kBlock.StartsWith("\uFEFF"u8) ? 3 : 0;				// UTF-8 BOM 건너뜀
-				int					nEnd	= nBom;																			// 볼 끝 (상대)
-				long				nBlockLine	= 0;																// 이 블록에서 지난 줄 수 (줄 번호 = nLine + nBlockLine + 1)
-				int					nIndex;																					// 줄 끝 (상대)
+				ReadOnlySpan<byte>	kBlock		= arrBytes.AsSpan(0, nRead);
+				bool				bEnd		= nOffset + nRead >= nLength;	// 파일 끝까지 읽음
+				int					nBom		= nOffset == 0 && kBlock.StartsWith("\uFEFF"u8) ? 3 : 0;	// UTF-8 BOM 건너뜀
+				int					nEnd		= nBom;							// 볼 끝 (상대)
+				long				nBlockLine	= 0;							// 이 블록에서 지난 줄 수 (줄 번호 = nLine + nBlockLine + 1)
+				int					nIndex;										// 줄 끝 (상대)
 
 				while ((nIndex = kBlock.Slice(nEnd).IndexOf((byte)'\n')) >= 0)	// 끝난 줄마다 시간 확인 → aLogType 줄 모음
 				{
@@ -792,7 +798,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	private static void AddLogLine(ReadOnlySpan<byte> kLine, char[] arrChars, List<string> listLine, List<long> listNo, long nNo)	// 한 줄 (바이트) → aLogType 줄이면 listLine·listNo 에 추가 (원문 시간 없음·값 틀림: 보내는 줄만 첫 [] 를 지금 시간으로 보정, 로그 파일 그대로)
 	{
-		ReadOnlySpan<char> kText = arrChars.AsSpan(0, Tab.Decode(kLine, arrChars));	// 글자 (글자 수 ≤ 바이트 수)
+		ReadOnlySpan<char>	kText	= arrChars.AsSpan(0, Tab.Decode(kLine, arrChars));	// 글자 (글자 수 ≤ 바이트 수)
 
 		if (IsLogType(kText))
 		{
@@ -803,7 +809,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	private static bool IsLogType(ReadOnlySpan<char> kLine)	// 두 번째 [] 안에 aLogType 포함 (대소문자 구분, 예: NOTI → [NOTI_])
 	{
-		int nTimeEnd = kLine.IndexOf(']');	// 첫 번째 [] 끝
+		int	nTimeEnd	= kLine.IndexOf(']');	// 첫 번째 [] 끝
 
 		if (kLine.Length == 0 || kLine[0] != '[' || nTimeEnd < 0)
 		{
@@ -845,7 +851,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 				continue;
 			}
 
-			int nDigit = kLine[nIndex] - '0';
+			int	nDigit	= kLine[nIndex] - '0';
 
 			if ((uint)nDigit > 9)
 			{
@@ -858,12 +864,12 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 			}
 		}
 
-		long nYear		= nTime / 10000000000;		// 년
-		long nMonth		= nTime / 100000000 % 100;	// 월
-		long nDay		= nTime / 1000000 % 100;	// 일
-		long nHour		= nTime / 10000 % 100;		// 시
-		long nMinute	= nTime / 100 % 100;		// 분
-		long nSecond	= nTime % 100;				// 초
+		long	nYear	= nTime / 10000000000;		// 년
+		long	nMonth	= nTime / 100000000 % 100;	// 월
+		long	nDay	= nTime / 1000000 % 100;	// 일
+		long	nHour	= nTime / 10000 % 100;		// 시
+		long	nMinute	= nTime / 100 % 100;		// 분
+		long	nSecond	= nTime % 100;				// 초
 
 		return nYear >= 1 && nMonth >= 1 && nMonth <= 12 && nDay >= 1 && nDay <= DateTime.DaysInMonth((int)nYear, (int)nMonth) && nHour <= 23 && nMinute <= 59 && nSecond <= 59;	// 있는 날짜·시각
 	}
@@ -871,13 +877,13 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 	private static long GetLastLineEnd(SafeFileHandle kHandle)	// 끝난 줄 끝 바이트 (마지막 '\n' 다음, 끝 블록 안에서 찾음)
 	{
 		long	nLength		= RandomAccess.GetLength(kHandle);
-		int		nCount		= (int)Math.Min(nLength, Define.m_nBlockBytes);			// 끝에서 읽을 바이트
+		int		nCount		= (int)Math.Min(nLength, Define.m_nBlockBytes);	// 끝에서 읽을 바이트
 		long	nStart		= nLength - nCount;
 		byte[]	arrBytes	= ArrayPool<byte>.Shared.Rent(Define.m_nBlockBytes);
 
 		try
 		{
-			int nEnd = arrBytes.AsSpan(0, RandomAccess.Read(kHandle, arrBytes.AsSpan(0, nCount), nStart)).LastIndexOf((byte)'\n') + 1;	// 마지막 '\n' 다음 (상대, 0: 없음)
+			int	nEnd	= arrBytes.AsSpan(0, RandomAccess.Read(kHandle, arrBytes.AsSpan(0, nCount), nStart)).LastIndexOf((byte)'\n') + 1;	// 마지막 '\n' 다음 (상대, 0: 없음)
 
 			return nEnd > 0 || nStart == 0 ? nStart + nEnd : nLength;	// 끝 블록에 줄 끝 없음 (아주 긴 줄): 파일 끝부터
 		}
@@ -896,14 +902,14 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 		Throttle	kThrottle	= new Throttle();
 		byte[]		arrBytes	= ArrayPool<byte>.Shared.Rent(Define.m_nBlockBytes);
-		long		nCount		= 0;											// 지난 '\n' 수
+		long		nCount		= 0;	// 지난 '\n' 수
 		long		nPos		= 0;
 
 		try
 		{
 			while (true)
 			{
-				int nRead = RandomAccess.Read(kHandle, arrBytes.AsSpan(0, Define.m_nBlockBytes), nPos);
+				int	nRead	= RandomAccess.Read(kHandle, arrBytes.AsSpan(0, Define.m_nBlockBytes), nPos);
 
 				if (nRead <= 0)	// 파일 끝: 줄 모자람
 				{
@@ -923,7 +929,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 					continue;
 				}
 
-				int nIndex = -1;	// 블록 안 '\n' 위치
+				int	nIndex	= -1;	// 블록 안 '\n' 위치
 
 				while (nCount < nLine)
 				{
@@ -952,7 +958,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 		{
 			while (nPos < nEnd)
 			{
-				int nRead = RandomAccess.Read(kHandle, arrBytes.AsSpan(0, (int)Math.Min(Define.m_nBlockBytes, nEnd - nPos)), nPos);
+				int	nRead	= RandomAccess.Read(kHandle, arrBytes.AsSpan(0, (int)Math.Min(Define.m_nBlockBytes, nEnd - nPos)), nPos);
 
 				if (nRead <= 0)
 				{
@@ -1003,7 +1009,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 			return "";
 		}
 
-		(long nDateHour, long nTime, string sPath) kLatest = (-1, 0, "");	// 최신 파일 (파일명 날짜·시간, 수정 시각, 경로)
+		(long nDateHour, long nTime, string sPath)	kLatest	= (-1, 0, "");	// 최신 파일 (파일명 날짜·시간, 수정 시각, 경로)
 
 		FileSystemEnumerable<(long nDateHour, long nTime, string sPath)> kFile = new FileSystemEnumerable<(long nDateHour, long nTime, string sPath)>(sDateDir, (ref FileSystemEntry kEntry) => (Tab.TryGetLogDateHour(kEntry.FileName, out long nDateHour) ? nDateHour : 0, kEntry.LastWriteTimeUtc.UtcTicks, kEntry.ToFullPath()), kOption)
 		{
@@ -1077,9 +1083,9 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	public static async Task SyncCount(LineWriter kWriter, CancellationToken kStop)	// 접속 때 1번: 로그 감시 대상 폴더 목록 → 서버 (서버: 목록 밖 Count 지움) → 답 (서버 받은 진행) X초 기다림 (없음: 예전 서버 → 등록 없이) → 로그 감시 스레드가 첫 검사 전 등록·보정
 	{
-		TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>	kReply		= new TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>(TaskCreationOptions.RunContinuationsAsynchronously);
-		string[]															arrFolder	= m_arrLogType.Length == 0 ? Array.Empty<string>() : m_arrCountFolder;	// 관리 목록 (aLogType 없음: 빈 목록 → 서버 Count 모두 지움)
-		long																nGen		= Interlocked.Increment(ref m_nCountGen);								// 이 접속 번호 (지난 접속 등록·답: 무효)
+		TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>	kReply	= new TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>(TaskCreationOptions.RunContinuationsAsynchronously);
+		string[]	arrFolder	= m_arrLogType.Length == 0 ? Array.Empty<string>() : m_arrCountFolder;	// 관리 목록 (aLogType 없음: 빈 목록 → 서버 Count 모두 지움)
+		long		nGen		= Interlocked.Increment(ref m_nCountGen);	// 이 접속 번호 (지난 접속 등록·답: 무효)
 
 		m_bCountServer	= false;
 		m_arrField		= Array.Empty<LogField>();	// 이 접속 줄 필드: Count 답 aField (답 없음·예전 서버: 없이)
@@ -1090,7 +1096,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 		{
 			await kWriter.WriteAsync(JsonSerializer.Serialize(new { sType = "Count", arrFolder, sTime = GetNowText() }, Define.m_kJsonOption), kStop);
 
-			Dictionary<string, (string sRel, long nLine)> hmapCount = await kReply.Task.WaitAsync(TimeSpan.FromSeconds(m_nCountWaitSec), kStop);	// 서버 받은 진행
+			Dictionary<string, (string sRel, long nLine)>	hmapCount	= await kReply.Task.WaitAsync(TimeSpan.FromSeconds(m_nCountWaitSec), kStop);	// 서버 받은 진행
 
 			m_bCountServer = true;
 
@@ -1111,14 +1117,14 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	public static string GetAliveLine()	// 얼라이브 한 줄 {"sType":"Alive","arrFolder":[""]} (지금 관리 목록, aLogType 없음: 빈 목록 → 서버: 다름만 맞춤·답 필드 정의)
 	{
-		string[] arrFolder = m_arrLogType.Length == 0 ? Array.Empty<string>() : m_arrCountFolder;	// 관리 목록 (Count 와 같음)
+		string[]	arrFolder	= m_arrLogType.Length == 0 ? Array.Empty<string>() : m_arrCountFolder;	// 관리 목록 (Count 와 같음)
 
 		return JsonSerializer.Serialize(new { sType = "Alive", arrFolder, sTime = GetNowText() }, Define.m_kJsonOption);
 	}
 
 	public static void ApplyServerField(JsonElement kRoot)	// 서버 aField (Count 답·얼라이브 답) → 보낼 줄 필드 (같은 값: 그대로 → 1분마다 로그 안 남김)
 	{
-		string sField = kRoot.TryGetProperty("aField", out JsonElement kFields) ? kFields.GetRawText() : "";	// 받은 aField 글자 (바뀜 판단)
+		string	sField	= kRoot.TryGetProperty("aField", out JsonElement kFields) ? kFields.GetRawText() : "";	// 받은 aField 글자 (바뀜 판단)
 
 		if (sField == m_sServerField)
 		{
@@ -1143,7 +1149,7 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 	public static Dictionary<string, (string sRel, long nLine)> ReadServerCount(JsonElement kRoot)	// Count·CountAdd 답 arrCount [{sFolder, sRel, nLine}] → 대상 폴더 → 날짜 폴더\파일·줄 번호
 	{
-		Dictionary<string, (string sRel, long nLine)> hmapCount = new Dictionary<string, (string sRel, long nLine)>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, (string sRel, long nLine)>	hmapCount	= new Dictionary<string, (string sRel, long nLine)>(StringComparer.OrdinalIgnoreCase);
 
 		if (kRoot.TryGetProperty("arrCount", out JsonElement kCounts) && kCounts.ValueKind == JsonValueKind.Array)
 		{
@@ -1170,9 +1176,9 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 		foreach (JsonElement kSection in kFields.EnumerateArray().Where(kItem => kItem.ValueKind == JsonValueKind.Object))
 		{
-			string sKey		= GetFieldText(kSection, "sKey").Trim();
-			string sRegex	= GetFieldText(kSection, "sRegex");
-			string sValue	= GetFieldText(kSection, "sValue").Trim();	// 고정값 (있음: 정규식 안 씀, 모든 줄 이 값)
+			string	sKey	= GetFieldText(kSection, "sKey").Trim();
+			string	sRegex	= GetFieldText(kSection, "sRegex");
+			string	sValue	= GetFieldText(kSection, "sValue").Trim();	// 고정값 (있음: 정규식 안 씀, 모든 줄 이 값)
 
 			if (sKey.Length > m_nFieldKeyMax || !Regex.IsMatch(sKey, "^[A-Za-z][A-Za-z0-9_]*$") || arrBase.Contains(sKey, StringComparer.OrdinalIgnoreCase) || listField.Any(kField => string.Equals(kField.sKey, sKey, StringComparison.OrdinalIgnoreCase)))
 			{
@@ -1225,14 +1231,14 @@ static class TabQuery	// 쿼리 탭: 로그 감시 (대상 폴더 탐색·최신
 
 class LogWatch	// 대상 폴더 하나의 로그 감시: 감시 파일 읽기 전용 핸들 유지 (로그 감시 스레드 전용)
 {
-	public readonly string	m_sFolder;			// 대상 폴더 전체 경로 (끝 구분자 없음)
-	public string?			m_sPath;			// 감시 파일 (null: 탐색 후 확인 전, "": 최신 파일 없음)
-	public SafeFileHandle?	m_kHandle;			// 감시 파일 핸들 (읽기 전용, null: 안 열림)
-	public long				m_nOffset;			// 다음 읽기 바이트 (-1: 열 때 m_nLine 기준으로 정함)
-	public long				m_nLine;			// 마지막 본 줄 번호 (0: 없음, -1: 열 때 끝난 줄 끝으로)
-	public long				m_nNextTick;		// 마지막 다음 시간 파일 찾기 시각 (TickCount64)
-	public string			m_sError	= "";	// 마지막 오류 (같은 오류 반복 출력 방지)
-	public readonly Count	m_kCount;			// 로그 감시 상태 (Data\Count\머신\대상 폴더\Count.data)
+	public readonly string	m_sFolder;				// 대상 폴더 전체 경로 (끝 구분자 없음)
+	public string?			m_sPath;				// 감시 파일 (null: 탐색 후 확인 전, "": 최신 파일 없음)
+	public SafeFileHandle?	m_kHandle;				// 감시 파일 핸들 (읽기 전용, null: 안 열림)
+	public long				m_nOffset;				// 다음 읽기 바이트 (-1: 열 때 m_nLine 기준으로 정함)
+	public long				m_nLine;				// 마지막 본 줄 번호 (0: 없음, -1: 열 때 끝난 줄 끝으로)
+	public long				m_nNextTick;			// 마지막 다음 시간 파일 찾기 시각 (TickCount64)
+	public string			m_sError		= "";	// 마지막 오류 (같은 오류 반복 출력 방지)
+	public readonly Count	m_kCount;				// 로그 감시 상태 (Data\Count\머신\대상 폴더\Count.data)
 	public long				m_nServerGen	= -1;	// 서버 등록된 접속 번호 (지금 접속과 같음: 전송, 다름: 등록 전 → 위치 유지)
 	public long				m_nRequestGen	= -1;	// 서버 등록 요청 (CountAdd) 보낸 접속 번호 (같은 접속 중복 요청 방지)
 	public bool				m_bNoCount;				// 마지막 서버 답: 받은 진행 없음

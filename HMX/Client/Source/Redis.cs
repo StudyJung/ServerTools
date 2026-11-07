@@ -7,18 +7,18 @@ static class Redis	// Redis 연결: 설정 Redis 항목 (sHost, nPort, nDB, sUse
 	private const string	m_sDefaultProcess	= "HMX:Process:";	// 목록 키 앞 기본값 (Redis:sPrefix 없음, 서버 Redis:sProcess 와 같게)
 	private const string	m_sDefaultError		= "HMX:Error:";		// 에러 리스트 키 앞 기본값 (Redis:sError 없음, 서버 Redis:sError 와 같게)
 
-	private static readonly Lazy<ConnectionMultiplexer> m_kConnect = new Lazy<ConnectionMultiplexer>(Connect);	// 연결 (최초 사용 시 생성, 스레드 안전, Config.Load() 이후 사용)
+	private static readonly Lazy<ConnectionMultiplexer>	m_kConnect	= new Lazy<ConnectionMultiplexer>(Connect);	// 연결 (최초 사용 시 생성, 스레드 안전, Config.Load() 이후 사용)
 
 	private static ConnectionMultiplexer Connect()	// 연결 생성 (실패해도 백그라운드 재연결, 연결 전 명령은 예외)
 	{
-		string sHost = Config.GetString("Redis:sHost");
+		string	sHost	= Config.GetString("Redis:sHost");
 
 		if (sHost == "")	// 호스트 미설정
 		{
 			throw new InvalidOperationException("Redis 호스트 미설정 (Redis:sHost)");
 		}
 
-		int		nPort	= Config.GetInt("Redis:nPort", m_nDefaultPort);
+		int	nPort	= Config.GetInt("Redis:nPort", m_nDefaultPort);
 
 		if (nPort <= 0)	// 0·음수: 기본 포트
 		{
@@ -45,7 +45,7 @@ static class Redis	// Redis 연결: 설정 Redis 항목 (sHost, nPort, nDB, sUse
 			kOption.Password	= sPass;
 		}
 
-		ConnectionMultiplexer kConnect = ConnectionMultiplexer.Connect(kOption);
+		ConnectionMultiplexer	kConnect	= ConnectionMultiplexer.Connect(kOption);
 
 		Log.Write(INFO_, $"Redis 연결: {sHost}:{nPort} (DB: {GetDbNumber()}, 목록: {GetPrefix()}*, 연결: {kConnect.IsConnected})");	// 비밀번호는 출력 안 함
 
@@ -64,7 +64,7 @@ static class Redis	// Redis 연결: 설정 Redis 항목 (sHost, nPort, nDB, sUse
 
 	public static IServer GetServer()	// 키 목록 조회용 서버 (단일 엔드포인트, 목록 SCAN)
 	{
-		ConnectionMultiplexer kConnect = m_kConnect.Value;
+		ConnectionMultiplexer	kConnect	= m_kConnect.Value;
 
 		return kConnect.GetServer(kConnect.GetEndPoints()[0]);
 	}
@@ -76,7 +76,7 @@ static class Redis	// Redis 연결: 설정 Redis 항목 (sHost, nPort, nDB, sUse
 
 	public static string GetZonePrefix(string sConfigKey, string sZone, string sDefault = "")	// 키 앞: 설정 값 + 존 + ":" (예: Redis:sError HMX:Error: + Dev → HMX:Error:Dev:, 존 없음: 설정 값만, 서버와 같음)
 	{
-		string sPrefix = Config.GetString(sConfigKey, sDefault);
+		string	sPrefix	= Config.GetString(sConfigKey, sDefault);
 
 		sZone = sZone.Trim();	// 존 앞뒤 공백 (서버·클라 키 갈림 방지)
 

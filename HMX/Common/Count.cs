@@ -5,15 +5,17 @@ class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은
 //   읽기: 아랫줄 기준, 줄바꿈 없는 마지막 줄 (쓰다 끊김) 버림, 바른 줄 중 맨 밑 줄이 윗줄보다 진행 (파일 날짜·시간, 줄 번호) 작음: 쓰다 끊김 → 윗줄
 //     예) 10.log 617 / 10.log 6 → 617, 10.log 617 / 11.log 617: 정상 → 아랫줄
 {
-	private const int					m_nFileLineMax	= 2;							// 파일 줄 수 (참: 다음 저장 때 윗줄 지우고 아랫줄 맨 위로)
-	private static readonly Encoding	m_kUtf8			= new UTF8Encoding(false);	// UTF-8 (BOM 없음)
+	private const int	m_nFileLineMax	= 2;	// 파일 줄 수 (참: 다음 저장 때 윗줄 지우고 아랫줄 맨 위로)
 
-	public readonly string	m_sFile;									// 상태 파일 ("": 머신·폴더 오류 → 안 읽고 안 씀)
-	public string			m_sRel		= "";							// 마지막 저장 "날짜 폴더\파일" (없음: "")
-	public long				m_nDateHour	= -1;							// 마지막 저장 파일 날짜·시간 (yyyyMMddHH, 진행 비교, 없음: -1)
-	public long				m_nLine		= -1;							// 마지막 저장 줄 번호 (없음: -1)
-	private FileStream?		m_kStream;									// 상태 파일 (쓰기로 열어 둠, null: 안 열림)
-	private int				m_nFileLine;								// 파일 줄 수 (m_nFileLineMax: 참·모름 → 다음 저장 때 처음부터 정리)
+	private static readonly Encoding	m_kUtf8	= new UTF8Encoding(false);	// UTF-8 (BOM 없음)
+
+	public readonly string	m_sFile;			// 상태 파일 ("": 머신·폴더 오류 → 안 읽고 안 씀)
+	public string			m_sRel		= "";	// 마지막 저장 "날짜 폴더\파일" (없음: "")
+	public long				m_nDateHour	= -1;	// 마지막 저장 파일 날짜·시간 (yyyyMMddHH, 진행 비교, 없음: -1)
+	public long				m_nLine		= -1;	// 마지막 저장 줄 번호 (없음: -1)
+
+	private FileStream?	m_kStream;		// 상태 파일 (쓰기로 열어 둠, null: 안 열림)
+	private int			m_nFileLine;	// 파일 줄 수 (m_nFileLineMax: 참·모름 → 다음 저장 때 처음부터 정리)
 
 	public Count(string sMachine, string sFolder)
 	{
@@ -34,8 +36,8 @@ class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은
 				return "";
 			}
 
-			string sRoot = Path.GetFullPath(GetRoot(sMachine)) + Path.DirectorySeparatorChar;										// 머신 폴더 (끝 구분자 포함)
-			string sFile = Path.GetFullPath(Path.Combine(sRoot, sFolder.Replace(":", "").TrimStart('\\', '/'), "Count.data"));
+			string	sRoot	= Path.GetFullPath(GetRoot(sMachine)) + Path.DirectorySeparatorChar;	// 머신 폴더 (끝 구분자 포함)
+			string	sFile	= Path.GetFullPath(Path.Combine(sRoot, sFolder.Replace(":", "").TrimStart('\\', '/'), "Count.data"));
 
 			return sFile.StartsWith(sRoot, StringComparison.OrdinalIgnoreCase) ? sFile : "";	// 머신 폴더 밖 (..\ 등): 거부
 		}
@@ -123,7 +125,7 @@ class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은
 			}
 		}
 
-		(string sRel, long nDateHour, long nLine)? kState = kLast;	// 고른 줄
+		(string sRel, long nDateHour, long nLine)?	kState	= kLast;	// 고른 줄
 
 		if (kLast != null && kPrev != null && (kLast.Value.nDateHour, kLast.Value.nLine).CompareTo((kPrev.Value.nDateHour, kPrev.Value.nLine)) < 0)	// 윗줄보다 진행 작음: 쓰다 끊김
 		{
@@ -222,7 +224,7 @@ class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은
 
 	public static void DeleteUnused(string sMachine, IEnumerable<string> listKeep)	// 머신 상태 폴더에서 남길 파일 (listKeep) 아닌 Count.data + 빈 폴더 지움 (파일마다 실패: 출력 후 그대로)
 	{
-		string sRoot = Path.GetFullPath(GetRoot(sMachine));	// 머신 상태 폴더
+		string	sRoot	= Path.GetFullPath(GetRoot(sMachine));	// 머신 상태 폴더
 
 		if (sMachine.Trim('.') == "" || sMachine.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || !Directory.Exists(sRoot))	// 머신 이름 오류·상태 없음
 		{

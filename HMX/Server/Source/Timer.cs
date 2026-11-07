@@ -4,11 +4,11 @@ static class Timer	// 타이머: 별도 스레드에서 X초마다 Batch, X분�
 	private const int	m_nAliveMin		= 1;	// Alive 로그 간격 (분)
 	private const int	m_nStopWaitMs	= 5000;	// 중지 때 Batch 끝 대기 (ms, 넘음: 색인 쓰기는 종료 Flush 가 이어서 대기)
 
-	private static Thread?					m_kThread;							// 타이머 스레드
-	private static CancellationTokenSource	m_kStop		= new CancellationTokenSource();	// 중지 요청 (대기 즉시 깸)
-	private static DateTimeOffset			m_kStartTime;						// 시작 시각 (KST, 가동 시간)
-	private static long						m_nAliveTick;						// 마지막 Alive 로그 (TickCount64)
-	private static System.Threading.Timer?	m_kMinuteTimer;						// 클라 분당 교체 (1분마다, 스레드 풀: 타이머 스레드 Batch·색인 Flush 와 따로 → 안 밀림)
+	private static Thread?					m_kThread;		// 타이머 스레드
+	private static CancellationTokenSource	m_kStop	= new CancellationTokenSource();	// 중지 요청 (대기 즉시 깸)
+	private static DateTimeOffset			m_kStartTime;	// 시작 시각 (KST, 가동 시간)
+	private static long						m_nAliveTick;	// 마지막 Alive 로그 (TickCount64)
+	private static System.Threading.Timer?	m_kMinuteTimer;	// 클라 분당 교체 (1분마다, 스레드 풀: 타이머 스레드 Batch·색인 Flush 와 따로 → 안 밀림)
 
 	public static void Start()	// 타이머 시작 (백그라운드 스레드)
 	{
@@ -66,7 +66,7 @@ static class Timer	// 타이머: 별도 스레드에서 X초마다 Batch, X분�
 	{
 		while (!m_kStop.IsCancellationRequested)
 		{
-			long nBegin = Environment.TickCount64;
+			long	nBegin	= Environment.TickCount64;
 
 			try
 			{
@@ -77,7 +77,7 @@ static class Timer	// 타이머: 별도 스레드에서 X초마다 Batch, X분�
 				Log.Write(ERROR, $"타이머 오류: {kException.Message}");
 			}
 
-			long nWait = Math.Max(0, m_nTickMs - (Environment.TickCount64 - nBegin));	// Batch 소요 시간 제외
+			long	nWait	= Math.Max(0, m_nTickMs - (Environment.TickCount64 - nBegin));	// Batch 소요 시간 제외
 
 			m_kStop.Token.WaitHandle.WaitOne((int)nWait);
 		}

@@ -1,9 +1,9 @@
 static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', 예: GetString("DB:Dev:sHost"), 따로 관리 키: Main.m_arrConfigSplit 파일) (Server·Client 공통)
 {
-	private static IConfigurationRoot m_kConfig = new ConfigurationBuilder().Build();	// 설정 값 (Load 전·파일 없음: 빈 설정)
-	private static readonly object m_kSaveLock = new object();							// 설정 파일 쓰기 1건씩
-	private static bool m_bLoaded;														// 한 번 로딩함 (예전 형식 경고: 처음만)
-	private static int m_nVersion;														// 설정 버전 (로딩마다 +1)
+	private static IConfigurationRoot	m_kConfig	= new ConfigurationBuilder().Build();	// 설정 값 (Load 전·파일 없음: 빈 설정)
+	private static readonly object		m_kSaveLock	= new object();							// 설정 파일 쓰기 1건씩
+	private static bool					m_bLoaded;											// 한 번 로딩함 (예전 형식 경고: 처음만)
+	private static int					m_nVersion;											// 설정 버전 (로딩마다 +1)
 
 	public static int GetVersion()	// 설정 버전 (로딩마다 바뀜 → 설정으로 만든 메모리 맵 다시 만들 때)
 	{
@@ -41,9 +41,9 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 			}
 		}
 
-		IConfigurationRoot kConfig = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(kRoot.ToJsonString()))).Build();	// 복호화 후 교체 (다시 로딩 중 읽는 쪽: 앞 설정)
+		IConfigurationRoot	kConfig	= new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(kRoot.ToJsonString()))).Build();	// 복호화 후 교체 (다시 로딩 중 읽는 쪽: 앞 설정)
 
-		int nDecrypt = DecryptCode(kConfig);	// sCode → sPass
+		int	nDecrypt	= DecryptCode(kConfig);	// sCode → sPass
 
 		m_kConfig	= kConfig;
 		m_bLoaded	= true;
@@ -117,7 +117,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 
 		if (kRoot[sKey] is JsonNode kOld)	// 예전 형식: 기본 설정 파일 값 → 따로 관리 파일 만듦
 		{
-			string sError = WriteJson(sPath, new JsonObject { [sKey] = kOld.DeepClone() });
+			string	sError	= WriteJson(sPath, new JsonObject { [sKey] = kOld.DeepClone() });
 
 			Log.Write(sError == "" ? NOTI_ : WARN_, sError == "" ? $"설정 {sKey}: {sFile} 로 옮김 ({GetConfigFile()} 의 {sKey} 지워도 됨)" : $"설정 {sKey}: {sFile} 만들기 실패 ({sError}, {GetConfigFile()} 값 사용)");
 		}
@@ -127,15 +127,15 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 
 	public static string GetKeyFile(string sKey)	// 키를 읽는 파일 경로 (따로 관리 키: 그 파일 있음 → 그 파일, 그 외: 기본 설정 파일)
 	{
-		string sSplit = GetSplitFile(sKey);
+		string	sSplit	= GetSplitFile(sKey);
 
 		return sSplit != "" && File.Exists(sSplit) ? sSplit : GetPath(GetConfigFile());
 	}
 
 	private static string GetPath(string sFile)	// 설정 파일 경로: Json 폴더 (Json 폴더에 없음·예전 위치 기준 폴더에 있음: 그 파일 그대로 읽고 씀, 경고: 처음 로딩만)
 	{
-		string sPath	= Path.Combine(GetConfigDir(), sFile);
-		string sOld		= Path.Combine(GetBaseDir(), sFile);
+		string	sPath	= Path.Combine(GetConfigDir(), sFile);
+		string	sOld	= Path.Combine(GetBaseDir(), sFile);
 
 		if (File.Exists(sPath) || !File.Exists(sOld))
 		{
@@ -180,7 +180,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 
 		while (nPos < sJson.Length)
 		{
-			char cChar = sJson[nPos++];
+			char	cChar	= sJson[nPos++];
 
 			kOut.Append(cChar);
 
@@ -277,7 +277,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 
 	private static int DecryptCode(IConfigurationRoot kConfig)	// sCode 값 복호화 → 같은 위치 sPass 로 메모리 보관 (반환: 건수, 마스터 키 없음: 안 함)
 	{
-		Dictionary<string, string> hmapPass = new Dictionary<string, string>();	// sPass 키 → 값 (열거 중 변경 방지용 임시)
+		Dictionary<string, string>	hmapPass	= new Dictionary<string, string>();	// sPass 키 → 값 (열거 중 변경 방지용 임시)
 
 		if (GetMasterKey() == "")	// 마스터 키 없음 (서버 첫 접속 입력 전·클라 받기 전): sPass 없음
 		{
@@ -291,7 +291,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 				continue;
 			}
 
-			string? sPass = AES.Decrypt(kPair.Value);
+			string?	sPass	= AES.Decrypt(kPair.Value);
 
 			if (sPass == null)	// 실패: sPass 미등록, 값 미출력
 			{
@@ -300,7 +300,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 				continue;
 			}
 
-			string? sParent = ConfigurationPath.GetParentPath(kPair.Key);	// 최상위: null
+			string?	sParent	= ConfigurationPath.GetParentPath(kPair.Key);	// 최상위: null
 
 			hmapPass[sParent == null ? "sPass" : ConfigurationPath.Combine(sParent, "sPass")] = sPass;
 		}
@@ -365,7 +365,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 
 		lock (m_kSaveLock)
 		{
-			JsonObject kRoot;	// 저장할 파일 내용
+			JsonObject	kRoot;	// 저장할 파일 내용
 
 			try
 			{
@@ -378,7 +378,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 
 			kRoot[sKey] = kNode;
 
-			string sError = WriteJson(sPath, kRoot);
+			string	sError	= WriteJson(sPath, kRoot);
 
 			if (sError != "")
 			{

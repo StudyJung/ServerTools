@@ -2,8 +2,9 @@ static class Alarm	// 알람 (적재 시 매칭 → 매분 판정 → 발송): �
 {
 	public static volatile AlarmMatcher?	m_kMatcher;			// 매칭 스냅샷 (적재 스레드가 잠금 없이 읽음, 사용 알람 없음: null)
 	public static volatile bool				m_bFieldChanged;	// 추가 필드 이름 늘어남 → 다음 분에 스냅샷 다시 (필드:값 판단)
-	private static List<AlarmItem>			m_listAlarm		= new List<AlarmItem>();	// 지금 알람 (스냅샷 다시 만들 때)
-	private static readonly object			m_kLock			= new object();				// 스냅샷 교체 1건씩
+
+	private static List<AlarmItem>	m_listAlarm	= new List<AlarmItem>();	// 지금 알람 (스냅샷 다시 만들 때)
+	private static readonly object	m_kLock		= new object();				// 스냅샷 교체 1건씩
 
 	public static void Start(List<AlarmItem> listAlarm)	// 시작: 스냅샷 → 펜딩 읽기·통계 스레드 → 발송 풀
 	{
@@ -25,7 +26,7 @@ static class Alarm	// 알람 (적재 시 매칭 → 매분 판정 → 발송): �
 	{
 		lock (m_kLock)
 		{
-			AlarmItem[] arrUse = listAlarm.Where(kAlarm => kAlarm.bEnable).ToArray();	// 사용 알람
+			AlarmItem[]	arrUse	= listAlarm.Where(kAlarm => kAlarm.bEnable).ToArray();	// 사용 알람
 
 			m_listAlarm		= listAlarm;
 			m_bFieldChanged	= false;
@@ -66,8 +67,9 @@ class AlarmCount	// 워커 알람 카운터 (스냅샷 1개, 버퍼 잠금): 알
 
 class AlarmMatcher	// 알람 매칭 스냅샷 (불변, 적재 스레드가 잠금 없이): 앵커 사전 (단어·필드 키 → 알람 위치) 으로 후보만 조건 평가, 앵커 없음 (*·NOT 만): 모든 줄 평가
 {
-	public readonly AlarmItem[]					m_arrAlarm;		// 사용 알람 (카운터 위치 = 배열 위치)
-	public readonly bool						m_bField;		// 필드 조건 있음 (줄 필드 키 필요)
+	public readonly AlarmItem[]	m_arrAlarm;	// 사용 알람 (카운터 위치 = 배열 위치)
+	public readonly bool		m_bField;	// 필드 조건 있음 (줄 필드 키 필요)
+
 	private readonly AlarmNode[]				m_arrNode;		// 알람 조건
 	private readonly Dictionary<ulong, int[]>	m_hmapWord;		// 앵커 단어 해시 (색인과 같은 GetHash) → 알람 위치
 	private readonly Dictionary<string, int[]>	m_hmapField;	// 앵커 필드 키 (대소문자 무시) → 알람 위치
@@ -87,7 +89,7 @@ class AlarmMatcher	// 알람 매칭 스냅샷 (불변, 적재 스레드가 잠�
 
 		for (int nAlarm = 0; nAlarm < m_arrNode.Length; ++nAlarm)
 		{
-			HashSet<string>? setAnchor = m_arrNode[nAlarm].GetAnchor();	// "W:단어"·"F:필드 키" (null: 앵커 없음)
+			HashSet<string>?	setAnchor	= m_arrNode[nAlarm].GetAnchor();	// "W:단어"·"F:필드 키" (null: 앵커 없음)
 
 			if (setAnchor == null)
 			{
@@ -100,7 +102,7 @@ class AlarmMatcher	// 알람 매칭 스냅샷 (불변, 적재 스레드가 잠�
 
 			foreach (string sAnchor in setAnchor)
 			{
-				string sKey = sAnchor[2..];	// 단어·필드 키
+				string	sKey	= sAnchor[2..];	// 단어·필드 키
 
 				if (sAnchor[0] == 'W')
 				{
@@ -130,7 +132,7 @@ class AlarmMatcher	// 알람 매칭 스냅샷 (불변, 적재 스레드가 잠�
 
 	public void Match(HashSet<ulong> setWord, HashSet<string>? setField, ReadOnlySpan<char> kText, AlarmCount kCount, AlarmHit kHit)	// 줄 1개: 앵커 후보만 조건 평가 → 맞으면 카운터 +1·마지막 줄 (원문 시간 최신) (setWord: 색인 단어 해시, setField: 필드 키, kText: 앞 시간 뺀 원문, kHit: 이 줄)
 	{
-		HashSet<int>? setDone = null;	// 평가한 앵커 여러 개 알람 (줄당 1번, 앵커 1개: 단어·필드 키가 집합이라 1번뿐)
+		HashSet<int>?	setDone	= null;	// 평가한 앵커 여러 개 알람 (줄당 1번, 앵커 1개: 단어·필드 키가 집합이라 1번뿐)
 
 		foreach (int nAlarm in m_arrAlways)
 		{
@@ -242,8 +244,8 @@ class AlarmNode	// 알람 조건 트리 (SearchNode 를 매칭용으로 미리 �
 		{
 			case SEARCH_OP.SEARCH_OP_AND:
 			{
-				HashSet<string>? setLeft	= m_kLeft!.GetAnchor();
-				HashSet<string>? setRight	= m_kRight!.GetAnchor();
+				HashSet<string>?	setLeft		= m_kLeft!.GetAnchor();
+				HashSet<string>?	setRight	= m_kRight!.GetAnchor();
 
 				if (setLeft == null || setRight == null)
 				{
@@ -255,8 +257,8 @@ class AlarmNode	// 알람 조건 트리 (SearchNode 를 매칭용으로 미리 �
 
 			case SEARCH_OP.SEARCH_OP_OR:
 			{
-				HashSet<string>? setLeft	= m_kLeft!.GetAnchor();
-				HashSet<string>? setRight	= m_kRight!.GetAnchor();
+				HashSet<string>?	setLeft		= m_kLeft!.GetAnchor();
+				HashSet<string>?	setRight	= m_kRight!.GetAnchor();
 
 				if (setLeft == null || setRight == null)
 				{

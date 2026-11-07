@@ -1,15 +1,16 @@
 static class TabDump	// 덤프 탭: *.dmp 감시 (파일 이벤트 → 서버)·목록·조각 읽기·삭제
 {
-	private const int	m_nPingSec			= 60;		// 감시 폴더 재확인 주기 (초)
-	private const int	m_nFlushMs			= 1000;		// Changed 이벤트 묶음 전송 주기 (ms)
-	private const int	m_nWatchCheckMs		= 5000;		// 덤프 감시 상태 확인 주기 (ms)
+	private const int		m_nPingSec		= 60;		// 감시 폴더 재확인 주기 (초)
+	private const int		m_nFlushMs		= 1000;		// Changed 이벤트 묶음 전송 주기 (ms)
+	private const int		m_nWatchCheckMs	= 5000;		// 덤프 감시 상태 확인 주기 (ms)
 	private const string	m_sWatchFilter	= "*.dmp";	// 감시 대상 파일 (덤프만, 대소문자 무시)
-	private const int	m_nDumpMax			= 10000;			// 덤프 목록 최대 건수 (초과: bTruncated)
+	private const int		m_nDumpMax		= 10000;	// 덤프 목록 최대 건수 (초과: bTruncated)
 
-	private static readonly ConcurrentDictionary<string, byte>	m_hmapChanged = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);	// Changed 이벤트 경로 (주기마다 경로당 1건 전송, 로그 연속 쓰기 폭주 방지)
-	private static volatile bool								m_bWatchError;	// 감시 오류 발생 (WatchLoop 가 감시 다시 생성)
-	public static readonly TaskCompletionSource				m_kDumpReady	= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);	// 덤프 준비 끝 (준비 순서: 덤프 → 파일)
-	public static string[]							m_arrBlockDump = Array.Empty<string>();		// aBlockDump 막는 경로 (전체 경로·\이름\, 자신·하위: 덤프 감시·목록·다운·삭제 제외, 다른 탭: 그대로)
+	private static readonly ConcurrentDictionary<string, byte>	m_hmapChanged	= new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);	// Changed 이벤트 경로 (주기마다 경로당 1건 전송, 로그 연속 쓰기 폭주 방지)
+	private static volatile bool	m_bWatchError;	// 감시 오류 발생 (WatchLoop 가 감시 다시 생성)
+
+	public static readonly TaskCompletionSource	m_kDumpReady	= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);	// 덤프 준비 끝 (준비 순서: 덤프 → 파일)
+	public static string[]						m_arrBlockDump	= Array.Empty<string>();	// aBlockDump 막는 경로 (전체 경로·\이름\, 자신·하위: 덤프 감시·목록·다운·삭제 제외, 다른 탭: 그대로)
 
 	public static void Init(string[] arrBlockDump)	// 설정 → 막는 경로 (aBlockDump, Main.Create)
 	{
@@ -22,7 +23,7 @@ static class TabDump	// 덤프 탭: *.dmp 감시 (파일 이벤트 → 서버)·
 		{
 			List<FileSystemWatcher>	listWatcher	= new List<FileSystemWatcher>();
 			string					sExist		= GetRootExist();
-			bool					bRetry		= false;							// 감시 열기 실패 (대기 후 재시도)
+			bool					bRetry		= false;	// 감시 열기 실패 (대기 후 재시도)
 
 			m_bWatchError = false;
 
@@ -146,7 +147,7 @@ static class TabDump	// 덤프 탭: *.dmp 감시 (파일 이벤트 → 서버)·
 
 		foreach (string sRoot in Tab.m_arrLogRoot)
 		{
-			string sPrefix = Tab.GetRootPrefix(sRoot);
+			string	sPrefix	= Tab.GetRootPrefix(sRoot);
 
 			if (sPath.Length > sPrefix.Length && sPath.StartsWith(sPrefix, StringComparison.OrdinalIgnoreCase) && sPath.AsSpan(sPrefix.Length).Count(Path.DirectorySeparatorChar) <= Define.m_nLogScanDepth)
 			{
@@ -175,11 +176,11 @@ static class TabDump	// 덤프 탭: *.dmp 감시 (파일 이벤트 → 서버)·
 
 	private static void Send(string sEvent, string sPath, string sOldPath = "", string sMessage = "")	// 파일 이벤트 → 전송 대기 (끊긴 동안에도 보관)
 	{
-		long nSize = -1;	// 파일 크기 (폴더·삭제·조회 실패: -1)
+		long	nSize	= -1;	// 파일 크기 (폴더·삭제·조회 실패: -1)
 
 		try
 		{
-			FileInfo kInfo = new FileInfo(sPath);
+			FileInfo	kInfo	= new FileInfo(sPath);
 
 			if (kInfo.Exists)
 			{
@@ -212,7 +213,7 @@ static class TabDump	// 덤프 탭: *.dmp 감시 (파일 이벤트 → 서버)·
 	public static object DumpList(long nReqId)	// 덤프 목록: aLogFolder 하위 *.dmp (경로 순, 겹친 경로 1번, 최대 m_nDumpMax 건, 없는 aLogFolder: 건너뜀)
 	{
 		List<DumpFile>	listFile	= new List<DumpFile>();
-		bool			bTruncated	= false;				// 최대 건수 초과
+		bool			bTruncated	= false;	// 최대 건수 초과
 		string			sError		= "";
 		long			nBegin		= Stopwatch.GetTimestamp();
 
@@ -301,7 +302,7 @@ static class TabDump	// 덤프 탭: *.dmp 감시 (파일 이벤트 → 서버)·
 
 	private static string? GetDumpPath(string sPath)	// 덤프 허용 경로: aLogFolder 하위 *.dmp + 존재 + aBlockDump 밖 (그 외: null)
 	{
-		string? sFull = Tab.GetLogFolderPath(sPath);
+		string?	sFull	= Tab.GetLogFolderPath(sPath);
 
 		return sFull != null && IsDumpFile(sFull) && !Tab.IsBlocked(sFull, m_arrBlockDump) ? sFull : null;
 	}

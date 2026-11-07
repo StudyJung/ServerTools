@@ -22,7 +22,7 @@
 #:include TabProcess.cs
 #:include Clean.cs
 
-// ReadMe.cs 반드시 참조
+// Source.md 반드시 참조
 
 global using System.Buffers;
 global using System.Collections.Concurrent;
@@ -50,18 +50,19 @@ return Main.Run(args);	// 진입 (클래스 Main 안에 진입 함수 Main 불�
 class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (반영 탭 시작, 탭 순서 준비 → 서버 접속, 접속·끊김·Pause → 쿼리, 서버 요청 → 탭), 서비스 등록·제거
 {
 	public const int	m_nDefaultPort	= 9091;				// 기본 Server TCP 포트 (공통 Global.GetDefaultPort)
-	public const string	m_sPeerOff		= "Server Off";	// 상대 (서버) 끊김 표시 (공통 Global.GetErrorText)
+	public const string	m_sPeerOff		= "Server Off";		// 상대 (서버) 끊김 표시 (공통 Global.GetErrorText)
 	public const string	m_sSelfError	= "Client Error";	// 그 밖 오류 표시 (공통 Global.GetErrorText)
+
 	public static readonly (string sKey, string sFile)[]	m_arrConfigSplit	= Array.Empty<(string, string)>();	// 따로 관리 설정 (없음, 공통 Config)
 
-	private const int	m_nViewWaitSec		= 10;		// 보기 동시 처리 초과 시 대기 (초, 초과: 거절)
-	private const int	m_nViewConcurrent	= 2;		// 보기 동시 처리 수
+	private const int	m_nViewWaitSec		= 10;	// 보기 동시 처리 초과 시 대기 (초, 초과: 거절)
+	private const int	m_nViewConcurrent	= 2;	// 보기 동시 처리 수
 
-	private const string	m_sServiceName			= "HMXClient";							// 서비스 이름 (표시 이름 같음, -install·-uninstall·-start·-stop)
+	private const string	m_sServiceName			= "HMXClient";	// 서비스 이름 (표시 이름 같음, -install·-uninstall·-start·-stop)
 	private const string	m_sServiceDescription	= "로그 감시·바이너리 배포 및 온오프 관리";	// 서비스 설명
-	private const int		m_nServiceStopSec		= 60;									// 서비스 시작·정지 대기 (초, -uninstall·-start·-stop, 실행 기능 Git·종료 대기 포함)
+	private const int		m_nServiceStopSec		= 60;			// 서비스 시작·정지 대기 (초, -uninstall·-start·-stop, 실행 기능 Git·종료 대기 포함)
 
-	private static readonly SemaphoreSlim						m_kViewLock = new SemaphoreSlim(m_nViewConcurrent, m_nViewConcurrent);	// 보기 동시 m_nViewConcurrent 건
+	private static readonly SemaphoreSlim	m_kViewLock	= new SemaphoreSlim(m_nViewConcurrent, m_nViewConcurrent);	// 보기 동시 m_nViewConcurrent 건
 
 	public static int Run(string[] args)	// 진입: 기본 설정·설정 파일 로딩 후 인자별 실행: -install (서비스 등록·시작) | -uninstall (서비스 정지·제거) | -start·-stop (서비스 시작·정지) | 그 외 (클라 실행) (0: 정상 종료, 1: 설정 오류·등록 실패)
 	{
@@ -76,7 +77,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 			return 1;
 		}
 
-		string sArg = args.Length > 0 ? args[0].ToLowerInvariant() : "";	// 1번 인자
+		string	sArg	= args.Length > 0 ? args[0].ToLowerInvariant() : "";	// 1번 인자
 
 		if (sArg == "-install")
 		{
@@ -180,7 +181,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 	static int Install()	// 서비스 등록 (자동 시작) → 설명 → 시작 (0: 등록 완료, 1: 실패)
 	{
-		string sExe = Environment.ProcessPath ?? "";	// 등록할 실행 파일 (현재 exe)
+		string	sExe	= Environment.ProcessPath ?? "";	// 등록할 실행 파일 (현재 exe)
 
 		if (!string.Equals(Path.GetFileNameWithoutExtension(sExe), GetProjectName(), StringComparison.OrdinalIgnoreCase))	// dotnet 등 다른 실행 파일: 조기 반환
 		{
@@ -290,7 +291,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 	static int RunSc(params string[] arrArg)	// sc.exe 실행 (출력: 콘솔 그대로) → 종료 코드 (5: 관리자 권한 필요)
 	{
-		ProcessStartInfo kInfo = new ProcessStartInfo("sc.exe") { UseShellExecute = false };
+		ProcessStartInfo	kInfo	= new ProcessStartInfo("sc.exe") { UseShellExecute = false };
 
 		foreach (string sArg in arrArg)
 		{
@@ -343,7 +344,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 			Log.Write(INFO_, $"막는 경로: {sKey} {string.Join(", ", arrBlock)}");
 		}
 
-		string? sMasterKey = await TCPClient.KeyLoop(kStop);	// 마스터 키: 서버 첫 접속부터 X초마다 요청 → 받을 때까지 다른 기능 안 함
+		string?	sMasterKey	= await TCPClient.KeyLoop(kStop);	// 마스터 키: 서버 첫 접속부터 X초마다 요청 → 받을 때까지 다른 기능 안 함
 
 		if (sMasterKey == null)	// 받기 전 종료 요청
 		{
@@ -363,7 +364,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 		Execute();
 
-		List<Task> listLoop = new List<Task>();
+		List<Task>	listLoop	= new List<Task>();
 
 		try
 		{
@@ -397,7 +398,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 	{
 		try
 		{
-			JsonElement kRoot;
+			JsonElement	kRoot;
 
 			using (JsonDocument kDoc = JsonDocument.Parse(sLine))
 			{
@@ -417,7 +418,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 			if (sType == "Count")	// 접속 때 Count 답: 서버 받은 진행 {arrCount: [{sFolder, sRel, nLine}], aField: 줄 필드} (SyncCount 가 기다림, 늦은 답: 무시)
 			{
-				TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>? kReply = TabQuery.m_kCountReply;	// 기다리는 접속
+				TaskCompletionSource<Dictionary<string, (string sRel, long nLine)>>?	kReply	= TabQuery.m_kCountReply;	// 기다리는 접속
 
 				if (kReply != null)
 				{
@@ -438,7 +439,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 			if (sType == "CountAdd")	// 발견 등록 답: {arrFolder: 등록 폴더, arrCount: 받은 진행} → 로그 감시 스레드가 등록·보정 후 그 폴더도 전송
 			{
-				string[] arrFolder = kRoot.TryGetProperty("arrFolder", out JsonElement kFolders) && kFolders.ValueKind == JsonValueKind.Array ? kFolders.EnumerateArray().Where(kFolder => kFolder.ValueKind == JsonValueKind.String).Select(kFolder => kFolder.GetString() ?? "").ToArray() : Array.Empty<string>();	// 등록 폴더
+				string[]	arrFolder	= kRoot.TryGetProperty("arrFolder", out JsonElement kFolders) && kFolders.ValueKind == JsonValueKind.Array ? kFolders.EnumerateArray().Where(kFolder => kFolder.ValueKind == JsonValueKind.String).Select(kFolder => kFolder.GetString() ?? "").ToArray() : Array.Empty<string>();	// 등록 폴더
 
 				TabQuery.m_queServerCount.Enqueue((Interlocked.Read(ref TabQuery.m_nCountGen), arrFolder, TabQuery.ReadServerCount(kRoot)));	// 이 접속 답 (접속 바뀜: 꺼낼 때 버림)
 
@@ -457,12 +458,12 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 			if (sType == "Search")
 			{
-				SearchJob kJob = new SearchJob();
+				SearchJob	kJob	= new SearchJob();
 
 				TabSearch.m_hmapJob[nReqId] = kJob;
 
 				using CancellationTokenSource	kProgressStop	= CancellationTokenSource.CreateLinkedTokenSource(kStop);	// 진행 알림 끝 (검색 끝·연결 끊김)
-				Task							kProgress		= TabSearch.SendProgress(nReqId, kJob, kWriter, kProgressStop.Token, kStop);
+				Task	kProgress	= TabSearch.SendProgress(nReqId, kJob, kWriter, kProgressStop.Token, kStop);
 
 				try
 				{

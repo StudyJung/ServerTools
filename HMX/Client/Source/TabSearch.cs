@@ -1,8 +1,10 @@
 static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜 파일)·파일 보기·진행 알림
 {
-	private const int	m_nSearchMax		= 1000000;		// 검색 결과 최대 건수 (서버 nMax 상한)
-	public const int	m_nSearchDefault	= 1000;			// 검색 결과 최대 건수 기본값 (nMax 없음, 서버와 같음)
-	public const int	m_nSearchLimitSec	= 60;			// 검색 최대 시간 기본 (초, 서버 nLimit 없음, 초과 시 그때까지 결과만)
+	private const int	m_nSearchMax	= 1000000;	// 검색 결과 최대 건수 (서버 nMax 상한)
+
+	public const int	m_nSearchDefault	= 1000;	// 검색 결과 최대 건수 기본값 (nMax 없음, 서버와 같음)
+	public const int	m_nSearchLimitSec	= 60;	// 검색 최대 시간 기본 (초, 서버 nLimit 없음, 초과 시 그때까지 결과만)
+
 	private const int	m_nSearchLimitMax	= 600;			// 검색 최대 시간 상한 (초, 서버 nLimit)
 	private const int	m_nSearchConcurrent	= 2;			// 동시 검색 (서버 동시 서치 수와 같음, 게임 서버 부하 제한)
 	private const int	m_nSearchTextMax	= 1000;			// 검색 결과 줄 최대 글자 (초과: "…")
@@ -13,10 +15,11 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 	private const int	m_nSearchWaitSec	= 20;			// 앞 검색 처리 중일 때 대기 (초, 초과: 거절 → 밀린 검색 방지)
 	private const int	m_nProgressMs		= 1000;			// 검색 진행 알림 주기 (ms)
 
-	private static readonly SemaphoreSlim						m_kSearchLock = new SemaphoreSlim(m_nSearchConcurrent, m_nSearchConcurrent);	// 동시 검색 X건 (한 검색이 오래 걸려도 다른 사용자 검색)
-	public static readonly ConcurrentDictionary<long, SearchJob>	m_hmapJob = new ConcurrentDictionary<long, SearchJob>();	// 진행 중인 검색 (요청 번호 → 진행·중지)
-	public static string[]							m_arrBlockSearch = Array.Empty<string>();	// aBlockSearch 막는 경로 (전체 경로·\이름\, 자신·하위: 서치 제외, 다른 탭: 그대로)
-	public static volatile string[]							m_arrLogFolder	= Array.Empty<string>();	// 서치 대상 폴더 (aBlockSearch 제외, 탐색 시 새 배열로 교체 → 다른 스레드 읽기)
+	private static readonly SemaphoreSlim	m_kSearchLock	= new SemaphoreSlim(m_nSearchConcurrent, m_nSearchConcurrent);	// 동시 검색 X건 (한 검색이 오래 걸려도 다른 사용자 검색)
+
+	public static readonly ConcurrentDictionary<long, SearchJob>	m_hmapJob	= new ConcurrentDictionary<long, SearchJob>();	// 진행 중인 검색 (요청 번호 → 진행·중지)
+	public static string[]			m_arrBlockSearch	= Array.Empty<string>();	// aBlockSearch 막는 경로 (전체 경로·\이름\, 자신·하위: 서치 제외, 다른 탭: 그대로)
+	public static volatile string[]	m_arrLogFolder		= Array.Empty<string>();	// 서치 대상 폴더 (aBlockSearch 제외, 탐색 시 새 배열로 교체 → 다른 스레드 읽기)
 
 	public static void Init(string[] arrBlockSearch)	// 설정 → 막는 경로 (aBlockSearch, Main.Create)
 	{
@@ -41,11 +44,11 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 	public static async Task<object> Search(long nReqId, long nStart, long nEnd, string sKey, int nMax, int nLimit, SearchJob kJob, CancellationToken kStop)	// 로그 검색: 대상 파일(시간·경로 순)에서 검색어 포함 줄 (nLimit: 마감 초, 없음·0 이하: 기본, kJob: 진행 기록·중지 요청)
 	{
-		long				nBegin		= kJob.m_nBegin;			// 검색 시작 타임스탬프
+		long				nBegin		= kJob.m_nBegin;	// 검색 시작 타임스탬프
 		List<SearchLine>	listLine	= new List<SearchLine>();
-		int					nFileCount	= 0;						// 검색한 파일 수
-		bool				bTruncated	= false;					// 최대 건수·시간 초과·중지로 중단
-		bool				bStopped	= false;					// 중지 요청으로 중단
+		int					nFileCount	= 0;				// 검색한 파일 수
+		bool				bTruncated	= false;			// 최대 건수·시간 초과·중지로 중단
+		bool				bStopped	= false;			// 중지 요청으로 중단
 		string				sError		= "";
 		int					nLimitSec	= nLimit > 0 ? Math.Min(nLimit, m_nSearchLimitMax) : m_nSearchLimitSec;	// 마감 (초)
 
@@ -67,7 +70,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 		try
 		{
-			SearchNode? kCond = SearchNode.Parse(sKey);	// 검색 조건 (빈 검색어: null)
+			SearchNode?	kCond	= SearchNode.Parse(sKey);	// 검색 조건 (빈 검색어: null)
 
 			if (kCond == null || nStart > nEnd)
 			{
@@ -75,12 +78,12 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 			}
 			else
 			{
-				SearchValues<string>	kKey		= SearchValues.Create(kCond.GetFirst(), StringComparison.OrdinalIgnoreCase);		// 블록에서 먼저 찾을 검색어 (맞는 줄에 꼭 있는 것, 벡터 검색)
+				SearchValues<string>	kKey		= SearchValues.Create(kCond.GetFirst(), StringComparison.OrdinalIgnoreCase);	// 블록에서 먼저 찾을 검색어 (맞는 줄에 꼭 있는 것, 벡터 검색)
 				SearchNode?				kCheck		= kCond.m_eOp == SEARCH_OP.SEARCH_OP_TERM ? null : kCond;						// 줄마다 확인할 조건 (연산자 없음: null → 찾은 줄 바로 추가)
 				long					nDeadline	= nBegin + nLimitSec * Stopwatch.Frequency;										// 검색 마감 타임스탬프
 
 				List<(long nDateHour, string sPath)>	listTarget	= GetTargetFile(nStart, nEnd);
-				Throttle								kThrottle	= new Throttle();				// 파일 바뀌어도 이어서 셈
+				Throttle	kThrottle	= new Throttle();	// 파일 바뀌어도 이어서 셈
 
 				kJob.m_nFileTotal = listTarget.Count;
 
@@ -106,7 +109,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 					try
 					{
-						SEARCH_STOP eStop = SearchFile(sPath, nDateHour, kKey, kCheck, listLine, nMax, nDeadline, kJob, kCancel.Token, kThrottle);
+						SEARCH_STOP	eStop	= SearchFile(sPath, nDateHour, kKey, kCheck, listLine, nMax, nDeadline, kJob, kCancel.Token, kThrottle);
 
 						if (eStop == SEARCH_STOP.SEARCH_STOP_CANCEL)
 						{
@@ -149,7 +152,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 			m_kSearchLock.Release();
 		}
 
-		long nElapsedMs = (long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds;
+		long	nElapsedMs	= (long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds;
 
 		Log.Write(INFO_, $"서치: {nStart}~{nEnd} → {listLine.Count}건 / 파일 {nFileCount}개 ({nElapsedMs}ms){(bStopped ? " (중지)" : bTruncated ? " (일부)" : "")}");
 
@@ -158,17 +161,17 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 	private static SEARCH_STOP SearchFile(string sPath, long nDateHour, SearchValues<string> kKey, SearchNode? kCheck, List<SearchLine> listLine, int nMax, long nDeadline, SearchJob kJob, CancellationToken kCancel, Throttle kThrottle)	// 파일 하나 검색: 블록에서 검색어 위치 찾고 맞는 줄만 문자열화 (kCheck: 줄 조건, null: 바로 추가, 줄 번호 = 앞 '\n' 수 + 1)
 	{
-		long		nLine	= 0;							// 지난 블록까지 '\n' 수
+		long		nLine	= 0;	// 지난 블록까지 '\n' 수
 		SEARCH_STOP	eStop	= SEARCH_STOP.SEARCH_STOP_NONE;
 
 		Tab.ForEachBlock(sPath, (ReadOnlySpan<char> kBlock) =>
 		{
-			int nCounted	= 0;	// '\n' 을 센 위치
-			int nPos		= 0;
+			int	nCounted	= 0;	// '\n' 을 센 위치
+			int	nPos		= 0;
 
 			while (nPos < kBlock.Length)
 			{
-				int nFind = kBlock.Slice(nPos).IndexOfAny(kKey);
+				int	nFind	= kBlock.Slice(nPos).IndexOfAny(kKey);
 
 				if (nFind < 0)
 				{
@@ -177,8 +180,8 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 				nFind += nPos;
 
-				int nLineStart	= kBlock.Slice(0, nFind).LastIndexOf('\n') + 1;
-				int nLineEnd	= kBlock.Slice(nFind).IndexOf('\n');				// 줄 끝 ('\n' 위치, 없음: 블록 끝)
+				int	nLineStart	= kBlock.Slice(0, nFind).LastIndexOf('\n') + 1;
+				int	nLineEnd	= kBlock.Slice(nFind).IndexOf('\n');	// 줄 끝 ('\n' 위치, 없음: 블록 끝)
 
 				nLineEnd	= nLineEnd < 0 ? kBlock.Length : nFind + nLineEnd;
 				nLine		+= kBlock.Slice(nCounted, nLineStart - nCounted).Count('\n');
@@ -198,7 +201,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 					return false;
 				}
 
-				string sText = Tab.ToText(kBlock.Slice(nLineStart, nLineEnd - nLineStart), m_nSearchTextMax);
+				string	sText	= Tab.ToText(kBlock.Slice(nLineStart, nLineEnd - nLineStart), m_nSearchTextMax);
 
 				listLine.Add(new SearchLine(sPath, nDateHour, nLine + 1, sText));	// 전체 경로 (aLogFolder 여러 개)
 
@@ -243,7 +246,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 		nCount = nCount <= 0 ? m_nViewCount : Math.Min(nCount, m_nViewCountMax);
 
-		string? sPath = GetAllowedPath(sRelPath);	// 허용 경로 (그 외: null)
+		string?	sPath	= GetAllowedPath(sRelPath);	// 허용 경로 (그 외: null)
 
 		if (sPath == null)
 		{
@@ -253,7 +256,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 		{
 			try
 			{
-				Throttle kThrottle = new Throttle();	// 줄 세기·읽기 이어서 셈
+				Throttle	kThrottle	= new Throttle();	// 줄 세기·읽기 이어서 셈
 
 				(nTotal, long nOffset) = ScanLines(sPath, nStart > 0 ? nFirst : 0, kThrottle);	// 바이트로 줄 수·nFirst 줄 시작 위치 (마지막 페이지: 줄 수만, UTF-16: -1)
 
@@ -281,7 +284,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 					}
 				}
 
-				FileInfo kInfo = new FileInfo(sPath);
+				FileInfo	kInfo	= new FileInfo(sPath);
 
 				nSize	= kInfo.Length;
 				sTime	= new DateTimeOffset(kInfo.LastWriteTimeUtc, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
@@ -321,7 +324,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 			while (true)
 			{
-				int nRead = kStream.Read(arrBuffer, 0, arrBuffer.Length);
+				int	nRead	= kStream.Read(arrBuffer, 0, arrBuffer.Length);
 
 				if (nRead == 0)
 				{
@@ -333,7 +336,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 				if (nOffset < 0 && nFindLine > 1 && nNewLine + nCount >= nFindLine - 1)	// 찾는 줄 시작이 이 블록에 있음
 				{
-					int nSkip = 0;
+					int	nSkip	= 0;
 
 					for (long nNeed = nFindLine - 1 - nNewLine; nNeed > 0; --nNeed)
 					{
@@ -355,22 +358,22 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 			ArrayPool<byte>.Shared.Return(arrBuffer);
 		}
 
-		long nTotal = nNewLine + (bOpen ? 1 : 0);	// 끝 줄 '\n' 없음: 1 더함
+		long	nTotal	= nNewLine + (bOpen ? 1 : 0);	// 끝 줄 '\n' 없음: 1 더함
 
 		return (nTotal, nFindLine > nTotal ? -1 : nOffset);	// 범위 밖 (예: 끝 '\n' 뒤): -1
 	}
 
 	private static void ReadLines(string sPath, long nOffset, int nCount, List<string> listText, Throttle kThrottle)	// nOffset (줄 시작 바이트) 부터 nCount 줄 → listText (아주 긴 줄: 앞 조각만)
 	{
-		bool bOpen = false;	// 앞 블록이 줄 중간에서 끝남 (이어지는 조각은 버림)
+		bool	bOpen	= false;	// 앞 블록이 줄 중간에서 끝남 (이어지는 조각은 버림)
 
 		Tab.ForEachBlock(sPath, (ReadOnlySpan<char> kBlock) =>
 		{
-			ReadOnlySpan<char> kRest = kBlock;
+			ReadOnlySpan<char>	kRest	= kBlock;
 
 			while (kRest.Length > 0 && listText.Count < nCount)
 			{
-				int nIndex = kRest.IndexOf('\n');
+				int	nIndex	= kRest.IndexOf('\n');
 
 				if (!bOpen)
 				{
@@ -394,8 +397,8 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 	private static long CountLines(string sPath, Throttle kThrottle)	// 전체 줄 수 ('\n' 수 + 마지막 줄이 '\n' 으로 안 끝나면 1)
 	{
-		long nLine = 0;		// '\n' 수
-		bool bOpen = false;	// 마지막 블록이 '\n' 으로 안 끝남
+		long	nLine	= 0;		// '\n' 수
+		bool	bOpen	= false;	// 마지막 블록이 '\n' 으로 안 끝남
 
 		Tab.ForEachBlock(sPath, (ReadOnlySpan<char> kBlock) =>
 		{
@@ -410,14 +413,14 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 	private static long ReadRange(string sPath, long nFirst, int nCount, List<string> listText, Throttle kThrottle)	// nFirst 줄부터 nCount 줄을 listText 에 (범위 밖 줄은 세기만 함), 반환: 전체 줄 수
 	{
-		long nLast	= nFirst + nCount - 1;	// 읽을 마지막 줄 번호
-		long nLine	= 0;					// 지난 '\n' 수
-		long nAdded	= 0;					// 마지막으로 넣은 줄 번호 (아주 긴 줄이 블록에 나뉘면 앞 조각만)
-		bool bOpen	= false;				// 마지막 블록이 '\n' 으로 안 끝남
+		long	nLast	= nFirst + nCount - 1;	// 읽을 마지막 줄 번호
+		long	nLine	= 0;					// 지난 '\n' 수
+		long	nAdded	= 0;					// 마지막으로 넣은 줄 번호 (아주 긴 줄이 블록에 나뉘면 앞 조각만)
+		bool	bOpen	= false;				// 마지막 블록이 '\n' 으로 안 끝남
 
 		Tab.ForEachBlock(sPath, (ReadOnlySpan<char> kBlock) =>
 		{
-			int nNewLine = kBlock.Count('\n');
+			int	nNewLine	= kBlock.Count('\n');
 
 			if (nLine + nNewLine + 1 < nFirst || nLine + 1 > nLast)	// 블록 줄이 모두 범위 밖: 세기만
 			{
@@ -427,7 +430,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 				return true;
 			}
 
-			ReadOnlySpan<char> kRest = kBlock;
+			ReadOnlySpan<char>	kRest	= kBlock;
 
 			while (kRest.Length > 0)
 			{
@@ -497,7 +500,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 	private static string? GetAllowedPath(string sPath)	// 보기 허용 경로: aLogFolder 하위 + 보기 확장자 + 존재 (그 외: null)
 	{
-		string? sLog = Tab.GetLogFolderPath(sPath);
+		string?	sLog	= Tab.GetLogFolderPath(sPath);
 
 		return sLog != null && IsViewFile(Path.GetFileName(sLog.AsSpan())) ? sLog : null;
 	}
@@ -513,11 +516,11 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 class SearchJob	// 진행 중인 검색 (진행 알림·Stop 중지)
 {
 	public readonly CancellationTokenSource	m_kCancel		= new CancellationTokenSource();	// 중지 요청
-	public readonly long					m_nBegin		= Stopwatch.GetTimestamp();		// 시작 타임스탬프
-	public volatile int						m_nFileTotal	= -1;							// 대상 파일 수 (-1: 앞 검색 대기 중)
-	public volatile int						m_nFileDone;									// 검색한 파일 수
-	public volatile int						m_nFound;										// 찾은 줄 수
-	public long								m_nTextChars;									// 찾은 줄 글자 수 합 (검색 스레드 전용)
+	public readonly long					m_nBegin		= Stopwatch.GetTimestamp();			// 시작 타임스탬프
+	public volatile int						m_nFileTotal	= -1;								// 대상 파일 수 (-1: 앞 검색 대기 중)
+	public volatile int						m_nFileDone;										// 검색한 파일 수
+	public volatile int						m_nFound;											// 찾은 줄 수
+	public long								m_nTextChars;										// 찾은 줄 글자 수 합 (검색 스레드 전용)
 }
 
 class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼쪽부터, 괄호 먼저 (예: "A AND (B NOT C) OR D" = (A AND (B NOT C)) OR D, 페이지 Key.Parse 와 같은 규칙)
@@ -529,9 +532,10 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 	public readonly string		m_sTerm;	// 검색어 (SEARCH_OP_TERM 만, 그 외: "")
 	public readonly SearchNode?	m_kLeft;	// 왼쪽 (연산만)
 	public readonly SearchNode?	m_kRight;	// 오른쪽 (연산만)
-	private readonly string		m_sWild;	// 와일드카드 * 뗀 글자 ("": 아님)
-	private readonly bool		m_bWildHead;	// 와일드카드 앞 * (앞 아무 글자)
-	private readonly bool		m_bWildTail;	// 와일드카드 뒤 * (뒤 아무 글자)
+
+	private readonly string	m_sWild;		// 와일드카드 * 뗀 글자 ("": 아님)
+	private readonly bool	m_bWildHead;	// 와일드카드 앞 * (앞 아무 글자)
+	private readonly bool	m_bWildTail;	// 와일드카드 뒤 * (뒤 아무 글자)
 
 	private SearchNode(SEARCH_OP eOp, string sTerm, SearchNode? kLeft, SearchNode? kRight)
 	{
@@ -544,7 +548,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 
 	public static SearchNode? Parse(string sKey)	// 검색어 → 조건 트리 (빈 검색어: null, 형식 오류: 전체를 검색어 하나로)
 	{
-		string sTrim = sKey.Trim();
+		string	sTrim	= sKey.Trim();
 
 		if (sTrim == "")
 		{
@@ -595,8 +599,8 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 		{
 			case SEARCH_OP.SEARCH_OP_AND:
 			{
-				string[] arrLeft	= m_kLeft!.GetFirst();
-				string[] arrRight	= m_kRight!.GetFirst();
+				string[]	arrLeft		= m_kLeft!.GetFirst();
+				string[]	arrRight	= m_kRight!.GetFirst();
 
 				return arrLeft.Min(sTerm => sTerm.Length) >= arrRight.Min(sTerm => sTerm.Length) ? arrLeft : arrRight;
 			}
@@ -620,7 +624,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 
 	private static SearchNode? ParseExpr(List<(char cType, string sTerm)> listToken, ref int nIndex)	// 식: 항 (연산자 항)… 왼쪽부터 차례로 (null: 형식 오류)
 	{
-		SearchNode? kLeft = ParseTerm(listToken, ref nIndex);	// 지금까지 결과
+		SearchNode?	kLeft	= ParseTerm(listToken, ref nIndex);	// 지금까지 결과
 
 		while (kLeft != null && nIndex < listToken.Count && listToken[nIndex].cType != ')')
 		{
@@ -639,7 +643,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 
 			++nIndex;
 
-			SearchNode? kRight = ParseTerm(listToken, ref nIndex);
+			SearchNode?	kRight	= ParseTerm(listToken, ref nIndex);
 
 			kLeft = kRight == null ? null : new SearchNode(eOp, "", kLeft, kRight);
 		}
@@ -666,7 +670,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 			return null;
 		}
 
-		SearchNode? kInner = ParseExpr(listToken, ref nIndex);	// 괄호 안
+		SearchNode?	kInner	= ParseExpr(listToken, ref nIndex);	// 괄호 안
 
 		if (nIndex < listToken.Count && listToken[nIndex].cType == ')')
 		{
@@ -679,9 +683,9 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 	private static List<(char cType, string sTerm)>? Tokenize(string sKey)	// 토큰 나누기: 검색어 T·AND &·OR |·NOT !·괄호 ( ) (null: 형식 오류 → 연산자 자리에 검색어, 연산자로 끝남)
 	{
 		List<(char cType, string sTerm)>	listToken	= new List<(char cType, string sTerm)>();
-		int									nPos		= 0;	// 읽을 위치
-		int									nDepth		= 0;	// 열린 괄호 수
-		bool								bOperand	= true;	// 검색어·여는 괄호 차례 (false: 연산자·닫는 괄호 차례)
+		int		nPos		= 0;	// 읽을 위치
+		int		nDepth		= 0;	// 열린 괄호 수
+		bool	bOperand	= true;	// 검색어·여는 괄호 차례 (false: 연산자·닫는 괄호 차례)
 
 		while (true)
 		{
@@ -707,7 +711,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 
 			if (bOperand)	// 검색어: 다음 연산자·닫는 괄호 앞까지
 			{
-				int nEnd = FindTermEnd(sKey, nPos, nDepth);
+				int	nEnd	= FindTermEnd(sKey, nPos, nDepth);
 
 				listToken.Add(('T', sKey[nPos..nEnd].Trim()));
 
@@ -727,7 +731,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 				continue;
 			}
 
-			int nOpLength = GetOperator(sKey, nPos, out char cType);	// 연산자 길이 (0: 아님)
+			int	nOpLength	= GetOperator(sKey, nPos, out char cType);	// 연산자 길이 (0: 아님)
 
 			if (nOpLength == 0)	// 연산자 자리에 다른 글자 (예: (A) B)
 			{
@@ -745,15 +749,15 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 
 	private static int FindTermEnd(string sKey, int nStart, int nDepth)	// 검색어 끝 위치: 공백 뒤 연산자 또는 (괄호 안) 닫는 괄호 앞 (검색어 안 짝 괄호: 검색어 글자)
 	{
-		int nInner = 0;	// 검색어 안에서 열린 괄호 수 (예: Init(x))
+		int	nInner	= 0;	// 검색어 안에서 열린 괄호 수 (예: Init(x))
 
 		for (int nIndex = nStart; nIndex < sKey.Length; ++nIndex)
 		{
-			char cChar = sKey[nIndex];
+			char	cChar	= sKey[nIndex];
 
 			if (char.IsWhiteSpace(cChar))	// 공백 뒤 연산자·닫는 괄호면 여기서 끝
 			{
-				int nNext = nIndex;
+				int	nNext	= nIndex;
 
 				while (nNext < sKey.Length && char.IsWhiteSpace(sKey[nNext]))
 				{
@@ -789,7 +793,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 
 	private static bool IsClose(string sKey, int nPos)	// nPos 의 ')' 가 닫는 괄호: 뒤에 공백·')' 만 이어진 뒤 끝 또는 연산자 (아니면 검색어 글자)
 	{
-		int nNext = nPos + 1;
+		int	nNext	= nPos + 1;
 
 		while (nNext < sKey.Length && (char.IsWhiteSpace(sKey[nNext]) || sKey[nNext] == ')'))
 		{
@@ -803,7 +807,7 @@ class SearchNode	// 검색 조건 트리: AND·OR·NOT (대소문자 무시) 왼
 	{
 		foreach ((string sWord, char cOp) in new[] { ("AND", '&'), ("OR", '|'), ("NOT", '!') })	// 대소문자 무시
 		{
-			int nNext = nPos + sWord.Length;
+			int	nNext	= nPos + sWord.Length;
 
 			if (string.Compare(sKey, nPos, sWord, 0, sWord.Length, StringComparison.OrdinalIgnoreCase) == 0 && nNext < sKey.Length && (char.IsWhiteSpace(sKey[nNext]) || sKey[nNext] == '('))
 			{

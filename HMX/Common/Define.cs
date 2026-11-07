@@ -1,15 +1,15 @@
 static class Define	// 공유 상수 (Server·Client 공통, 프로젝트별 값: Main)
 {
-	public const string	m_sSolution		= "HMX";	// 솔루션명 (sCode AES 키, 프로젝트 이름 바뀌어도 그대로)
+	public const string	m_sSolution	= "HMX";	// 솔루션명 (sCode AES 키, 프로젝트 이름 바뀌어도 그대로)
 
-	public const int	m_nMachineMax		= 1000;	// 한 번에 검색할 최대 머신 수
-	public const int	m_nViewWaitSec		= 30;	// 보기 결과 대기 (초)
-	public const int	m_nDumpWaitSec		= 60;	// 덤프 목록·조각·삭제 결과 대기 (초)
-	public const int	m_nDumpChunk		= 4 * 1024 * 1024;	// 덤프·파일 다운 조각 (바이트, 서버 요청 = 클라 읽기 최대)
+	public const int	m_nMachineMax	= 1000;				// 한 번에 검색할 최대 머신 수
+	public const int	m_nViewWaitSec	= 30;				// 보기 결과 대기 (초)
+	public const int	m_nDumpWaitSec	= 60;				// 덤프 목록·조각·삭제 결과 대기 (초)
+	public const int	m_nDumpChunk	= 4 * 1024 * 1024;	// 덤프·파일 다운 조각 (바이트, 서버 요청 = 클라 읽기 최대)
 
-	public const int	m_nLogScanDepth		= 4;		// aLogFolder 하위 폴더 깊이 (대상 탐색·덤프 감시·목록)
-	public const int	m_nReadBufferSize	= 128 * 1024;	// UTF-16 파일 읽기 버퍼 (바이트)
-	public const int	m_nBlockBytes		= 256 * 1024;	// 검색·보기 블록 기본 크기 (바이트, 풀에서 재사용)
+	public const int	m_nLogScanDepth		= 4;				// aLogFolder 하위 폴더 깊이 (대상 탐색·덤프 감시·목록)
+	public const int	m_nReadBufferSize	= 128 * 1024;		// UTF-16 파일 읽기 버퍼 (바이트)
+	public const int	m_nBlockBytes		= 256 * 1024;		// 검색·보기 블록 기본 크기 (바이트, 풀에서 재사용)
 	public const int	m_nLineBytesMax		= 8 * 1024 * 1024;	// 블록 최대 크기 (바이트, 이보다 긴 줄은 조각으로 처리)
 
 	public static readonly JsonSerializerOptions	m_kJsonOption	= new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };	// 한글 등 \uXXXX 미변환 (크기 절감)
@@ -131,7 +131,7 @@ record struct FileItem(string sName, long nSize, string sTime);	// 폴더 보기
 
 class ChunkResult : IDisposable	// 조각 읽기 결과 (공개 속성 이름 그대로 JSON 전송, arrData: base64, 풀 버퍼 → 전송 후 Dispose)
 {
-	private byte[]? m_arrBuffer;	// 빌린 버퍼 (반환 후·없음: null)
+	private byte[]?	m_arrBuffer;	// 빌린 버퍼 (반환 후·없음: null)
 
 	public string				sType	{ get; }	// DumpReadResult·FileReadResult
 	public long					nReqId	{ get; }	// 요청 번호

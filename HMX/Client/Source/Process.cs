@@ -11,10 +11,10 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 	private const uint	CTRL_C_EVENT						= 0;
 	private const uint	ATTACH_PARENT_PROCESS				= 0xFFFFFFFF;
 
-	private const int	m_nKillWaitMs		= 5000;		// 강제 종료 뒤 완전 종료 대기 (ms)
-	private const int	m_nCtrlCWaitMs		= 10000;	// Ctrl+C 뒤 graceful 종료 대기 (ms, 초과: ERROR)
+	private const int	m_nKillWaitMs	= 5000;		// 강제 종료 뒤 완전 종료 대기 (ms)
+	private const int	m_nCtrlCWaitMs	= 10000;	// Ctrl+C 뒤 graceful 종료 대기 (ms, 초과: ERROR)
 
-	private static readonly object m_lockConsole = new object();	// AttachConsole·FreeConsole 은 프로세스 전역 상태라 Ctrl+C 전송 직렬화
+	private static readonly object	m_lockConsole	= new object();	// AttachConsole·FreeConsole 은 프로세스 전역 상태라 Ctrl+C 전송 직렬화
 
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 	private struct STARTUPINFO
@@ -74,7 +74,7 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 	public static int Check(string[] arrValue, int nPID)	// 폴더\깃헙\실행파일 이 실행 중이면 PID (미실행: 0, 값 오류·조회 실패: -1), nPID 있음: 그 PID 먼저 확인 (전체 검색 생략)
 	{
-		string sFullPath = GetFullPath(arrValue);
+		string	sFullPath	= GetFullPath(arrValue);
 
 		if (sFullPath == "")	// 파라미터 검사 및 조기 반환
 		{
@@ -86,7 +86,7 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 			return nPID;
 		}
 
-		System.Diagnostics.Process[] arrProcess;	// 실행파일명이 같은 프로세스
+		System.Diagnostics.Process[]	arrProcess;	// 실행파일명이 같은 프로세스
 
 		try
 		{
@@ -99,7 +99,7 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 			return -1;
 		}
 
-		int nFound = 0;	// 전체 경로가 같은 첫 프로세스
+		int	nFound	= 0;	// 전체 경로가 같은 첫 프로세스
 
 		foreach (System.Diagnostics.Process kProcess in arrProcess)
 		{
@@ -116,8 +116,8 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 	public static int Init(string sField, string[] arrValue)	// 폴더\깃헙 에서 실행파일+인자 실행 → PID (실패: -1), Mode 0: 독립 실행 (클라 종료와 무관하게 유지), 그 외: 새 콘솔 + 프로세스 그룹 (Ctrl+C 종료용)
 	{
-		string sMode	= arrValue[ProcessValue.MODE];
-		string sExecute	= arrValue[ProcessValue.EXECUTE];
+		string	sMode		= arrValue[ProcessValue.MODE];
+		string	sExecute	= arrValue[ProcessValue.EXECUTE];
 
 		if (GetFullPath(arrValue) == "")	// 파라미터 검사 및 조기 반환
 		{
@@ -134,7 +134,7 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 		PROCESS_INFORMATION	kProcess	= default;
 		uint				uFlags		= NORMAL_PRIORITY_CLASS | (bDetached ? DETACHED_PROCESS : (CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP));
 
-		bool bCreated = bDetached && CreateProcessW(null, kCmdLine, IntPtr.Zero, IntPtr.Zero, false, uFlags | CREATE_BREAKAWAY_FROM_JOB, IntPtr.Zero, sWorkDir, ref kStartup, out kProcess);	// 독립 실행은 잡에서도 분리 시도
+		bool	bCreated	= bDetached && CreateProcessW(null, kCmdLine, IntPtr.Zero, IntPtr.Zero, false, uFlags | CREATE_BREAKAWAY_FROM_JOB, IntPtr.Zero, sWorkDir, ref kStartup, out kProcess);	// 독립 실행은 잡에서도 분리 시도
 
 		if (!bCreated)	// 잡 분리 미허용 환경·Graceful: 플래그 그대로
 		{
@@ -165,11 +165,11 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 	public static int Fini(string sField, string[] arrValue)	// 폴더\깃헙\실행파일 종료 → 종료한 PID (이미 종료: 0, 실패: -1), Mode 0: 강제 종료 (X초 대기), 그 외: Ctrl+C graceful (X초 대기, 초과: ERROR)
 	{
-		string sMode	= arrValue[ProcessValue.MODE];
-		string sExecute	= arrValue[ProcessValue.EXECUTE];
-		string sWorkDir	= arrValue[ProcessValue.FOLDER] + "\\" + arrValue[ProcessValue.GITHUB];	// 실제 실행 위치 (로그 표시)
+		string	sMode		= arrValue[ProcessValue.MODE];
+		string	sExecute	= arrValue[ProcessValue.EXECUTE];
+		string	sWorkDir	= arrValue[ProcessValue.FOLDER] + "\\" + arrValue[ProcessValue.GITHUB];	// 실제 실행 위치 (로그 표시)
 
-		int nPID = Check(arrValue, ProcessValue.ToInt(arrValue[ProcessValue.PID]));	// 실행 중인 PID (저장된 PID 우선 확인)
+		int	nPID	= Check(arrValue, ProcessValue.ToInt(arrValue[ProcessValue.PID]));	// 실행 중인 PID (저장된 PID 우선 확인)
 
 		if (nPID <= 0)	// 확인 오류(-1)·이미 종료(0)
 		{
@@ -194,7 +194,7 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 		}
 		else	// Graceful: Ctrl+C → 모듈 정리 후 종료
 		{
-			System.Diagnostics.Process? kProcess = null;	// 종료 완료 대기용
+			System.Diagnostics.Process?	kProcess	= null;	// 종료 완료 대기용
 
 			try
 			{
@@ -231,13 +231,13 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 	private static bool SendCtrlC(int nPID, out string sError)	// 대상 PID 의 콘솔에 붙어 그 프로세스 그룹에만 Ctrl+C 전송 (그룹 0 은 클라 자신도 받아 함께 종료되므로 PID 사용, 실패: sError 에 API·에러코드)
 	{
-		bool bSent = false;
+		bool	bSent	= false;
 
 		sError = "";
 
 		lock (m_lockConsole)
 		{
-			bool bHadConsole = GetConsoleWindow() != IntPtr.Zero;	// 콘솔 모드 (작업 후 원래 콘솔로 복귀)
+			bool	bHadConsole	= GetConsoleWindow() != IntPtr.Zero;	// 콘솔 모드 (작업 후 원래 콘솔로 복귀)
 
 			FreeConsole();	// 다른 콘솔에 붙으려면 먼저 기존 콘솔 분리 (서비스는 콘솔이 없어 무해)
 
@@ -270,9 +270,9 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 	private static string GetFullPath(string[] arrValue)	// 실행 파일 전체 경로 = 폴더\깃헙\실행파일 (폴더·깃헙·실행파일 없음·경로 오류: "")
 	{
-		string sFolder	= arrValue[ProcessValue.FOLDER];
-		string sGitHub	= arrValue[ProcessValue.GITHUB];
-		string sExeName	= GetExeName(arrValue[ProcessValue.EXECUTE]);
+		string	sFolder		= arrValue[ProcessValue.FOLDER];
+		string	sGitHub		= arrValue[ProcessValue.GITHUB];
+		string	sExeName	= GetExeName(arrValue[ProcessValue.EXECUTE]);
 
 		if (sFolder == "" || sGitHub == "" || sExeName == "")
 		{
@@ -291,14 +291,14 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 	private static string GetExeName(string sExecute)	// 실행파일명 (첫 공백 전까지)
 	{
-		int nSpace = sExecute.IndexOf(' ');
+		int	nSpace	= sExecute.IndexOf(' ');
 
 		return nSpace < 0 ? sExecute : sExecute.Substring(0, nSpace);
 	}
 
 	private static string GetImagePath(int nPID)	// 프로세스 실행 파일 전체 경로 (접근 불가·종료: "")
 	{
-		IntPtr hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, nPID);
+		IntPtr	hProcess	= OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, nPID);
 
 		if (hProcess == IntPtr.Zero)
 		{
@@ -321,22 +321,22 @@ static class Process	// 실행 API: 폴더\깃헙\실행파일 실행 여부 확
 
 static class ProcessValue	// 값 파트 (콤마 구분, 서버 반영 탭 등록 형식: 상태,적용,PID,커밋,머신,폴더,깃헙,Sync,Mode,실행파일+인자, OLD HMXValue 이식)
 {
-	public const int ONOFF		= 0;	// 상태 (On | Off | Down)
-	public const int CHECK		= 1;	// 적용 (True: 상태 반영 완료, False: 처리 대기)
-	public const int PID		= 2;	// 실행 PID (0: 미실행, 음수: 오류값)
-	public const int COMMIT		= 3;	// Git 커밋 (X자리)
-	public const int MACHINE	= 4;	// 머신 이름 (이 머신과 같은 항목만 처리)
-	public const int FOLDER		= 5;	// 폴더 (Git 클론 위치)
-	public const int GITHUB		= 6;	// 깃헙 (sparse-checkout 경로, 실행 위치 = 폴더\깃헙)
-	public const int SYNC		= 7;	// 1: 시작 시 Git 갱신 (기본), 0: 생략 (Down 의 명시적 다운로드는 값과 무관하게 수행)
-	public const int MODE		= 8;	// 0: Detached (독립 실행 + 강제 종료), 그 외: Graceful (새 콘솔 + Ctrl+C 종료)
-	public const int EXECUTE	= 9;	// 실행파일 + 인자 (첫 공백 전까지 실행파일)
-	public const int COUNT		= 10;	// 파트 수
+	public const int	ONOFF	= 0;	// 상태 (On | Off | Down)
+	public const int	CHECK	= 1;	// 적용 (True: 상태 반영 완료, False: 처리 대기)
+	public const int	PID		= 2;	// 실행 PID (0: 미실행, 음수: 오류값)
+	public const int	COMMIT	= 3;	// Git 커밋 (X자리)
+	public const int	MACHINE	= 4;	// 머신 이름 (이 머신과 같은 항목만 처리)
+	public const int	FOLDER	= 5;	// 폴더 (Git 클론 위치)
+	public const int	GITHUB	= 6;	// 깃헙 (sparse-checkout 경로, 실행 위치 = 폴더\깃헙)
+	public const int	SYNC	= 7;	// 1: 시작 시 Git 갱신 (기본), 0: 생략 (Down 의 명시적 다운로드는 값과 무관하게 수행)
+	public const int	MODE	= 8;	// 0: Detached (독립 실행 + 강제 종료), 그 외: Graceful (새 콘솔 + Ctrl+C 종료)
+	public const int	EXECUTE	= 9;	// 실행파일 + 인자 (첫 공백 전까지 실행파일)
+	public const int	COUNT	= 10;	// 파트 수
 
 	public static string[] Parse(string sValue)	// 값 → 파트 배열 (COUNT 개 고정, 없는 파트: "", 마지막 파트 (실행파일+인자): 남은 콤마 그대로 → 서버 화면 실행 명령과 같음)
 	{
-		string[] arrPart	= sValue.Split(',', COUNT);
-		string[] arrValue	= new string[COUNT];
+		string[]	arrPart		= sValue.Split(',', COUNT);
+		string[]	arrValue	= new string[COUNT];
 
 		for (int nIndex = 0; nIndex < COUNT; ++nIndex)
 		{
@@ -358,14 +358,14 @@ static class ProcessValue	// 값 파트 (콤마 구분, 서버 반영 탭 등록
 
 	public static string GetGroup(string sField)	// 그룹 키: 필드의 첫번째+두번째 파트 (예: "999, 0_HMX, 0_Common" → "999, 0_HMX", 파트 부족: 필드 그대로)
 	{
-		int nFirst = sField.IndexOf(',');
+		int	nFirst	= sField.IndexOf(',');
 
 		if (nFirst < 0)
 		{
 			return sField;
 		}
 
-		int nSecond = sField.IndexOf(',', nFirst + 1);
+		int	nSecond	= sField.IndexOf(',', nFirst + 1);
 
 		return nSecond < 0 ? sField : sField.Substring(0, nSecond);
 	}
@@ -373,8 +373,8 @@ static class ProcessValue	// 값 파트 (콤마 구분, 서버 반영 탭 등록
 
 static class ProcessLog	// 실행 로그: 공통 Log (레벨 앞 sTitle 태그), ERROR·FATAL 은 Redis 에러 리스트에도 추가 ([머신] 붙임, 서버 반영 탭 조회 형식: [머신] [시각] [HMX_][레벨] 내용, OLD HMXLog 이식)
 {
-	private const int		m_nErrorExpireDay	= 30;	// 에러 리스트 유지 (일, 마지막 에러 기준)
-	private const int		m_nFatalWaitMs	= 10000;	// FATAL 기록 뒤 대기 (ms, 반복 실패 완화)
+	private const int	m_nErrorExpireDay	= 30;		// 에러 리스트 유지 (일, 마지막 에러 기준)
+	private const int	m_nFatalWaitMs		= 10000;	// FATAL 기록 뒤 대기 (ms, 반복 실패 완화)
 
 	public static void Write(string sLevel, string sMessage)	// 로그 한 줄 (FATAL: 기록 후 X초 대기)
 	{
@@ -416,13 +416,13 @@ static class ProcessLog	// 실행 로그: 공통 Log (레벨 앞 sTitle 태그),
 
 static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위치, 깃헙 = sparse-checkout 경로 (최신 커밋 1개만 shallow 유지, OLD HMXGit 이식)
 {
-	private const int		m_nCloneTimeoutMs	= 100000000;	// Git 클론 최대 대기 (ms, 초과: 강제 종료)
-	private const int		m_nCommandTimeoutMs	= 1000000;		// 명령 최대 대기 (ms, 초과: 강제 종료)
+	private const int		m_nCloneTimeoutMs	= 100000000;										// Git 클론 최대 대기 (ms, 초과: 강제 종료)
+	private const int		m_nCommandTimeoutMs	= 1000000;											// 명령 최대 대기 (ms, 초과: 강제 종료)
 	private const string	m_sDefaultUrl		= "https://github.nhnent.com/qpoker/HMX_ALPHA.git";	// 배포 저장소 기본값 (Git:sUrl 없음)
 	private const string	m_sGitClone			= "git clone --filter=blob:none --sparse --depth=1 {0} . && git sparse-checkout init --cone && git sparse-checkout set {1}";	// 클론 ({0}: 저장소 주소, {1}: 깃헙 파트 = sparse-checkout 경로)
 	private const string	m_sGitUpdate		= "git fetch --depth=1 --no-tags origin main && git reset --hard origin/main";	// 히스토리 없이 최신 커밋 1개만 받아 shallow 유지 (fetch 가 히스토리 전체를 deepen 해 느려지는 것 방지)
-	private const string	m_sGitHash			= "git rev-parse --short=6 HEAD";	// 현재 커밋 해시
-	private const int		m_nCommitLength		= 6;	// 커밋 해시 표시 길이
+	private const string	m_sGitHash			= "git rev-parse --short=6 HEAD";					// 현재 커밋 해시
+	private const int		m_nCommitLength		= 6;												// 커밋 해시 표시 길이
 
 	public static async Task<bool> Update(string[] arrValue, CancellationToken kStop)	// On·False (실행 전 동기화, Sync 0: 생략) 또는 Down·False (다운로드만) 일 때만 폴더 동기화 → 커밋 기록 (할 일 없음: true, 실패: false)
 	{
@@ -474,7 +474,7 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 			ProcessLog.Write(INFO_, $"Git Clone Fini: {sFolder}");
 		}
 
-		string sIndexLock = Path.Combine(sGitDir, "index.lock");	// 이전 git 이 강제 종료(시간 초과·정지)되며 남긴 lock → "Another git process..."(128) 방지
+		string	sIndexLock	= Path.Combine(sGitDir, "index.lock");	// 이전 git 이 강제 종료(시간 초과·정지)되며 남긴 lock → "Another git process..."(128) 방지
 
 		if (File.Exists(sIndexLock))
 		{
@@ -496,7 +496,7 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 
 		(nExit, sOut, _) = await Run(sFolder, m_sGitHash, nTimeoutMs, kStop);
 
-		string sCommit = sOut.Trim();	// 현재 커밋 해시
+		string	sCommit	= sOut.Trim();	// 현재 커밋 해시
 
 		if (nExit == 0 && sCommit != "")
 		{
@@ -521,7 +521,7 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 
 		kInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";	// git 이 인증 입력 대기로 멈추지 않게
 
-		System.Diagnostics.Process? kProcess;
+		System.Diagnostics.Process?	kProcess;
 
 		try
 		{
@@ -543,8 +543,8 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 
 		using (kProcess)
 		{
-			Task<string> taskOut = kProcess.StandardOutput.ReadToEndAsync();	// 출력 버퍼가 차서 멈추지 않게 동시 읽기
-			Task<string> taskErr = kProcess.StandardError.ReadToEndAsync();
+			Task<string>	taskOut	= kProcess.StandardOutput.ReadToEndAsync();	// 출력 버퍼가 차서 멈추지 않게 동시 읽기
+			Task<string>	taskErr	= kProcess.StandardError.ReadToEndAsync();
 
 			using CancellationTokenSource kWait = CancellationTokenSource.CreateLinkedTokenSource(kStop);
 
@@ -564,7 +564,7 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 				{
 				}
 
-				bool bStop = kStop.IsCancellationRequested;
+				bool	bStop	= kStop.IsCancellationRequested;
 
 				ProcessLog.Write(bStop ? NOTI_ : FATAL, $"명령 실행 중단({(bStop ? "정지 요청" : "시간 초과")}): {Mask(sCommand)}");	// 정지 요청은 FATAL 대기 없이 바로 종료
 
@@ -591,7 +591,7 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 
 	private static string Mask(string sText)	// 로그용: 저장소 토큰을 **** 로 (명령·git 오류 메시지)
 	{
-		string sToken = Config.GetString("Git:sPass");
+		string	sToken	= Config.GetString("Git:sPass");
 
 		if (sToken == "")
 		{
@@ -603,7 +603,7 @@ static class ProcessGit	// Git 배포 저장소 동기화: 폴더 = 클론 위�
 
 	private static string GetLastLine(string sText)	// 출력 마지막 줄 (오류 원인 표시용, 토큰 가림, 없음: "")
 	{
-		string sLine = sText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault() ?? "";
+		string	sLine	= sText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault() ?? "";
 
 		return Mask(sLine);
 	}

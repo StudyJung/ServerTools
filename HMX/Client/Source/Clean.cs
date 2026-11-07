@@ -9,18 +9,18 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 
 	public static void Init()	// 설정 aDeleteFolder → 삭제 항목 (빈 sPath: 꺼짐, 상대 경로·드라이브 루트·형식 오류: 경고 후 뺌, 같은 경로: 첫 항목만·경고, Main.Create)
 	{
-		List<(string sPath, int nDay, int nHour)> listItem = new List<(string sPath, int nDay, int nHour)>();
+		List<(string sPath, int nDay, int nHour)>	listItem	= new List<(string sPath, int nDay, int nHour)>();
 
 		foreach (IConfigurationSection kChild in Config.GetChildren("aDeleteFolder"))
 		{
-			string sValue = (kChild["sPath"] ?? "").Trim();
+			string	sValue	= (kChild["sPath"] ?? "").Trim();
 
 			if (sValue == "")	// 꺼짐 (예시 항목)
 			{
 				continue;
 			}
 
-			string? sFull = GetDeletePath(sValue);
+			string?	sFull	= GetDeletePath(sValue);
 
 			if (sFull == null)
 			{
@@ -36,8 +36,8 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 				continue;
 			}
 
-			int nDay	= int.TryParse(kChild["nDay"], out int nValue) && nValue >= m_nDayMin ? Math.Min(nValue, m_nDayMax) : m_nDayMin;	// 없음·최소 미만: 최소
-			int nHour	= int.TryParse(kChild["nHour"], out nValue) && nValue >= 0 && nValue <= 23 ? nValue : m_nHourDefault;				// 없음·범위 밖: 기본
+			int	nDay	= int.TryParse(kChild["nDay"], out int nValue) && nValue >= m_nDayMin ? Math.Min(nValue, m_nDayMax) : m_nDayMin;	// 없음·최소 미만: 최소
+			int	nHour	= int.TryParse(kChild["nHour"], out nValue) && nValue >= 0 && nValue <= 23 ? nValue : m_nHourDefault;				// 없음·범위 밖: 기본
 
 			listItem.Add((sFull, nDay, nHour));
 		}
@@ -54,8 +54,8 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 
 		try
 		{
-			string sFull	= Path.TrimEndingDirectorySeparator(Path.GetFullPath(sValue));
-			string sRoot	= Path.GetPathRoot(sFull) ?? "";	// 드라이브 루트 (C:\·\\서버\공유)
+			string	sFull	= Path.TrimEndingDirectorySeparator(Path.GetFullPath(sValue));
+			string	sRoot	= Path.GetPathRoot(sFull) ?? "";	// 드라이브 루트 (C:\·\\서버\공유)
 
 			if (sFull.Length <= sRoot.Length || sFull.Substring(sRoot.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Any(sName => sName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0))	// 드라이브 루트·폴더 이름에 못 쓰는 글자 (*?:<>|")
 			{
@@ -77,18 +77,18 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 			return;
 		}
 
-		DateTimeOffset[] arrNext = m_arrItem.Select(kItem => GetNextTime(kItem.nHour, GetNow())).ToArray();	// 항목마다 다음 삭제 시각 (KST)
+		DateTimeOffset[]	arrNext	= m_arrItem.Select(kItem => GetNextTime(kItem.nHour, GetNow())).ToArray();	// 항목마다 다음 삭제 시각 (KST)
 
 		for (int nIndex = 0; nIndex < m_arrItem.Length; ++nIndex)
 		{
-			CleanItem kItem = m_arrItem[nIndex];
+			CleanItem	kItem	= m_arrItem[nIndex];
 
 			Log.Write(INFO_, $"날짜 폴더 삭제 등록: {kItem.sPath} ({kItem.nDay}일 이전, 매일 {kItem.nHour}시, 하위 {Define.m_nLogScanDepth}단계{(kItem.arrSub.Length > 0 ? $", 하위 항목 제외: {string.Join(", ", kItem.arrSub)}" : "")}, 다음 {arrNext[nIndex]:yyyy-MM-dd HH:mm})");
 		}
 
 		while (!kStop.IsCancellationRequested)
 		{
-			DateTimeOffset kNow = GetNow();
+			DateTimeOffset	kNow	= GetNow();
 
 			for (int nIndex = 0; nIndex < m_arrItem.Length && !kStop.IsCancellationRequested; ++nIndex)
 			{
@@ -109,7 +109,7 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 				arrNext[nIndex] = GetNextTime(m_arrItem[nIndex].nHour, GetNow());
 			}
 
-			double dWaitMs = (arrNext.Min() - GetNow()).TotalMilliseconds;	// 가장 가까운 삭제 시각까지
+			double	dWaitMs	= (arrNext.Min() - GetNow()).TotalMilliseconds;	// 가장 가까운 삭제 시각까지
 
 			await Delay((int)Math.Clamp(Math.Ceiling(dWaitMs), 1, m_nWaitMaxMs), kStop);	// 최대 m_nWaitMaxMs 씩 (종료 요청: 바로 반환)
 		}
@@ -119,7 +119,7 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 
 	private static DateTimeOffset GetNextTime(int nHour, DateTimeOffset kNow)	// 다음 삭제 시각: kNow 뒤 첫 nHour 시 정각 (KST, 그 시각 지남: 다음 날)
 	{
-		DateTimeOffset kTime = new DateTimeOffset(kNow.Date.AddHours(nHour), kNow.Offset);	// 오늘 nHour 시
+		DateTimeOffset	kTime	= new DateTimeOffset(kNow.Date.AddHours(nHour), kNow.Offset);	// 오늘 nHour 시
 
 		return kTime > kNow ? kTime : kTime.AddDays(1);
 	}
@@ -134,10 +134,10 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 		long			nBegin		= Stopwatch.GetTimestamp();
 		long			nLimit		= GetLimitDate(GetNow(), kItem.nDay);	// 삭제 기준 날짜 (yyyyMMdd)
 		Throttle		kThrottle	= new Throttle();
-		int				nDelete		= 0;									// 삭제 수
-		int				nFail		= 0;									// 실패 수
-		int				nSkip		= 0;									// 링크 건너뜀 수
-		List<string>	listFolder;											// 삭제 대상
+		int				nDelete		= 0;	// 삭제 수
+		int				nFail		= 0;	// 실패 수
+		int				nSkip		= 0;	// 링크 건너뜀 수
+		List<string>	listFolder;			// 삭제 대상
 
 		if (!Directory.Exists(kItem.sPath))
 		{
@@ -203,7 +203,7 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 
 	private static List<string> FindDateFolder(CleanItem kItem, long nLimit, Throttle kThrottle)	// 삭제 대상: sPath 하위 X단계 날짜 폴더 중 nLimit 이하 (날짜 폴더 안·숨김·시스템·링크·하위 항목 경로: 안 들어감, 하위 항목 경로 담은 날짜 폴더: 뺌, 경로 순)
 	{
-		EnumerationOptions kOption = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint, RecurseSubdirectories = true, MaxRecursionDepth = Define.m_nLogScanDepth };	// 하위 폴더 (깊이 제한, 링크 제외 → sPath 밖으로 안 나감)
+		EnumerationOptions	kOption	= new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint, RecurseSubdirectories = true, MaxRecursionDepth = Define.m_nLogScanDepth };	// 하위 폴더 (깊이 제한, 링크 제외 → sPath 밖으로 안 나감)
 
 		FileSystemEnumerable<string> kDateDir = new FileSystemEnumerable<string>(kItem.sPath, (ref FileSystemEntry kEntry) => kEntry.ToFullPath(), kOption)
 		{
@@ -216,7 +216,7 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 			},
 		};
 
-		List<string> listFolder = kDateDir.ToList();	// 다 찾은 뒤 삭제 (탐색 중 삭제 안 함)
+		List<string>	listFolder	= kDateDir.ToList();	// 다 찾은 뒤 삭제 (탐색 중 삭제 안 함)
 
 		listFolder.Sort(StringComparer.OrdinalIgnoreCase);
 
@@ -241,7 +241,7 @@ static class Clean	// 날짜 폴더 자동 삭제 (aDeleteFolder): 항목마다 
 
 	private static bool HasSub(string sFolder, string[] arrSub)	// sFolder 자신·하위에 하위 항목 경로 있음 (대소문자 무시, 끝 구분자 붙여 비교)
 	{
-		string sPrefix = Tab.GetRootPrefix(sFolder);
+		string	sPrefix	= Tab.GetRootPrefix(sFolder);
 
 		return arrSub.Any(sSub => Tab.GetRootPrefix(sSub).StartsWith(sPrefix, StringComparison.OrdinalIgnoreCase));
 	}

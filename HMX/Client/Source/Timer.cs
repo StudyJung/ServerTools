@@ -1,12 +1,12 @@
 static class Timer	// 타이머: 별도 스레드에서 X초마다 Batch 호출, X분마다 Alive 로그 (Start → Stop)
 {
-	private const int	m_nTickMs		= 1000;	// Batch 호출 간격 (ms)
-	private const int	m_nAliveMin		= 10;	// Alive 로그 간격 (분)
+	private const int	m_nTickMs	= 1000;	// Batch 호출 간격 (ms)
+	private const int	m_nAliveMin	= 10;	// Alive 로그 간격 (분)
 
-	private static Thread?					m_kThread;							// 타이머 스레드 (Start 생성, Stop 해제)
-	private static CancellationTokenSource	m_kStop		= new CancellationTokenSource();	// 중지 요청 (대기 중이면 즉시 깸)
-	private static DateTimeOffset			m_kStartTime;						// 시작 시각 (Alive 로그 가동 시간)
-	private static long						m_nAliveTick;						// 마지막 Alive 로그 시각 (Environment.TickCount64)
+	private static Thread?					m_kThread;		// 타이머 스레드 (Start 생성, Stop 해제)
+	private static CancellationTokenSource	m_kStop	= new CancellationTokenSource();	// 중지 요청 (대기 중이면 즉시 깸)
+	private static DateTimeOffset			m_kStartTime;	// 시작 시각 (Alive 로그 가동 시간)
+	private static long						m_nAliveTick;	// 마지막 Alive 로그 시각 (Environment.TickCount64)
 
 	public static void Start()	// 타이머 시작 (백그라운드 스레드: 프로세스 종료 시 함께 종료)
 	{
@@ -44,7 +44,7 @@ static class Timer	// 타이머: 별도 스레드에서 X초마다 Batch 호출,
 	{
 		while (!m_kStop.IsCancellationRequested)
 		{
-			long nBegin = Environment.TickCount64;
+			long	nBegin	= Environment.TickCount64;
 
 			try
 			{
@@ -55,7 +55,7 @@ static class Timer	// 타이머: 별도 스레드에서 X초마다 Batch 호출,
 				Log.Write(ERROR, $"타이머 오류: {kException.Message}");
 			}
 
-			long nWait = Math.Max(0, m_nTickMs - (Environment.TickCount64 - nBegin));	// 남은 대기 시간 (Batch 가 X초 넘으면 바로 다음 호출)
+			long	nWait	= Math.Max(0, m_nTickMs - (Environment.TickCount64 - nBegin));	// 남은 대기 시간 (Batch 가 X초 넘으면 바로 다음 호출)
 
 			m_kStop.Token.WaitHandle.WaitOne((int)nWait);
 		}

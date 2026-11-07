@@ -16,7 +16,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 	private static readonly Gate		m_kViewGate	= new Gate(m_nViewConcurrent);		// 파일 보기 자리
 	private static readonly SavedList	m_kSaved	= new SavedList("aSearch", "저장 서치", "검색어", "arrSearch");	// 저장 서치 (설정 aSearch → Search.json)
 
-	private readonly TCPServer			m_kListener;									// Client TCP 수신 (Main 이 넘김)
+	private readonly TCPServer	m_kListener;	// Client TCP 수신 (Main 이 넘김)
 
 	public TabSearch(TCPServer kListener)
 	{
@@ -47,11 +47,11 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 	private IResult OnSearch(SearchParam kParam, HttpContext kContext)	// 로그 검색: 머신마다 클라에 Search → 끝난 순서대로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON, sToken: 진행·중지)
 	{
-		string[]	arrMachine	= kParam.arrMachine ?? Array.Empty<string>();	// 검색할 머신 (nIndex = 이 순서)
-		string		sKey		= kParam.sKey ?? "";							// 검색어
-		long		nStart		= kParam.nStart ?? 0;							// 시작 yyyyMMddHH
-		long		nEnd		= kParam.nEnd ?? 0;								// 종료 yyyyMMddHH
-		int			nMax		= Math.Clamp(kParam.nMax ?? m_nSearchDefault, 1, m_nSearchMax);	// 머신당 최대 (페이지 설정값, 없으면 기본값)
+		string[]	arrMachine	= kParam.arrMachine ?? Array.Empty<string>();							// 검색할 머신 (nIndex = 이 순서)
+		string		sKey		= kParam.sKey ?? "";													// 검색어
+		long		nStart		= kParam.nStart ?? 0;													// 시작 yyyyMMddHH
+		long		nEnd		= kParam.nEnd ?? 0;														// 종료 yyyyMMddHH
+		int			nMax		= Math.Clamp(kParam.nMax ?? m_nSearchDefault, 1, m_nSearchMax);			// 머신당 최대 (페이지 설정값, 없으면 기본값)
 		int			nLimit		= Math.Clamp(kParam.nLimit ?? m_nSearchLimitSec, 1, m_nSearchLimitMax);	// 서치 제한 시간 (초, 페이지 설정값)
 
 		if (arrMachine.Length > Define.m_nMachineMax)	// 머신 수 초과: 조기 반환
@@ -59,7 +59,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 			return Results.BadRequest($"머신 수 초과 (최대 {Define.m_nMachineMax})");
 		}
 
-		bool bValid = arrMachine.All(sMachine => !string.IsNullOrEmpty(sMachine)) && !string.IsNullOrWhiteSpace(sKey) && sKey.Length <= m_nKeyMax && IsDateHour(nStart, 23) && IsDateHour(nEnd, 24) && nStart <= nEnd;	// 검색 조건 (오류: 머신마다 sError)
+		bool	bValid	= arrMachine.All(sMachine => !string.IsNullOrEmpty(sMachine)) && !string.IsNullOrWhiteSpace(sKey) && sKey.Length <= m_nKeyMax && IsDateHour(nStart, 23) && IsDateHour(nEnd, 24) && nStart <= nEnd;	// 검색 조건 (오류: 머신마다 sError)
 
 		return Results.Stream(async (Stream kBody) =>
 		{
@@ -80,13 +80,13 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 				return;
 			}
 
-			ConcurrentDictionary<long, SearchTrack>? hmapTrack = m_kListener.BeginTrack(kParam.sToken);	// 진행 조회·중지 등록 (sToken 없음: null)
+			ConcurrentDictionary<long, SearchTrack>?	hmapTrack	= m_kListener.BeginTrack(kParam.sToken);	// 진행 조회·중지 등록 (sToken 없음: null)
 
 			using CancellationTokenRegistration kAbortReg = kContext.RequestAborted.Register(() => _ = m_kListener.Stop(kParam.sToken));	// 페이지 닫힘·새로고침·경유 끊김: 머신들 검색 중지 (게임 서버 검색이 끝까지 돌지 않게)
 
 			try
 			{
-				Task<(int nIndex, byte[]? arrResult, string sError)>[] arrTask = arrMachine.Select((sMachine, nIndex) => RequestSearch(nIndex, sMachine, nStart, nEnd, sKey.Trim(), nMax, nLimit, hmapTrack)).ToArray();	// 모든 머신 동시 요청
+				Task<(int nIndex, byte[]? arrResult, string sError)>[]	arrTask	= arrMachine.Select((sMachine, nIndex) => RequestSearch(nIndex, sMachine, nStart, nEnd, sKey.Trim(), nMax, nLimit, hmapTrack)).ToArray();	// 모든 머신 동시 요청
 
 				await foreach (Task<(int nIndex, byte[]? arrResult, string sError)> kTask in Task.WhenEach(arrTask))	// 끝난 순서대로 전송 (결과 바이트는 보내고 바로 해제)
 				{
@@ -104,7 +104,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 	private async Task<IResult> OnExternalSearch(HttpRequest kRequest)	// 외부 API 서치 (/api/external/search/키/토큰/, aAPI 서치 권한): 쿼리 문자열 (있음) 또는 POST 본문 JSON {sKey (검색어, 필수), aMachine (머신: 반복·쉼표, 없음: 접속 머신 전체), nStart·nEnd (yyyyMMddHH, 끝 없음: 지금 시, 시작 없음: 끝 nHour - 1 시간 전), nHour (기본 X), nMax (머신당 최대)} → /api/search 와 같은 응답 (NDJSON)
 	{
-		Dictionary<string, List<string>> hmapParam = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);	// 입력 (키 대소문자 무시, 값 여러 개)
+		Dictionary<string, List<string>>	hmapParam	= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);	// 입력 (키 대소문자 무시, 값 여러 개)
 
 		try
 		{
@@ -144,8 +144,8 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		long	funcStamp(DateTime k)	=> long.Parse(k.ToString("yyyyMMddHH", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);	// 시각 → yyyyMMddHH
 
 		string[]	arrMachine	= (hmapParam.GetValueOrDefault("aMachine") ?? hmapParam.GetValueOrDefault("arrMachine") ?? new List<string>()).SelectMany(sValue => sValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).Distinct().ToArray();	// 머신 (반복·쉼표)
-		int			nHour		= (int)Math.Clamp(funcLong("nHour") ?? m_nExternalHour, 1, 24 * 31);											// 시작 없음: 끝 X - 1 시간 전 (최대 31일)
-		long		nEnd		= funcLong("nEnd") ?? funcStamp(GetNow().DateTime);													// 끝 (포함, 없음: 지금 시)
+		int			nHour		= (int)Math.Clamp(funcLong("nHour") ?? m_nExternalHour, 1, 24 * 31);	// 시작 없음: 끝 X - 1 시간 전 (최대 31일)
+		long		nEnd		= funcLong("nEnd") ?? funcStamp(GetNow().DateTime);						// 끝 (포함, 없음: 지금 시)
 		long		nStart		= funcLong("nStart") ?? (DateTime.TryParseExact(nEnd.ToString(CultureInfo.InvariantCulture), "yyyyMMddHH", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime kEnd) ? funcStamp(kEnd.AddHours(1 - nHour)) : 0);	// 시작 (포함, 없음: 끝 X - 1 시간 전, 끝 형식 오류: 0 → 검색 조건 오류)
 
 		return OnSearch(new SearchParam
@@ -205,7 +205,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 	private IResult OnProgress(string? sToken)	// 검색 진행: 진행 중인 머신 합 (bFound false: 없음, nWait: 앞 검색 대기 머신 수, nFileTotal: 아는 머신만)
 	{
-		SearchTrack[] arrTrack = m_kListener.GetTrackList(sToken);	// 진행 중인 머신별 검색
+		SearchTrack[]	arrTrack	= m_kListener.GetTrackList(sToken);	// 진행 중인 머신별 검색
 
 		if (arrTrack.Length == 0)
 		{
@@ -230,7 +230,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 	private static bool IsDateHour(long nValue, int nHourMax)	// yyyyMMddHH 검사 (유효 날짜, 시간 0~nHourMax)
 	{
-		long nHour = nValue % 100;	// 시
+		long	nHour	= nValue % 100;	// 시
 
 		return nValue > 0 && nHour <= nHourMax && DateTime.TryParseExact((nValue / 100).ToString(CultureInfo.InvariantCulture), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 	}
@@ -240,42 +240,42 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		return """
 		class Search	// 서치 탭: 1번 창 검색 결과·2번 창 파일 보기 (this 없음 → 메서드를 이벤트 처리기로 바로 넘김)
 		{
-		    static PAGE_MAX			= 10000;	// 서치 1번 창 한 페이지 건수
-		    static SPLIT_MIN		= 120;		// 서치 1·2번 창 최소 높이 (px, 가운데 바 드래그)
-		    static FIT_HEIGHT_MIN	= 135;		// 서치 1번 창 기본·최소 높이 (px, 쿼리 1번 창 막대 기본 높이와 같음, CSS #ResultScroll 과 같음)
-		    static FIT_ROW_MAX		= 10;		// 서치 1번 창 기본 줄 수 (넘음: 스크롤, 바 드래그 전)
-		    static VIEW_COUNT		= 300;		// 서치 2번 창 한 번에 읽는 줄 수 (클릭한 줄 위·아래, 스크롤: 이어서)
-		    static VIEW_MAX			= 20000;	// 서치 2번 창 최대 줄 수 (넘음: 반대쪽 지움 → 메모리 제한, 빈 높이로 위치 유지)
-		    static VIEW_POS			= { kScroll: kViewScroll, kBody: kViewBody, kPrev: kViewPrev, kShift: kViewShift, kNext: kViewNext, sInput: "ViewShiftInput", nStep: Search.VIEW_COUNT, funcState: () => Search.kView };	// 서치 2번 창 포지션 버튼 (공통 ShowPos 등, 포지션 0: 클릭한 줄)
-		    static WORD_BOX		= "#ResultBody td.log, #ViewBody .line";	// Ctrl·Alt+클릭 단어 칸 (서치 1번 창 Log 칸·2번 창 줄)
-		    static bSearching		= false;	// 검색 중
-		    static arrResult		= [];		// 검색 결과 전체 { sMachine, kLine } (화면에는 현재 페이지만 그림)
-		    static arrReceived		= [];		// 검색 결과 받은 순서 (정렬 설정 바뀜: 이것으로 다시 정렬)
-		    static sResultKey		= "";		// 결과의 검색어 (강조·보기용)
-		    static nResultPage		= 0;		// 서치 1번 창 현재 페이지 (0부터)
-		    static sResultHeight	= "";		// 서치 1번 창 기준 높이 ("": CSS 기본, 바 드래그: 그 높이) → 결과가 적으면 이보다 줄임
-		    static nSelected		= -1;		// 선택한 결과 번호 (0부터, -1: 없음)
-		    static arrHistory		= [];		// 들어온 단계 { sKey, arrPick } (0: 최초 검색, Ctrl·Alt 단어 검색마다 추가, ← →: 그 조건·마지막 결과, 결과 없음: 다시 검색)
-		    static nHistory			= -1;		// 지금 단계 (← → 로 오감)
-		    static LOG_TIME			= /^\[\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/;	// 로그 줄 시작 시각 (고정 폭 → 문자열 비교 = 시간 비교, 결과 정렬)
-		    static kView			= null;		// 보기 중인 파일 { sMachine, sPath, sKey, nTarget, nStart, nTotal }
-		    static PROGRESS_MS		= 1000;		// 검색 진행 갱신 주기 (ms)
-		    static RUN_NONE			= { nWait: 0, nFileTotal: 0, nFileDone: 0, nFound: 0 };	// 진행 중인 머신 합 없음 (/api/progress 응답 형식)
-		    static sSearchToken		= "";		// 이번 검색 표시 (서버 진행 조회·중지용)
-		    static bStopRequested	= false;	// 중지 요청됨
-		    static arrSaved			= [];		// 저장 서치 { sKey, sQuery, nMinute } (쿼리 설정 창 공용: Query.OpenSetting(false, false, true))
-		    static sSavedKey		= "";		// 고른 저장 서치 제목 (설정 목록 강조, "": 없음)
-		    static bRunAfterStop	= false;	// 저장 서치 고름 (서치 중): 중지 끝난 뒤 다시 실행
-		    static kProgressInfo	= null;		// 진행 표시 정보 { nCount, nDone, nFileDone, nFound, kRun, nBegin } (검색 중만, kRun: 진행 중인 머신 합)
-		    static bProgressLoading	= false;	// 진행 조회 중 (겹침 방지)
-		    static mapStepResult	= new WeakMap();	// 단계 → 마지막 결과 { arrReceived, sResultKey, sTitle } (← →·새 창 복사: 다시 검색 안 함)
-		    static arrResultStep	= [];				// 결과 보관한 단계 (보관 순서, 모든 단계 합 RESULT_LIMIT 줄 넘음: 오래된 단계부터 버림)
+		    static	PAGE_MAX			= 10000;												// 서치 1번 창 한 페이지 건수
+		    static	SPLIT_MIN			= 120;													// 서치 1·2번 창 최소 높이 (px, 가운데 바 드래그)
+		    static	FIT_HEIGHT_MIN		= 135;													// 서치 1번 창 기본·최소 높이 (px, 쿼리 1번 창 막대 기본 높이와 같음, CSS #ResultScroll 과 같음)
+		    static	FIT_ROW_MAX			= 10;													// 서치 1번 창 기본 줄 수 (넘음: 스크롤, 바 드래그 전)
+		    static	VIEW_COUNT			= 300;													// 서치 2번 창 한 번에 읽는 줄 수 (클릭한 줄 위·아래, 스크롤: 이어서)
+		    static	VIEW_MAX			= 20000;												// 서치 2번 창 최대 줄 수 (넘음: 반대쪽 지움 → 메모리 제한, 빈 높이로 위치 유지)
+		    static	VIEW_POS			= { kScroll: kViewScroll, kBody: kViewBody, kPrev: kViewPrev, kShift: kViewShift, kNext: kViewNext, sInput: "ViewShiftInput", nStep: Search.VIEW_COUNT, funcState: () => Search.kView };	// 서치 2번 창 포지션 버튼 (공통 ShowPos 등, 포지션 0: 클릭한 줄)
+		    static	WORD_BOX			= "#ResultBody td.log, #ViewBody .line";				// Ctrl·Alt+클릭 단어 칸 (서치 1번 창 Log 칸·2번 창 줄)
+		    static	bSearching			= false;												// 검색 중
+		    static	arrResult			= [];													// 검색 결과 전체 { sMachine, kLine } (화면에는 현재 페이지만 그림)
+		    static	arrReceived			= [];													// 검색 결과 받은 순서 (정렬 설정 바뀜: 이것으로 다시 정렬)
+		    static	sResultKey			= "";													// 결과의 검색어 (강조·보기용)
+		    static	nResultPage			= 0;													// 서치 1번 창 현재 페이지 (0부터)
+		    static	sResultHeight		= "";													// 서치 1번 창 기준 높이 ("": CSS 기본, 바 드래그: 그 높이) → 결과가 적으면 이보다 줄임
+		    static	nSelected			= -1;													// 선택한 결과 번호 (0부터, -1: 없음)
+		    static	arrHistory			= [];													// 들어온 단계 { sKey, arrPick } (0: 최초 검색, Ctrl·Alt 단어 검색마다 추가, ← →: 그 조건·마지막 결과, 결과 없음: 다시 검색)
+		    static	nHistory			= -1;													// 지금 단계 (← → 로 오감)
+		    static	LOG_TIME			= /^\[\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]/;	// 로그 줄 시작 시각 (고정 폭 → 문자열 비교 = 시간 비교, 결과 정렬)
+		    static	kView				= null;													// 보기 중인 파일 { sMachine, sPath, sKey, nTarget, nStart, nTotal }
+		    static	PROGRESS_MS			= 1000;													// 검색 진행 갱신 주기 (ms)
+		    static	RUN_NONE			= { nWait: 0, nFileTotal: 0, nFileDone: 0, nFound: 0 };	// 진행 중인 머신 합 없음 (/api/progress 응답 형식)
+		    static	sSearchToken		= "";													// 이번 검색 표시 (서버 진행 조회·중지용)
+		    static	bStopRequested		= false;												// 중지 요청됨
+		    static	arrSaved			= [];													// 저장 서치 { sKey, sQuery, nMinute } (쿼리 설정 창 공용: Query.OpenSetting(false, false, true))
+		    static	sSavedKey			= "";													// 고른 저장 서치 제목 (설정 목록 강조, "": 없음)
+		    static	bRunAfterStop		= false;												// 저장 서치 고름 (서치 중): 중지 끝난 뒤 다시 실행
+		    static	kProgressInfo		= null;													// 진행 표시 정보 { nCount, nDone, nFileDone, nFound, kRun, nBegin } (검색 중만, kRun: 진행 중인 머신 합)
+		    static	bProgressLoading	= false;												// 진행 조회 중 (겹침 방지)
+		    static	mapStepResult		= new WeakMap();										// 단계 → 마지막 결과 { arrReceived, sResultKey, sTitle } (← →·새 창 복사: 다시 검색 안 함)
+		    static	arrResultStep		= [];													// 결과 보관한 단계 (보관 순서, 모든 단계 합 RESULT_LIMIT 줄 넘음: 오래된 단계부터 버림)
 
 		    static MakeResultRow(nIndex)	// 서치 1번 창 결과 한 줄 (arrResult[nIndex], 클릭은 kResultBody 한 곳에서 처리)
 		    {
-		        const kItem		= Search.arrResult[nIndex];
-		        const kLine		= kItem.kLine;
-		        const kRow		= document.createElement("tr");
+		        const	kItem	= Search.arrResult[nIndex];
+		        const	kLine	= kItem.kLine;
+		        const	kRow	= document.createElement("tr");
 
 		        kRow.dataset.index = nIndex;
 
@@ -296,15 +296,15 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static OnResultClick(kEvent)	// 서치 1번 창 결과 클릭: 2번 창에 그 줄 주변 보기 (표 하나에서 처리 → 큰 페이지 메모리·그리기 절감)
 		    {
-		        const kRow = kEvent.target.closest("tr[data-index]");	// 클릭한 줄
+		        const	kRow	= kEvent.target.closest("tr[data-index]");	// 클릭한 줄
 
 		        if (kRow == null || Search.IsWordClick(kEvent))	// Log 칸 Ctrl·Alt 클릭: 단어 추가만
 		        {
 		            return;
 		        }
 
-		        const nIndex	= Number(kRow.dataset.index);
-		        const kItem		= Search.arrResult[nIndex];
+		        const	nIndex	= Number(kRow.dataset.index);
+		        const	kItem	= Search.arrResult[nIndex];
 
 		        kResultBody.querySelector("tr.sel")?.classList.remove("sel");
 		        kRow.classList.add("sel");
@@ -329,12 +329,12 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static ShowPager()	// 페이지 번호 버튼 (현재 페이지 강조, 결과 없음: 숨김)
 		    {
-		        const nPageCount	= Math.ceil(Search.arrResult.length / Search.PAGE_MAX);	// 전체 페이지 수
-		        const kFragment		= document.createDocumentFragment();
+		        const	nPageCount	= Math.ceil(Search.arrResult.length / Search.PAGE_MAX);	// 전체 페이지 수
+		        const	kFragment	= document.createDocumentFragment();
 
 		        for (let nPage = 0; nPage < nPageCount; ++nPage)
 		        {
-		            const kButton = document.createElement("button");
+		            const	kButton	= document.createElement("button");
 
 		            kButton.type		= "button";
 		            kButton.textContent	= String(nPage + 1);
@@ -360,13 +360,13 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static ShowResultPage(nPage)	// 서치 1번 창 nPage 페이지 그리기 (비우고 PAGE_MAX 건 새로 그림, 맨 위로)
 		    {
-		        const nPageCount	= Math.max(1, Math.ceil(Search.arrResult.length / Search.PAGE_MAX));
-		        const kFragment		= document.createDocumentFragment();
+		        const	nPageCount	= Math.max(1, Math.ceil(Search.arrResult.length / Search.PAGE_MAX));
+		        const	kFragment	= document.createDocumentFragment();
 
 		        Search.nResultPage = Math.min(Math.max(0, nPage), nPageCount - 1);
 
-		        const nBegin	= Search.nResultPage * Search.PAGE_MAX;
-		        const nEnd		= Math.min(Search.arrResult.length, nBegin + Search.PAGE_MAX);
+		        const	nBegin	= Search.nResultPage * Search.PAGE_MAX;
+		        const	nEnd	= Math.min(Search.arrResult.length, nBegin + Search.PAGE_MAX);
 
 		        for (let nIndex = nBegin; nIndex < nEnd; ++nIndex)
 		        {
@@ -398,10 +398,10 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            return;
 		        }
 
-		        const nHeight	= kResultScroll.offsetHeight - kResultScroll.clientTop * 2;	// 기준 높이 (테두리 제외, 가로 스크롤 바 포함)
-		        const nBar		= nHeight - kResultScroll.clientHeight;						// 가로 스크롤 바
-		        const arrRow	= kResultBody.rows;											// 지금 페이지 결과 줄
-		        let nNeed		= 0;														// 맞춘 높이
+		        const	nHeight	= kResultScroll.offsetHeight - kResultScroll.clientTop * 2;	// 기준 높이 (테두리 제외, 가로 스크롤 바 포함)
+		        const	nBar	= nHeight - kResultScroll.clientHeight;						// 가로 스크롤 바
+		        const	arrRow	= kResultBody.rows;											// 지금 페이지 결과 줄
+		        let		nNeed	= 0;														// 맞춘 높이
 
 		        if (arrRow.length >= Search.FIT_ROW_MAX)	// 결과 많음: FIT_ROW_MAX 줄까지 (줄마다 높이 달라도 그 줄 끝까지)
 		        {
@@ -409,7 +409,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        }
 		        else	// 결과 적음: 결과 + 빈 줄 1개 (최소 FIT_HEIGHT_MIN: 쿼리 1번 창과 같은 위치·크기)
 		        {
-		            const kRow = arrRow[0] ?? kResultTable.tHead.rows[0];	// 빈 줄 높이 기준 (결과 없음: 제목 줄)
+		            const	kRow	= arrRow[0] ?? kResultTable.tHead.rows[0];	// 빈 줄 높이 기준 (결과 없음: 제목 줄)
 
 		            nNeed = Math.max(Search.FIT_HEIGHT_MIN, Math.ceil(kResultTable.getBoundingClientRect().height + kRow.getBoundingClientRect().height) + nBar);
 		        }
@@ -424,9 +424,9 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static AppendResult(nFrom)	// 검색 중 추가된 결과 반영: 현재 페이지에 들어갈 줄만 추가 (스크롤 유지), 페이지 번호 갱신
 		    {
-		        const nBegin	= Search.nResultPage * Search.PAGE_MAX;
-		        const nEnd		= Math.min(Search.arrResult.length, nBegin + Search.PAGE_MAX);
-		        const kFragment	= document.createDocumentFragment();
+		        const	nBegin		= Search.nResultPage * Search.PAGE_MAX;
+		        const	nEnd		= Math.min(Search.arrResult.length, nBegin + Search.PAGE_MAX);
+		        const	kFragment	= document.createDocumentFragment();
 
 		        for (let nIndex = Math.max(nFrom, nBegin); nIndex < nEnd; ++nIndex)
 		        {
@@ -440,7 +440,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static SortResult()	// 서치 1번 창 결과 정렬 (설정 sSort, 받은 순서 기준, 선택한 결과 유지)
 		    {
-		        const kSelected = Search.nSelected >= 0 ? Search.arrResult[Search.nSelected] : null;	// 선택한 결과 (정렬 후 번호 다시 찾음)
+		        const	kSelected	= Search.nSelected >= 0 ? Search.arrResult[Search.nSelected] : null;	// 선택한 결과 (정렬 후 번호 다시 찾음)
 
 		        Search.arrResult	= sSort === SORT_TIME ? Search.SortTime(Search.arrReceived) : Search.arrReceived;
 		        Search.nSelected	= kSelected == null ? -1 : Search.arrResult.indexOf(kSelected);
@@ -448,12 +448,12 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static SortTime(arrItem)	// 시간 정렬 (새 배열): 시각 있는 줄 최신 위 (같음: 받은 순서), 없는 줄 맨 아래
 		    {
-		        const arrTime	= [];	// 시각 있는 줄 { sTime, kItem }
-		        const arrOther	= [];	// 시각 없는 줄 (머신 목록 순서 그대로)
+		        const	arrTime		= [];	// 시각 있는 줄 { sTime, kItem }
+		        const	arrOther	= [];	// 시각 없는 줄 (머신 목록 순서 그대로)
 
 		        for (const kItem of arrItem)
 		        {
-		            const kMatch = Search.LOG_TIME.exec(kItem.kLine.sText);
+		            const	kMatch	= Search.LOG_TIME.exec(kItem.kLine.sText);
 
 		            if (kMatch != null)
 		            {
@@ -477,10 +477,10 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static RenderProgress(kInfo)	// 서치 1번 창 진행 표시: 시간·완료 머신·파일·찾은 줄
 		    {
-		        const kRun			= kInfo.kRun;	// 진행 중인 머신 합 (마지막 조회)
-		        const nSec			= Math.floor((performance.now() - kInfo.nBegin) / 1000);	// 검색 시간 (초)
-		        const nFileDone		= kInfo.nFileDone + kRun.nFileDone;		// 검색한 파일 (끝난 머신 + 진행 중인 머신)
-		        const nFileTotal	= kInfo.nFileDone + kRun.nFileTotal;	// 대상 파일 (진행 중인 머신은 아는 것만)
+		        const	kRun		= kInfo.kRun;												// 진행 중인 머신 합 (마지막 조회)
+		        const	nSec		= Math.floor((performance.now() - kInfo.nBegin) / 1000);	// 검색 시간 (초)
+		        const	nFileDone	= kInfo.nFileDone + kRun.nFileDone;							// 검색한 파일 (끝난 머신 + 진행 중인 머신)
+		        const	nFileTotal	= kInfo.nFileDone + kRun.nFileTotal;						// 대상 파일 (진행 중인 머신은 아는 것만)
 		        const sWait			= kRun.nWait > 0 ? ` · 다른 검색 대기 ${kRun.nWait}대` : "";	// 클라가 앞 검색 처리 중인 머신
 
 		        kProgress.textContent	= `${Search.bStopRequested ? "중지하는 중" : "검색 중"} · ${nSec}초\n머신 ${kInfo.nDone}/${kInfo.nCount} 완료 · 파일 ${nFileDone.toLocaleString()} / ${nFileTotal.toLocaleString()}${sWait}\n찾은 줄: ${(kInfo.nFound + kRun.nFound).toLocaleString()}건`;
@@ -501,14 +501,14 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            return;
 		        }
 
-		        const kInfo	= Search.kProgressInfo;	// 이번 검색
-		        let kRun	= null;						// 진행 중인 머신 합 (null: 조회 실패 → 앞 값 유지)
+		        const	kInfo	= Search.kProgressInfo;	// 이번 검색
+		        let		kRun	= null;					// 진행 중인 머신 합 (null: 조회 실패 → 앞 값 유지)
 
 		        Search.bProgressLoading = true;
 
 		        try
 		        {
-		            const kData = await FetchJson("/api/progress?" + new URLSearchParams({ sToken: Search.sSearchToken }), { cache: "no-store", signal: AbortSignal.timeout(Search.PROGRESS_MS * 5) });	// 응답 없음: 끊고 다음 조회
+		            const	kData	= await FetchJson("/api/progress?" + new URLSearchParams({ sToken: Search.sSearchToken }), { cache: "no-store", signal: AbortSignal.timeout(Search.PROGRESS_MS * 5) });	// 응답 없음: 끊고 다음 조회
 
 		            kRun = kData.bFound ? kData : Search.RUN_NONE;
 		        }
@@ -536,7 +536,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            return;
 		        }
 
-		        const sToken = Search.sSearchToken;	// 중지할 검색
+		        const	sToken	= Search.sSearchToken;	// 중지할 검색
 
 		        Search.bStopRequested	= true;
 		        kStopButton.disabled	= true;
@@ -548,7 +548,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        try
 		        {
-		            const kData = await FetchJson("/api/stop?" + new URLSearchParams({ sToken }), { cache: "no-store" });
+		            const	kData	= await FetchJson("/api/stop?" + new URLSearchParams({ sToken }), { cache: "no-store" });
 
 		            if (!kData.bStopped)	// 아직 중지할 머신 없음 (검색 막 시작 등)
 		            {
@@ -569,7 +569,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static OnKeyInput()	// 검색어칸 고침: 고른 저장 서치와 달라지면 선택 해제
 		    {
-		        const kSaved = Search.arrSaved.find(kItem => kItem.sKey === Search.sSavedKey);
+		        const	kSaved	= Search.arrSaved.find(kItem => kItem.sKey === Search.sSavedKey);
 
 		        if (kSaved !== undefined && kKey.value.trim() !== kSaved.sQuery)
 		        {
@@ -579,8 +579,8 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static IsInRange(kLine, nFrom, nTo)	// 결과 줄이 초 범위 안 (yyyyMMddHHmmss, S <= 줄 < E, 초 없는 줄: 그 분 0초, 시간 없는 줄: 그 파일 시간 정각)
 		    {
-		        const kMatch	= /^\[(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?/.exec(kLine.sText);	// 줄 앞 시간
-		        const nSecond	= kMatch != null ? Number(kMatch.slice(1, 6).join("") + (kMatch[6] ?? "00")) : kLine.nDateHour * 10000;	// 줄 초
+		        const	kMatch	= /^\[(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?/.exec(kLine.sText);						// 줄 앞 시간
+		        const	nSecond	= kMatch != null ? Number(kMatch.slice(1, 6).join("") + (kMatch[6] ?? "00")) : kLine.nDateHour * 10000;	// 줄 초
 
 		        return nSecond >= nFrom && nSecond < nTo;
 		    }
@@ -597,7 +597,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            Query.SetRecent();
 		        }
 
-		        const kFilter = GetFilter();
+		        const	kFilter	= GetFilter();
 
 		        if (kFilter.sKey === "")	// 검색어 없음
 		        {
@@ -614,7 +614,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            return;
 		        }
 
-		        const arrMachine = kFilter.arrMachine;	// 검색할 머신 (목록 순서)
+		        const	arrMachine	= kFilter.arrMachine;	// 검색할 머신 (목록 순서)
 
 		        if (arrMachine.length === 0)	// 접속 머신 없음
 		        {
@@ -658,7 +658,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        Search.ShowResultPage(0);
 		        Search.RenderProgress(Search.kProgressInfo);
 
-		        const nProgressTimer = setInterval(Search.ShowProgress, Search.PROGRESS_MS);	// 진행 표시 갱신
+		        const	nProgressTimer	= setInterval(Search.ShowProgress, Search.PROGRESS_MS);	// 진행 표시 갱신
 		        const nProgressPopup = setTimeout(() =>	// 팝업: X초 이상 걸릴 때만 (정확히 X초)
 		        {
 		            if (Search.kProgressInfo != null)
@@ -669,26 +669,26 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            }
 		        }, PROGRESS_DELAY_MS);
 
-		        const sScope		= kFilter.sMachine === "전체" ? "전체" : "선택";	// 제목 머신 범위 (전체·선택)
-		        const nBegin		= performance.now();	// 검색 시작 시각
+		        const	sScope	= kFilter.sMachine === "전체" ? "전체" : "선택";	// 제목 머신 범위 (전체·선택)
+		        const	nBegin	= performance.now();	// 검색 시작 시각
 
 		        kResultTitle.textContent = `${sScope} - 서치 중: 머신 0/${arrMachine.length} 완료 · 0건`;	// 첫 머신 결과 전: 앞 검색 제목 지움
-		        const nSearchMachineMax	= nMachineMax;		// 이번 검색 머신당 최대 (설정, 검색 중 변경 불가)
-		        const nSearchResultMax	= nResultMax;		// 이번 검색 전체 최대 (설정)
-		        const arrNotice		= [];					// 머신별 오류·일부 표시 안내
-		        const arrOver		= [];					// 머신당 최대(nSearchMachineMax) 넘은 머신
-		        const arrStopped	= [];					// 중지로 그때까지 결과만 받은 머신
-		        const arrWait		= new Array(arrMachine.length);	// 받은 머신 결과 (앞 머신이 아직이면 보관, undefined: 아직 안 옴)
-		        const kAbort		= new AbortController();	// 전체 최대 넘으면 결과 받기 중단
-		        let nNext			= 0;					// 다음에 서치 1번 창에 넣을 머신 순서
-		        let nFileCount		= 0;					// 검색한 파일 수
-		        let bTotalOver		= false;				// 전체 최대(nSearchResultMax) 넘음
-		        let nSkipMachine	= 0;					// 전체 최대 넘어 표시 안 한 머신 수
+		        const	nSearchMachineMax	= nMachineMax;					// 이번 검색 머신당 최대 (설정, 검색 중 변경 불가)
+		        const	nSearchResultMax	= nResultMax;					// 이번 검색 전체 최대 (설정)
+		        const	arrNotice			= [];							// 머신별 오류·일부 표시 안내
+		        const	arrOver				= [];							// 머신당 최대(nSearchMachineMax) 넘은 머신
+		        const	arrStopped			= [];							// 중지로 그때까지 결과만 받은 머신
+		        const	arrWait				= new Array(arrMachine.length);	// 받은 머신 결과 (앞 머신이 아직이면 보관, undefined: 아직 안 옴)
+		        const	kAbort				= new AbortController();		// 전체 최대 넘으면 결과 받기 중단
+		        let		nNext				= 0;							// 다음에 서치 1번 창에 넣을 머신 순서
+		        let		nFileCount			= 0;							// 검색한 파일 수
+		        let		bTotalOver			= false;						// 전체 최대(nSearchResultMax) 넘음
+		        let		nSkipMachine		= 0;							// 전체 최대 넘어 표시 안 한 머신 수
 
 		        const funcAdd = (nIndex, kData) =>	// 머신 1대 결과를 서치 1번 창에 추가 (머신 순서대로 호출, 전체 최대 넘으면 bTotalOver)
 		        {
-		            const sMachine	= arrMachine[nIndex];
-		            const kResult	= kData.kResult;
+		            const	sMachine	= arrMachine[nIndex];
+		            const	kResult		= kData.kResult;
 
 		            if (kData.sError !== "" || kResult == null)	// 미접속·시간 초과 등
 		            {
@@ -697,9 +697,9 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		                return;
 		            }
 
-		            const nFrom		= Search.arrResult.length;	// 이번 머신 결과 시작 번호
-		            const nRoom		= nSearchResultMax - nFrom;	// 전체 최대까지 남은 건수
-		            const arrLine	= kResult.arrLine.filter(kLine => Search.IsInRange(kLine, kFilter.nStartSec, kFilter.nEndSec));	// 초 범위 안 줄만 (S <= 줄 < E, 검색은 시간 파일 단위)
+		            const	nFrom	= Search.arrResult.length;	// 이번 머신 결과 시작 번호
+		            const	nRoom	= nSearchResultMax - nFrom;	// 전체 최대까지 남은 건수
+		            const	arrLine	= kResult.arrLine.filter(kLine => Search.IsInRange(kLine, kFilter.nStartSec, kFilter.nEndSec));	// 초 범위 안 줄만 (S <= 줄 < E, 검색은 시간 파일 단위)
 
 		            nFileCount += kResult.nFileCount;
 
@@ -734,7 +734,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        {
 		            while (!bTotalOver && nNext < arrMachine.length)
 		            {
-		                const kData = arrWait[nNext];
+		                const	kData	= arrWait[nNext];
 
 		                if (kData === undefined && !bEnd)	// 앞 머신 아직
 		                {
@@ -763,7 +763,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		                return;
 		            }
 
-		            const kData = JSON.parse(sLine);
+		            const	kData	= JSON.parse(sLine);
 
 		            if (!(kData.nIndex >= 0 && kData.nIndex < arrMachine.length) || arrWait[kData.nIndex] !== undefined)	// 잘못된·중복 줄
 		            {
@@ -789,15 +789,15 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arrMachine: arrMachine, nStart: kFilter.nStart, nEnd: kFilter.nEnd, sKey: kFilter.sKey, nMax: nSearchMachineMax, nLimit: nSearchLimitSec, sToken: Search.sSearchToken }), cache: "no-store", signal: kAbort.signal });	// 모든 머신 동시 검색 (한 줄 = 머신 1대, 끝난 순서, nLimit: 서치 제한 시간 설정)
+		            const	kResponse	= await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arrMachine: arrMachine, nStart: kFilter.nStart, nEnd: kFilter.nEnd, sKey: kFilter.sKey, nMax: nSearchMachineMax, nLimit: nSearchLimitSec, sToken: Search.sSearchToken }), cache: "no-store", signal: kAbort.signal });	// 모든 머신 동시 검색 (한 줄 = 머신 1대, 끝난 순서, nLimit: 서치 제한 시간 설정)
 
 		            if (!kResponse.ok)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            const kReader	= kResponse.body.pipeThrough(new TextDecoderStream()).getReader();	// UTF-8 → 문자열 조각
-		            let arrPart		= [];	// 받는 중인 줄 조각 (큰 줄을 조각마다 처음부터 다시 찾지 않음)
+		            const	kReader	= kResponse.body.pipeThrough(new TextDecoderStream()).getReader();	// UTF-8 → 문자열 조각
+		            let		arrPart	= [];	// 받는 중인 줄 조각 (큰 줄을 조각마다 처음부터 다시 찾지 않음)
 
 		            while (true)
 		            {
@@ -808,7 +808,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		                    break;
 		                }
 
-		                let nPos = 0;	// 조각에서 다음 줄 시작
+		                let	nPos	= 0;	// 조각에서 다음 줄 시작
 
 		                for (let nFind = sChunk.indexOf("\n"); nFind !== -1; nFind = sChunk.indexOf("\n", nPos))
 		                {
@@ -893,7 +893,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        if (arrOver.length > 0 || bTotalOver)	// 최대 초과 안내 팝업 (확인으로 닫힘): 머신당 초과 머신 목록, 맨 아래 전체 초과
 		        {
-		            const arrText = [];	// 팝업 줄
+		            const	arrText	= [];	// 팝업 줄
 
 		            if (arrOver.length > 0)
 		            {
@@ -927,14 +927,14 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            }
 		        }
 
-		        const nIndex = Search.nHistory + nDirection;	// 갈 단계
+		        const	nIndex	= Search.nHistory + nDirection;	// 갈 단계
 
 		        if (nIndex < 0 || nIndex >= Search.arrHistory.length)
 		        {
 		            return;
 		        }
 
-		        const kStep = Search.arrHistory[nIndex];	// 그 단계
+		        const	kStep	= Search.arrHistory[nIndex];	// 그 단계
 
 		        Search.nHistory = nIndex;
 
@@ -944,7 +944,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        kQueryRange.selectedIndex = kStep.nRange ?? 0;	// D 도 그 단계로 (쿼리 ← → 와 같음, 예전 단계: 해제)
 
-		        const kResult = Search.mapStepResult.get(kStep);	// 그 단계 마지막 결과
+		        const	kResult	= Search.mapStepResult.get(kStep);	// 그 단계 마지막 결과
 
 		        if (kResult !== undefined)	// 결과 있음: 다시 검색 안 함
 		        {
@@ -970,7 +970,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        Search.arrResultStep = Search.arrResultStep.filter(kItem => kItem !== kStep && Search.arrHistory.includes(kItem));
 		        Search.arrResultStep.push(kStep);
 
-		        let nKeep = 0;	// 새 단계부터 센 보관 줄 수
+		        let	nKeep	= 0;	// 새 단계부터 센 보관 줄 수
 
 		        for (let nIndex = Search.arrResultStep.length - 1; nIndex >= 0; --nIndex)
 		        {
@@ -1056,8 +1056,8 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static LoadViewPos()	// 서치 2번 창 기준 줄 (kView.nPos) 위·아래 VIEW_COUNT 줄씩 새로 읽기 (기준 줄: 보이는 줄 가운데)
 		    {
-		        const kView	= Search.kView;
-		        const nFrom	= Math.max(1, kView.nPos - Search.VIEW_COUNT);
+		        const	kView	= Search.kView;
+		        const	nFrom	= Math.max(1, kView.nPos - Search.VIEW_COUNT);
 
 		        Search.LoadView(nFrom, kView.nPos - nFrom + 1 + Search.VIEW_COUNT, 0);
 		    }
@@ -1069,7 +1069,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static async LoadView(nStart, nCount, nDirection)	// 서치 2번 창 nStart 줄부터 nCount 줄 읽기 (nStart 0: 마지막, nDirection 0: 새로·-1: 위에 붙임·1: 아래에 붙임·2: 그 위치로 바꿈, 그 사이 다른 파일: 버림)
 		    {
-		        const kTarget = Search.kView;	// 요청한 파일
+		        const	kTarget	= Search.kView;	// 요청한 파일
 
 		        if (kTarget == null || kTarget.bLoading)
 		        {
@@ -1086,16 +1086,16 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        try
 		        {
-		            const kParam	= new URLSearchParams({ sMachine: kTarget.sMachine, sPath: kTarget.sPath, nStart: nStart, nCount: nCount });
-		            const kData		= await FetchJson("/api/view?" + kParam, { cache: "no-store" });
+		            const	kParam	= new URLSearchParams({ sMachine: kTarget.sMachine, sPath: kTarget.sPath, nStart: nStart, nCount: nCount });
+		            const	kData	= await FetchJson("/api/view?" + kParam, { cache: "no-store" });
 
 		            if (kTarget !== Search.kView)	// 그 사이 다른 파일·처음·끝
 		            {
 		                return;
 		            }
 
-		            const kResult	= kData.kResult;
-		            const sError	= kData.sError !== "" ? kData.sError : (kResult == null ? "결과 없음" : kResult.sError);
+		            const	kResult	= kData.kResult;
+		            const	sError	= kData.sError !== "" ? kData.sError : (kResult == null ? "결과 없음" : kResult.sError);
 
 		            if (sError !== "")
 		            {
@@ -1110,15 +1110,15 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		                return;
 		            }
 
-		            const kFragment	= document.createDocumentFragment();	// 새 내용 (다 만든 뒤 한 번에 붙임)
-		            const nCountRead	= kResult.arrText.length;				// 읽은 줄 수
-		            let kPosLine		= null;									// 기준 줄 (처음: 클릭한 줄)
+		            const	kFragment	= document.createDocumentFragment();	// 새 내용 (다 만든 뒤 한 번에 붙임)
+		            const	nCountRead	= kResult.arrText.length;				// 읽은 줄 수
+		            let		kPosLine	= null;									// 기준 줄 (처음: 클릭한 줄)
 
 		            kResult.arrText.forEach((sText, nIndex) =>
 		            {
-		                const nLine	= kResult.nStart + nIndex;
-		                const kLine	= document.createElement("span");
-		                const kNo	= document.createElement("span");
+		                const	nLine	= kResult.nStart + nIndex;
+		                const	kLine	= document.createElement("span");
+		                const	kNo		= document.createElement("span");
 
 		                kLine.className	= "line";
 		                kNo.className	= "lno";
@@ -1189,19 +1189,19 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		                    kTarget.nPos	= kTarget.nLast;
 		                }
 
-		                const bEnd = nStart === 0;	// 끝 (줄 모름): 맨 아래
+		                const	bEnd	= nStart === 0;	// 끝 (줄 모름): 맨 아래
 
 		                if (kPosLine != null && !bEnd)	// 기준 줄: 보이는 줄 가운데 (줄 보기·보기 새 창 공통 GetCenterAbove, 가로: 맨 왼쪽)
 		                {
-		                    const nAboveMax	= GetCenterAbove(kViewScroll, kViewBody);	// 위에 보일 줄 수
-		                    let kTop		= kPosLine;	// 맨 위에 보일 줄
+		                    const	nAboveMax	= GetCenterAbove(kViewScroll, kViewBody);	// 위에 보일 줄 수
+		                    let		kTop		= kPosLine;	// 맨 위에 보일 줄
 
 		                    for (let nAbove = 0; nAbove < nAboveMax && kTop.previousElementSibling != null; ++nAbove)
 		                    {
 		                        kTop = kTop.previousElementSibling;
 		                    }
 
-		                    const nShort = kTop.offsetTop + kViewScroll.clientHeight - (kViewBody.offsetTop + kViewBody.offsetHeight);	// 그 줄을 위 끝에 두기에 모자란 높이 (파일 끝 가까움, 아래 빈 높이 포함)
+		                    const	nShort	= kTop.offsetTop + kViewScroll.clientHeight - (kViewBody.offsetTop + kViewBody.offsetHeight);	// 그 줄을 위 끝에 두기에 모자란 높이 (파일 끝 가까움, 아래 빈 높이 포함)
 
 		                    if (kTop.previousElementSibling != null && nShort > 0)	// 아래 여백 늘림 → 그 줄부터 보이고 앞 줄은 위로 스크롤
 		                    {
@@ -1249,8 +1249,8 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		    static SyncViewHScroll()	// 서치 2번 창 아래 좌우 바: 좌우 넘침 + 창 아래쪽이 화면 밖일 때만 표시, 이동 범위·위치 맞춤
 		    {
-		        const kRect	= kViewScroll.getBoundingClientRect();
-		        const bShow	= kViewScroll.offsetParent != null && kViewScroll.scrollWidth > kViewScroll.clientWidth && kRect.top < window.innerHeight && kRect.bottom > window.innerHeight;
+		        const	kRect	= kViewScroll.getBoundingClientRect();
+		        const	bShow	= kViewScroll.offsetParent != null && kViewScroll.scrollWidth > kViewScroll.clientWidth && kRect.top < window.innerHeight && kRect.bottom > window.innerHeight;
 
 		        kViewHScroll.hidden = !bShow;
 
@@ -1300,7 +1300,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 
 	public static bool IsValid(string sKey)	// 검색어 형식 맞음 (빈 괄호·연산자로 시작·끝·빈 검색어: false, 페이지 Key.IsValid 와 같음)
 	{
-		string sTrim = sKey.Trim();
+		string	sTrim	= sKey.Trim();
 
 		if (sTrim == "")
 		{
@@ -1308,14 +1308,14 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 		}
 
 		List<(char cType, string sTerm)>?	listToken	= Tokenize(sTrim);	// 토큰 (null: 형식 오류)
-		int									nIndex		= 0;				// 읽을 토큰
+		int	nIndex	= 0;	// 읽을 토큰
 
 		return listToken != null && ParseExpr(listToken, ref nIndex) != null && nIndex == listToken.Count && !listToken.Any(kToken => kToken.cType == 'T' && Regex.IsMatch(kToken.sTerm.Trim(), @"^(AND|OR|NOT)(\s|$)|\s(AND|OR|NOT)$", RegexOptions.IgnoreCase));	// 검색어가 AND·OR·NOT (대소문자 무시) 로 시작·끝남 (예: "A AND"): 연산자 빠짐으로 봄
 	}
 
 	public static SearchNode? Parse(string sKey)	// 검색어 → 조건 트리 (빈 검색어: null, 형식 오류: 전체를 검색어 하나로)
 	{
-		string sTrim = sKey.Trim();
+		string	sTrim	= sKey.Trim();
 
 		if (sTrim == "")
 		{
@@ -1336,7 +1336,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 
 	private static SearchNode? ParseExpr(List<(char cType, string sTerm)> listToken, ref int nIndex)	// 식: 항 (연산자 항)… 왼쪽부터 차례로 (null: 형식 오류)
 	{
-		SearchNode? kLeft = ParseTerm(listToken, ref nIndex);	// 지금까지 결과
+		SearchNode?	kLeft	= ParseTerm(listToken, ref nIndex);	// 지금까지 결과
 
 		while (kLeft != null && nIndex < listToken.Count && listToken[nIndex].cType != ')')
 		{
@@ -1355,7 +1355,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 
 			++nIndex;
 
-			SearchNode? kRight = ParseTerm(listToken, ref nIndex);
+			SearchNode?	kRight	= ParseTerm(listToken, ref nIndex);
 
 			kLeft = kRight == null ? null : new SearchNode(eOp, "", kLeft, kRight);
 		}
@@ -1382,7 +1382,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 			return null;
 		}
 
-		SearchNode? kInner = ParseExpr(listToken, ref nIndex);	// 괄호 안
+		SearchNode?	kInner	= ParseExpr(listToken, ref nIndex);	// 괄호 안
 
 		if (nIndex < listToken.Count && listToken[nIndex].cType == ')')
 		{
@@ -1395,9 +1395,9 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 	private static List<(char cType, string sTerm)>? Tokenize(string sKey)	// 토큰 나누기: 검색어 T·AND &·OR |·NOT !·괄호 (null: 형식 오류)
 	{
 		List<(char cType, string sTerm)>	listToken	= new List<(char cType, string sTerm)>();
-		int									nPos		= 0;	// 읽을 위치
-		int									nDepth		= 0;	// 열린 괄호 수
-		bool								bOperand	= true;	// 검색어·여는 괄호 차례 (false: 연산자·닫는 괄호 차례)
+		int		nPos		= 0;	// 읽을 위치
+		int		nDepth		= 0;	// 열린 괄호 수
+		bool	bOperand	= true;	// 검색어·여는 괄호 차례 (false: 연산자·닫는 괄호 차례)
 
 		while (true)
 		{
@@ -1423,7 +1423,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 
 			if (bOperand)	// 검색어: 다음 연산자·닫는 괄호 앞까지
 			{
-				int nEnd = FindTermEnd(sKey, nPos, nDepth);	// 검색어 끝
+				int	nEnd	= FindTermEnd(sKey, nPos, nDepth);	// 검색어 끝
 
 				listToken.Add(('T', sKey[nPos..nEnd].Trim()));
 
@@ -1443,7 +1443,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 				continue;
 			}
 
-			int nOpLength = GetOperator(sKey, nPos, out char cType);	// 연산자 길이 (0: 아님)
+			int	nOpLength	= GetOperator(sKey, nPos, out char cType);	// 연산자 길이 (0: 아님)
 
 			if (nOpLength == 0)	// 연산자 자리에 다른 글자 (예: (A) B)
 			{
@@ -1461,15 +1461,15 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 
 	private static int FindTermEnd(string sKey, int nStart, int nDepth)	// 검색어 끝: 공백 뒤 연산자·괄호 안 닫는 괄호 앞 (검색어 안 짝 맞는 괄호: 검색어 글자)
 	{
-		int nInner = 0;	// 검색어 안에서 열린 괄호 수 (예: Init(x))
+		int	nInner	= 0;	// 검색어 안에서 열린 괄호 수 (예: Init(x))
 
 		for (int nIndex = nStart; nIndex < sKey.Length; ++nIndex)
 		{
-			char cChar = sKey[nIndex];
+			char	cChar	= sKey[nIndex];
 
 			if (char.IsWhiteSpace(cChar))	// 공백 뒤 연산자·닫는 괄호면 여기서 끝
 			{
-				int nNext = nIndex;	// 공백 다음 글자
+				int	nNext	= nIndex;	// 공백 다음 글자
 
 				while (nNext < sKey.Length && char.IsWhiteSpace(sKey[nNext]))
 				{
@@ -1505,7 +1505,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 
 	private static bool IsClose(string sKey, int nPos)	// nPos 의 ')' 가 닫는 괄호 (뒤에 공백·')' 만 이어진 뒤 끝·연산자, 아님: 검색어 글자)
 	{
-		int nNext = nPos + 1;	// 뒤 글자
+		int	nNext	= nPos + 1;	// 뒤 글자
 
 		while (nNext < sKey.Length && (char.IsWhiteSpace(sKey[nNext]) || sKey[nNext] == ')'))
 		{
@@ -1519,7 +1519,7 @@ class SearchNode	// 검색 조건 트리 (서치·쿼리 공통, Client SearchNo
 	{
 		foreach ((string sWord, char cOp) in new[] { ("AND", '&'), ("OR", '|'), ("NOT", '!') })	// 대소문자 무시
 		{
-			int nNext = nPos + sWord.Length;	// 연산자 뒤 글자
+			int	nNext	= nPos + sWord.Length;	// 연산자 뒤 글자
 
 			if (string.Compare(sKey, nPos, sWord, 0, sWord.Length, StringComparison.OrdinalIgnoreCase) == 0 && nNext < sKey.Length && (char.IsWhiteSpace(sKey[nNext]) || sKey[nNext] == '('))
 			{

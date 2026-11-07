@@ -1,11 +1,12 @@
 static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyyMMdd.jsonl 추가 전용 (1줄 = 발송 작업 결과 1건, 받는 곳 안 씀) + 조회 API, 알람 기록 (날짜·제목·내용·결과): Data\Alarm\history.jsonl 최신 X건 + 조회 API (전체, 최신 순)
 {
-	private const int				m_nPageSize	= 100;	// 조회 한 페이지 줄 수
-	private const int				m_nDayMax	= 31;	// 조회 최대 기간 (일, 메모리 보호)
-	private const int				m_nPageMax	= 100;	// 조회 최대 페이지 (보관 줄 수 상한)
-	private const int				m_nHistoryMax	= 1000;	// 알람 기록 최대 건수 (최신만, 넘음: 오래된 것 지움)
-	private static long				m_nLogId	= GetNow().ToUnixTimeMilliseconds() * 100;	// 줄 번호 (시작 시각 기준 → 재시작해도 겹침 없음)
-	private static readonly object	m_kLock		= new object();	// 파일 추가 1건씩
+	private const int	m_nPageSize		= 100;	// 조회 한 페이지 줄 수
+	private const int	m_nDayMax		= 31;	// 조회 최대 기간 (일, 메모리 보호)
+	private const int	m_nPageMax		= 100;	// 조회 최대 페이지 (보관 줄 수 상한)
+	private const int	m_nHistoryMax	= 1000;	// 알람 기록 최대 건수 (최신만, 넘음: 오래된 것 지움)
+
+	private static long				m_nLogId		= GetNow().ToUnixTimeMilliseconds() * 100;	// 줄 번호 (시작 시각 기준 → 재시작해도 겹침 없음)
+	private static readonly object	m_kLock			= new object();	// 파일 추가 1건씩
 	private static readonly object	m_kHistoryLock	= new object();	// 알람 기록 읽기·쓰기 1건씩
 	private static List<string>?	m_listHistory;					// 알람 기록 줄 (오래된 순, 처음 쓰기·조회 때 파일에서 읽음)
 
@@ -33,7 +34,7 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 			["nTry"]		= kJob.nTry,
 			["sDone"]		= GetNow().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
 		}.ToJsonString(new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });	// 줄 (JSON)
-		string sFile = Path.Combine(GetBaseDir(), "Data", "Alarm", "log", GetNow().ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
+		string	sFile	= Path.Combine(GetBaseDir(), "Data", "Alarm", "log", GetNow().ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
 
 		lock (m_kLock)
 		{
@@ -64,11 +65,11 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 			["sText"]		= kJob.sText,
 			["sLink"]		= kJob.sLink,
 		}.ToJsonString(new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });	// 줄 (JSON: 날짜·알람·채널·결과·사유·제목·내용·쿼리 링크, 내용 줄바꿈: \n)
-		string sFile = GetHistoryFile();
+		string	sFile	= GetHistoryFile();
 
 		lock (m_kHistoryLock)
 		{
-			List<string> listHistory = LoadHistory();
+			List<string>	listHistory	= LoadHistory();
 
 			listHistory.Add(sLine);
 
@@ -92,14 +93,14 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 
 	public static IResult OnHistory()	// 알람 기록 조회: 전체 (최신 X건) 최신 순 → {sError, arrHistory: [{sDone, nID, sKey, sChannel, sResult, sError, nTry, sTitle, sText, sLink}]}
 	{
-		string[] arrLine;	// 기록 줄 (오래된 순)
+		string[]	arrLine;	// 기록 줄 (오래된 순)
 
 		lock (m_kHistoryLock)
 		{
 			arrLine = LoadHistory().ToArray();
 		}
 
-		List<JsonNode> listHistory = new List<JsonNode>();	// 최신 순
+		List<JsonNode>	listHistory	= new List<JsonNode>();	// 최신 순
 
 		foreach (string sLine in arrLine.Reverse())
 		{
@@ -127,7 +128,7 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 
 		m_listHistory = new List<string>();
 
-		string sFile = GetHistoryFile();
+		string	sFile	= GetHistoryFile();
 
 		try
 		{
@@ -152,7 +153,7 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 	public static IResult OnLog(long? nStart, long? nEnd, int? nID, string? sResult, int? nPage)	// 알람 로그 조회: 기간 (yyyyMMddHHmm, 기록 날짜 파일, 최대 X일)·알람 ID·결과 → 최신 순 페이지 {sError, nTotal, nPage, nPageSize, arrLog}
 	{
 		DateTime	kNow	= GetNow().DateTime;
-		DateTime	kEnd	= nEnd != null && DateTime.TryParseExact(nEnd.ToString(), "yyyyMMddHHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime kEndValue) ? kEndValue : kNow;	// 끝 (없음: 지금)
+		DateTime	kEnd	= nEnd != null && DateTime.TryParseExact(nEnd.ToString(), "yyyyMMddHHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime kEndValue) ? kEndValue : kNow;						// 끝 (없음: 지금)
 		DateTime	kStart	= nStart != null && DateTime.TryParseExact(nStart.ToString(), "yyyyMMddHHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime kStartValue) ? kStartValue : kEnd.AddDays(-1);	// 시작 (없음: 1일 전)
 
 		if (kStart > kEnd || (kEnd - kStart).TotalDays > m_nDayMax)
@@ -160,14 +161,14 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 			return Results.Json(new { sError = $"기간 오류 (최대 {m_nDayMax}일)", nTotal = 0, nPage = 0, nPageSize = m_nPageSize, arrLog = Array.Empty<object>() });
 		}
 
-		int				nPageValue	= Math.Clamp(nPage ?? 0, 0, m_nPageMax);			// 페이지 (0부터, 상한: 메모리)
-		int				nKeep		= (nPageValue + 1) * m_nPageSize;				// 보관할 최신 줄 수 (이 페이지까지)
-		Queue<JsonNode>	queueLog	= new Queue<JsonNode>();						// 맞는 줄 중 최신 nKeep 개 (오래된 순)
-		int				nTotal		= 0;											// 맞는 줄 수
+		int				nPageValue	= Math.Clamp(nPage ?? 0, 0, m_nPageMax);	// 페이지 (0부터, 상한: 메모리)
+		int				nKeep		= (nPageValue + 1) * m_nPageSize;			// 보관할 최신 줄 수 (이 페이지까지)
+		Queue<JsonNode>	queueLog	= new Queue<JsonNode>();					// 맞는 줄 중 최신 nKeep 개 (오래된 순)
+		int				nTotal		= 0;										// 맞는 줄 수
 
 		for (DateTime kDay = kStart.Date; kDay <= kEnd.Date; kDay = kDay.AddDays(1))
 		{
-			string sFile = Path.Combine(GetBaseDir(), "Data", "Alarm", "log", kDay.ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
+			string	sFile	= Path.Combine(GetBaseDir(), "Data", "Alarm", "log", kDay.ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
 
 			if (!File.Exists(sFile))
 			{

@@ -2,11 +2,11 @@ using StackExchange.Redis;	// Redis 명령 (이 파일·Redis·TabOperation 만,
 
 class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이식, 요청·응답 형식 같음): 서버 목록 (공통 Redis 의 Redis:sProcess + 존 키, 예: HMX:Process:Dev:) 조회·등록·수정·삭제·이름 변경, On·Off·Down 지시 → 머신별 HMXClient 처리, 작업 로그·에러 (로그인: 공통 Auth)
 {
-	private const string	TEXT_PLAIN	= "text/plain; charset=utf-8";	// 텍스트 응답 형식
+	private const string	TEXT_PLAIN		= "text/plain; charset=utf-8";	// 텍스트 응답 형식
 	private const string	DEFAULT_PROCESS	= "HMX:Process:";				// 서버 목록 키 접두사 기본값 (Redis:sProcess 없음)
 	private const string	DEFAULT_ERROR	= "HMX:Error:";					// 에러 로그 리스트 키 기본값 (Redis:sError 없음)
-	private const int		PAGE_LIMIT	= 300;							// 로그·에러 페이지당 X줄
-	private const int		ERROR_DELAY	= 3000;							// Redis 오류 응답 지연 (ms, 재시도 폭주 완화)
+	private const int		PAGE_LIMIT		= 300;							// 로그·에러 페이지당 X줄
+	private const int		ERROR_DELAY		= 3000;							// Redis 오류 응답 지연 (ms, 재시도 폭주 완화)
 
 	private readonly SemaphoreSlim	m_lockEdit;	// 버전 검증~증가 직렬화 (동시 등록·수정·삭제: 한쪽만 성공, 나머지 버전 불일치)
 
@@ -66,7 +66,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			return bAction ? Results.Json(new { success = false, error = "Redis 설정 없음 (Redis:sHost)" }) : Results.Text("오류: Redis 설정 없음 (Redis:sHost)\n", TEXT_PLAIN);
 		}
 
-		bool bVersioned = kRequest.Query.ContainsKey("version") && (sAction == "set" || sAction == "rename" || sAction == "del");	// 버전 검증·증가 대상 (등록·수정·삭제·이름 변경)
+		bool	bVersioned	= kRequest.Query.ContainsKey("version") && (sAction == "set" || sAction == "rename" || sAction == "del");	// 버전 검증·증가 대상 (등록·수정·삭제·이름 변경)
 
 		try
 		{
@@ -115,7 +115,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 		}
 		catch (Exception kException)	// Redis 오류 등: 에러 로그 후 지연
 		{
-			string sError = GetErrorText(kException);
+			string	sError	= GetErrorText(kException);
 
 			ProcessLog.Write(ERROR, $"요청 처리 오류(action={(bAction ? sAction : "list")}): {sError} ({GetUser(kContext)})");
 
@@ -127,9 +127,9 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 	private static IResult OnActLog(HttpContext kContext)	// 시작·정지·다운 클릭 로그 (전체·그룹·개별 한 줄, 예: 그룹: 888,1_Center,On → (id@10.1.2.3))
 	{
-		string sKind	= GetQuery(kContext.Request, "kind");	// 전체·그룹·개별
-		string sTarget	= GetQuery(kContext.Request, "target");	// 대상 키 파트 (예: 888 / 888,1_Center / 888,1_Center,0_Common)
-		string sStatus	= GetQuery(kContext.Request, "status");	// On·Off·Down
+		string	sKind	= GetQuery(kContext.Request, "kind");	// 전체·그룹·개별
+		string	sTarget	= GetQuery(kContext.Request, "target");	// 대상 키 파트 (예: 888 / 888,1_Center / 888,1_Center,0_Common)
+		string	sStatus	= GetQuery(kContext.Request, "status");	// On·Off·Down
 
 		if (sKind == "" || sTarget == "" || (sStatus != "On" && sStatus != "Off" && sStatus != "Down"))	// 파라미터 검사 및 조기 반환
 		{
@@ -156,14 +156,14 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 		kEnd = kEnd.AddSeconds(59);	// 끝 분의 59초까지
 
-		string sDir		= GetQuery(kRequest, "dir");		// "": 최신부터, next: 더 과거, prev: 더 최신
-		string sCursor	= GetQuery(kRequest, "cursor");	// "yyyyMMdd_HH:바이트 오프셋" (줄 시작 위치)
+		string	sDir	= GetQuery(kRequest, "dir");	// "": 최신부터, next: 더 과거, prev: 더 최신
+		string	sCursor	= GetQuery(kRequest, "cursor");	// "yyyyMMdd_HH:바이트 오프셋" (줄 시작 위치)
 
-		List<string> listStamp = new List<string>();	// 범위 안 있는 시간별 파일 스탬프 (오름차순, 고정 폭 → 문자열 비교 = 시간순)
+		List<string>	listStamp	= new List<string>();	// 범위 안 있는 시간별 파일 스탬프 (오름차순, 고정 폭 → 문자열 비교 = 시간순)
 
 		for (DateTime kStamp = kStart.Date.AddHours(kStart.Hour); kStamp <= kEnd; kStamp = kStamp.AddHours(1))
 		{
-			string sStamp = kStamp.ToString("yyyyMMdd_HH", CultureInfo.InvariantCulture);
+			string	sStamp	= kStamp.ToString("yyyyMMdd_HH", CultureInfo.InvariantCulture);
 
 			if (File.Exists(Log.GetFile(sStamp)))
 			{
@@ -181,7 +181,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			nCurOffset	= long.TryParse(sCursor.Substring(nColon + 1), out long nValue) ? nValue : 0;
 		}
 
-		List<ProcessLogLine> listOut = new List<ProcessLogLine>();	// 모은 줄 (최종 내림차순)
+		List<ProcessLogLine>	listOut	= new List<ProcessLogLine>();	// 모은 줄 (최종 내림차순)
 
 		if (sDir == "prev" && sCurStamp != "")	// 더 최신: 커서 줄 다음부터 정방향 → 내림차순
 		{
@@ -192,8 +192,8 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 					continue;
 				}
 
-				bool bCursorFile	= sStamp == sCurStamp;
-				bool bReachedEnd	= ProcessLog.CollectForward(sStamp, bCursorFile ? nCurOffset : 0, bCursorFile, PAGE_LIMIT - listOut.Count, kStart, kEnd, listOut);
+				bool	bCursorFile	= sStamp == sCurStamp;
+				bool	bReachedEnd	= ProcessLog.CollectForward(sStamp, bCursorFile ? nCurOffset : 0, bCursorFile, PAGE_LIMIT - listOut.Count, kStart, kEnd, listOut);
 
 				if (listOut.Count >= PAGE_LIMIT || bReachedEnd)
 				{
@@ -207,15 +207,15 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 		{
 			for (int nIndex = listStamp.Count - 1; nIndex >= 0; --nIndex)
 			{
-				string sStamp = listStamp[nIndex];
+				string	sStamp	= listStamp[nIndex];
 
 				if (sCurStamp != "" && string.CompareOrdinal(sStamp, sCurStamp) > 0)	// 커서보다 미래 파일
 				{
 					continue;
 				}
 
-				bool bCursorFile	= sStamp == sCurStamp;
-				bool bReachedStart	= ProcessLog.CollectBackward(sStamp, bCursorFile ? nCurOffset : -1, PAGE_LIMIT - listOut.Count, kStart, kEnd, listOut);
+				bool	bCursorFile		= sStamp == sCurStamp;
+				bool	bReachedStart	= ProcessLog.CollectBackward(sStamp, bCursorFile ? nCurOffset : -1, PAGE_LIMIT - listOut.Count, kStart, kEnd, listOut);
 
 				if (listOut.Count >= PAGE_LIMIT || bReachedStart)
 				{
@@ -245,25 +245,25 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 	private static async Task<IResult> OnErrLog(HttpRequest kRequest)	// 에러 로그: Redis 에러 리스트 (Redis:sError + 존) offset 부터 X개
 	{
-		long nOffset = long.TryParse(GetQuery(kRequest, "offset"), out long nValue) ? Math.Max(0, nValue) : 0;	// 시작 위치 (0: 최신)
+		long	nOffset	= long.TryParse(GetQuery(kRequest, "offset"), out long nValue) ? Math.Max(0, nValue) : 0;	// 시작 위치 (0: 최신)
 
-		RedisValue[] arrValue = await Redis.GetDb().ListRangeAsync(GetErrorKey(), nOffset, nOffset + PAGE_LIMIT - 1);
+		RedisValue[]	arrValue	= await Redis.GetDb().ListRangeAsync(GetErrorKey(), nOffset, nOffset + PAGE_LIMIT - 1);
 
 		return Results.Text(string.Join("\n", arrValue.Select(kValue => kValue.ToString())), TEXT_PLAIN);
 	}
 
 	private static async Task<IResult> OnSet(HttpContext kContext, bool bVersioned)	// 값 저장 (등록·수정: 버전 검증·증가, On·Off·Down: version 없음 → 제외)
 	{
-		IResult? kStale = bVersioned ? CheckVersion(kContext) : null;
+		IResult?	kStale	= bVersioned ? CheckVersion(kContext) : null;
 
 		if (kStale != null)	// 버전 불일치: 다른 곳에서 변경
 		{
 			return kStale;
 		}
 
-		string sField	= GetQuery(kContext.Request, "field");
-		string sValue	= GetQuery(kContext.Request, "value");
-		string sLog		= GetQuery(kContext.Request, "log");	// 동작 구분 (toggle·add·edit)
+		string	sField	= GetQuery(kContext.Request, "field");
+		string	sValue	= GetQuery(kContext.Request, "value");
+		string	sLog	= GetQuery(kContext.Request, "log");	// 동작 구분 (toggle·add·edit)
 
 		if (sField == "")	// 파라미터 검사 및 조기 반환
 		{
@@ -290,29 +290,29 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			ProcessLog.Write(INFO_, $"액션: {sField} → [{GetState(sValue)}]");
 		}
 
-		int nVersion = bVersioned ? ProcessVersion.Up() : ProcessVersion.Get();	// 등록·수정 성공: 버전 +1
+		int	nVersion	= bVersioned ? ProcessVersion.Up() : ProcessVersion.Get();	// 등록·수정 성공: 버전 +1
 
 		return Results.Json(new { success = true, field = sField, value = sValue, version = nVersion });
 	}
 
 	private static async Task<IResult> OnRename(HttpContext kContext, bool bVersioned)	// 이름 변경: field·newfield 쌍 여러 개 → 버전 검증 1번으로 일괄 (하나라도 어긋남: 전체 중단)
 	{
-		IResult? kStale = bVersioned ? CheckVersion(kContext) : null;
+		IResult?	kStale	= bVersioned ? CheckVersion(kContext) : null;
 
 		if (kStale != null)	// 버전 불일치: 다른 곳에서 변경
 		{
 			return kStale;
 		}
 
-		string[] arrField		= kContext.Request.Query["field"].Select(s => s ?? "").ToArray();
-		string[] arrNewField	= kContext.Request.Query["newfield"].Select(s => s ?? "").ToArray();
+		string[]	arrField	= kContext.Request.Query["field"].Select(s => s ?? "").ToArray();
+		string[]	arrNewField	= kContext.Request.Query["newfield"].Select(s => s ?? "").ToArray();
 
 		if (arrField.Length == 0 || arrField.Length != arrNewField.Length || arrField.Contains("") || arrNewField.Contains(""))	// 파라미터 검사 및 조기 반환
 		{
 			return Results.Json(new { success = false, error = "field and newfield are required" });
 		}
 
-		string? sBad = arrNewField.FirstOrDefault(IsBadField);	// 새 이름: 금지 글자
+		string?	sBad	= arrNewField.FirstOrDefault(IsBadField);	// 새 이름: 금지 글자
 
 		if (sBad != null)
 		{
@@ -335,11 +335,11 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			}
 		}
 
-		List<string> listFail = new List<string>();
+		List<string>	listFail	= new List<string>();
 
 		for (int nIndex = 0; nIndex < arrField.Length; ++nIndex)
 		{
-			bool bRenamed = await kDb.KeyRenameAsync(sPrefix + arrField[nIndex], sPrefix + arrNewField[nIndex], When.NotExists);	// RENAMENX
+			bool	bRenamed	= await kDb.KeyRenameAsync(sPrefix + arrField[nIndex], sPrefix + arrNewField[nIndex], When.NotExists);	// RENAMENX
 
 			if (!bRenamed)	// 미리 검사 뒤 다른 곳에서 생성
 			{
@@ -351,7 +351,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			ProcessLog.Write(INFO_, $"이름: {arrField[nIndex]} → [{arrNewField[nIndex]}] ({GetUser(kContext)})");
 		}
 
-		int nVersion = bVersioned ? ProcessVersion.Up() : ProcessVersion.Get();	// 이름 변경: 버전 +1 (일괄 1번)
+		int	nVersion	= bVersioned ? ProcessVersion.Up() : ProcessVersion.Get();	// 이름 변경: 버전 +1 (일괄 1번)
 
 		if (listFail.Count > 0)
 		{
@@ -363,14 +363,14 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 	private static async Task<IResult> OnDel(HttpContext kContext, bool bVersioned)	// 서버 삭제 (삭제 전 값: 로그)
 	{
-		IResult? kStale = bVersioned ? CheckVersion(kContext) : null;
+		IResult?	kStale	= bVersioned ? CheckVersion(kContext) : null;
 
 		if (kStale != null)	// 버전 불일치: 다른 곳에서 변경
 		{
 			return kStale;
 		}
 
-		string sField = GetQuery(kContext.Request, "field");
+		string	sField	= GetQuery(kContext.Request, "field");
 
 		if (sField == "")	// 파라미터 검사 및 조기 반환
 		{
@@ -395,7 +395,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			return Results.Json(new { success = false, error = "존재하지 않는 String 입니다: " + sField });
 		}
 
-		int nVersion = bVersioned ? ProcessVersion.Up() : ProcessVersion.Get();	// 삭제 성공: 버전 +1
+		int	nVersion	= bVersioned ? ProcessVersion.Up() : ProcessVersion.Get();	// 삭제 성공: 버전 +1
 
 		ProcessLog.Write(INFO_, $"삭제: {sField} → [{sOld}] ({GetUser(kContext)})");
 
@@ -423,7 +423,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 		for (int nIndex = 0; nIndex < arrKey.Length; ++nIndex)
 		{
-			string sField = arrKey[nIndex].Substring(sPrefix.Length);	// 접두사 뺌
+			string	sField	= arrKey[nIndex].Substring(sPrefix.Length);	// 접두사 뺌
 
 			if (sField == "" || sField.Contains(':') || arrValue[nIndex].IsNull)	// 빈 필드·다른 존 키 (존 없는 설정: 접두사 아래 존 키 섞임)·String 아닌 키·삭제된 키
 			{
@@ -448,8 +448,8 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 	private static IResult? CheckVersion(HttpContext kContext)	// 버전 일치 검사 (일치: null, 불일치: stale 응답)
 	{
-		int nClient	= int.TryParse(GetQuery(kContext.Request, "version"), out int nValue) ? nValue : 0;
-		int nFile	= ProcessVersion.Get();
+		int	nClient	= int.TryParse(GetQuery(kContext.Request, "version"), out int nValue) ? nValue : 0;
+		int	nFile	= ProcessVersion.Get();
 
 		if (nClient == nFile)
 		{
@@ -480,7 +480,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 	private static string GetErrorText(Exception kException)	// 오류 메시지 (Redis 진단 정보 등 긴 메시지: 앞부분만)
 	{
-		string sText = kException.Message;
+		string	sText	= kException.Message;
 
 		return sText.Length > 200 ? sText.Substring(0, 200) + "…" : sText;
 	}
@@ -505,7 +505,7 @@ record ProcessLogLine(string sStamp, long nOffset, string sLine);	// 조회한 �
 
 static class ProcessVersion	// 설정 버전: 기준 폴더 하위 Data\프로젝트명.txt (등록·수정·삭제·이름 변경 성공: +1, 다른 곳 변경 감지)
 {
-	private static readonly object m_lockFile = new object();	// 버전 파일 읽기·쓰기 직렬화
+	private static readonly object	m_lockFile	= new object();	// 버전 파일 읽기·쓰기 직렬화
 
 	public static string GetPath()	// 버전 파일 경로 (예: Data\Server.txt)
 	{
@@ -516,7 +516,7 @@ static class ProcessVersion	// 설정 버전: 기준 폴더 하위 Data\프로�
 	{
 		lock (m_lockFile)
 		{
-			string sPath = GetPath();
+			string	sPath	= GetPath();
 
 			try
 			{
@@ -560,7 +560,7 @@ static class ProcessVersion	// 설정 버전: 기준 폴더 하위 Data\프로�
 
 			try
 			{
-				string sPath = GetPath();
+				string	sPath	= GetPath();
 
 				File.WriteAllText(sPath + ".tmp", nVersion.ToString());	// 임시 파일 후 교체 (쓰는 중 종료: 원본 유지)
 				File.Move(sPath + ".tmp", sPath, true);
@@ -584,17 +584,17 @@ static class ProcessVersion	// 설정 버전: 기준 폴더 하위 Data\프로�
 
 static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log) 에 레벨 뒤 [v.버전] 표시로 기록·조회 (예: [2026/06/18 09:36:17.123] [HMX_][INFO_] [v.1] 등록: ..., [HMX_]: 공통 sTitle 태그), 조회: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만
 {
-	private const int		READ_CHUNK		= 131072;	// 역읽기 조각 (바이트)
-	private const int		READ_BUFFER		= 65536;	// 정방향 읽기 버퍼 (바이트)
-	private const int		TIME_LENGTH		= 25;		// 줄 앞 시각 글자 수 ([yyyy/MM/dd HH:mm:ss.fff])
-	private const int		TIME_GRACE		= 60;		// 범위 끝 판정 여유 (초, 여러 스레드 기록 → 시각 순서 조금 어긋남)
+	private const int	READ_CHUNK	= 131072;	// 역읽기 조각 (바이트)
+	private const int	READ_BUFFER	= 65536;	// 정방향 읽기 버퍼 (바이트)
+	private const int	TIME_LENGTH	= 25;		// 줄 앞 시각 글자 수 ([yyyy/MM/dd HH:mm:ss.fff])
+	private const int	TIME_GRACE	= 60;		// 범위 끝 판정 여유 (초, 여러 스레드 기록 → 시각 순서 조금 어긋남)
 
 	private static readonly Regex	m_kTime		= new Regex(@"^\[(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})\.\d{3}\]", RegexOptions.Compiled);	// 줄 앞 시각
 	private static readonly Regex	m_kProcess	= new Regex(@"^\[[^\]]+\] \S*?\[\w+\] (\[v\.\d+\]|\[HMX_\]|로그인 (성공|실패))", RegexOptions.Compiled);	// 반영 로그 줄: 레벨 바로 뒤 [v.버전]·공통 Auth 로그인·예전 [HMX_] 태그 (레벨 앞 sTitle 태그: 건너뜀, 본문 안 글자: 아님)
 
 	public static void Write(string sLevel, string sMessage)	// 로그 한 줄: [v.버전] 표시 + 메시지 (화면 로그 조회: 표시로 실행 동작 구분)
 	{
-		int nVersion = ProcessVersion.Get();	// 지금 버전 (Log 잠금 밖에서 조회)
+		int	nVersion	= ProcessVersion.Get();	// 지금 버전 (Log 잠금 밖에서 조회)
 
 		Log.Write(sLevel, $"[v.{nVersion}] {sMessage}");
 	}
@@ -613,7 +613,7 @@ static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로
 	{
 		kTime = default;
 
-		Match kMatch = m_kTime.Match(sLine);
+		Match	kMatch	= m_kTime.Match(sLine);
 
 		if (!kMatch.Success)
 		{
@@ -637,7 +637,7 @@ static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로
 
 			while (nNeed > 0)
 			{
-				int nCut = nBufLen;	// 버퍼 끝 개행 (\r\n) 뺀 길이
+				int	nCut	= nBufLen;	// 버퍼 끝 개행 (\r\n) 뺀 길이
 
 				if (nCut > 0 && arrBuf[nCut - 1] == '\n')
 				{
@@ -649,7 +649,7 @@ static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로
 					--nCut;
 				}
 
-				int nNewLine = arrBuf.AsSpan(0, nCut).LastIndexOf((byte)'\n');	// 마지막 줄 앞 개행
+				int	nNewLine	= arrBuf.AsSpan(0, nCut).LastIndexOf((byte)'\n');	// 마지막 줄 앞 개행
 
 				if (nNewLine < 0 && nBufStart > 0)	// 줄 잘림: 앞 조각 더 읽음
 				{
@@ -674,7 +674,7 @@ static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로
 					break;
 				}
 
-				int		nLineStart	= nNewLine + 1;	// 버퍼 안 줄 시작 (개행 없음: 0)
+				int		nLineStart	= nNewLine + 1;				// 버퍼 안 줄 시작 (개행 없음: 0)
 				int		nLineLen	= nCut - nLineStart;
 				long	nOffset		= nBufStart + nLineStart;	// 파일 기준 줄 시작 (커서)
 				string	sHead		= Encoding.ASCII.GetString(arrBuf, nLineStart, Math.Min(nLineLen, TIME_LENGTH));	// 줄 앞 시각만 (전체 디코드: 실행 줄만)
@@ -701,7 +701,7 @@ static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로
 					continue;
 				}
 
-				string sLine = Encoding.UTF8.GetString(arrBuf, nLineStart, nLineLen);
+				string	sLine	= Encoding.UTF8.GetString(arrBuf, nLineStart, nLineLen);
 
 				if (!IsProcessLine(sLine))	// 반영 로그 아님
 				{
@@ -781,14 +781,14 @@ static class ProcessLog	// 반영 로그: 공통 Log 파일 (Log/YYYYMMDD/프로
 
 	private static string? ReadLine(FileStream kFile)	// 지금 위치에서 한 줄 (\r\n 뺌, 파일 끝: null)
 	{
-		int nByte = kFile.ReadByte();
+		int	nByte	= kFile.ReadByte();
 
 		if (nByte < 0)
 		{
 			return null;
 		}
 
-		List<byte> listByte = new List<byte>();
+		List<byte>	listByte	= new List<byte>();
 
 		while (nByte >= 0 && nByte != '\n')
 		{
