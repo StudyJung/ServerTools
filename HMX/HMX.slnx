@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Common/">
+    <File Path="Common/AES.cs" />
+    <File Path="Common/Config.cs" />
+    <File Path="Common/Count.cs" />
+    <File Path="Common/Define.cs" />
+    <File Path="Common/Global.cs" />
+    <File Path="Common/Log.cs" />
+  </Folder>
+  <Project Path="Server/Server.csproj" />
+  <Project Path="Client/Client.csproj" />
+</Solution>
