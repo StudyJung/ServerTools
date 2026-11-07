@@ -17,7 +17,8 @@
   ],
 
   "aLogFolder": [
-    "C:\\NHNServices"
+    "C:\\NHNServices",
+ "D:\SRC\ServerTools\HMX\Client\bin\Debug\net10.0\Log"
   ],
 
   "aBlockQuery": [
