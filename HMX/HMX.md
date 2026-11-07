@@ -44,7 +44,7 @@
 ## 공통 설계
 - 진입 .cs (`#:sdk`·`#:package`·`#:include` 지시문, Main) + 클래스별 .cs (1 클래스 1 파일, 파일명 = 클래스명, HT 접두사 없음, 진입: `return Main.Run(args);` → 클래스 Main 안 진입 함수 이름 Main 불가) → `dotnet run --file` 단독 실행과 csproj 빌드가 같은 소스 공유
 - 공통·기능 연결은 Main (서버: 라우트·TCP 시작·타이머 / 클라: 탭 준비 순서·서버 요청 분배·접속·Pause), 탭 기능: TabQuery·TabSearch·TabDump·TabFile (서버·클라 각각)
-- 빌드 후 PublishExe 타깃 → bin\Release\net10.0 에 단일 exe (win-x64, Json 폴더 보존, Server: 프레임워크 종속·서버 GC, Client: 런타임 포함 self-contained·워크스테이션 GC → .NET 설치 불필요)
+- 빌드 후 PublishExe 타깃 → bin\Release\net10.0 에 단일 exe (win-x64, Json 폴더 보존, 런타임 포함 self-contained → .NET 설치 불필요, Server: 서버 GC·ASP.NET Core 포함, Client: 워크스테이션 GC)
 - 설정 Json\{프로젝트명}.json (모든 설정 json: 기준 폴더 하위 Json 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고, bLog 등 최상위, Base 묶음 없음), `sCode` 키 → MySQL 호환 AES 복호화 → 같은 위치 `sPass` 로 메모리 보관, 경로 값 (`X:\…`·`\\…` 시작) 은 `\` 하나로 써도 됨 (Config.FixPathEscape, 서버·클라 공통)
 - 웹에서 고치는 설정은 키별 json 따로 관리 (서버: aQuery → Query.json·aSearch → Search.json·aAlarm → Alarm.json·aField → Field.json, Main.m_arrConfigSplit)
 - 로그 Log\yyyyMMdd\{프로젝트명}_yyyyMMdd_HH.log (레벨 DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, bLog)
@@ -57,7 +57,7 @@
 - 개발: HMX.slnx (Visual Studio 2026) F5, 상위 ServerTools.slnx 의 `/2.HMX/` 폴더에도 포함
 - Server: On.bat·Off.bat (콘솔) / IIS (web.config, HttpPlatformHandler) / 윈도우 서비스
 - Client: 각 게임 서버 머신 On.bat·Off.bat (콘솔) / 윈도우 서비스
-- 런타임 설치 파일 동봉: Server\Tool (dotnet·aspnetcore 10.0.13·httpPlatformHandler_amd64.msi), Client: 없음 (Client.exe 에 런타임 포함)
+- 런타임 설치 불필요 (Server.exe·Client.exe 에 런타임 포함), Server\Tool: httpPlatformHandler_amd64.msi (IIS 실행만)·aspnetcore-runtime 10.0.13 (참고용)
 
 ## 연관
 - 상위: [ServerTools.md](../ServerTools.md)
