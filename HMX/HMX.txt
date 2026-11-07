@@ -1,0 +1,51 @@
+# Huns Make X
+
+## Setting( 기존 폼 복사 및 네이밍 수정 )
+- D:\SRC\ServerTools\HTB의 모든 파일(폴더와 *.md파일 제외)을 D:\SRC\ServerTools\XXX에 복사 후 복사한 곳의 모든 파일명과 내용을 XXX로 이름을 전부 변경
+
+## Make
+- D:\SRC\ServerTools\XXX에 원하는 툴 기능을 HTB 템플릿(html UI포함) 베이스로 추가 제작( 외부 데이터 설정은 XXX.json에 프로그램용 설정은 HTGlobal에 세팅 )
+- 간단한 html이 필요한 경우에는 XXX.cs파일의 IndexHtml() 함수에 제작하면 됨( Index.html 파일로 따로 관리하고 싶다면 D:\SRC\ServerTools\XXX\wwwroot를 만들고 Index.html을 넣으면 기본 세팅 됨 )
+
+## Open( 여러가지 방법 )
+- 1. On.bat 더블 클릭 후 브라우저에서 http://localhost:포트 로 접속( 웹 서버 종료는 Off.bat 호출 )
+- 2. slnx 더블 클릭 후 빌드하고 F5로 디버깅 실행 후 브라우저에서 http://localhost:포트 로 접속
+- 3. slnx 빌드 후 bin 폴더에서 XXX.exe 파일 더블 클릭 후 브라우저에서 http://localhost:포트 로 접속( XXX.json은 bin에 복사 안 되므로 exe 폴더에 직접 복사 )
+- 4. 윈도우 서비스 등록 후 시작( XXX.json은 bin에 복사 안 되므로 exe 폴더에 직접 복사 )
+- 5. IIS 사이트 등록 후 브라우저에서 http://localhost:포트 로 접속( HttpPlatformHandler 설치 필요, web.config가 XXX.exe 실행 )
+
+## Service( 윈도우 서비스 등록 및 해제 )
+- 커맨드 관리자 모드
+- 생성 : sc.exe create HTB binPath= "C:\NHNServices\HTB\HTB.exe" DisplayName= "HTB" start= auto
+- 삭제 : sc.exe delete HTB
+
+## DoNet( 비주얼 스튜디오 2026 미설치 경우 아래 닷넷 설치 )
+- dotnet-runtime-10.0.13-win-x64.exe 설치(https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win-x64&os=win10&apphost_version=10.0.10)
+- aspnetcore-runtime-10.0.13-win-x64.exe 설치(https://aka.ms/dotnet-core-applaunch?framework=Microsoft.AspNetCore.App&framework_version=10.0.0&arch=x64&rid=win-x64&os=win10)
+
+## IIS( HttpPlatformHandler + web.config 등록 및 해제 )
+- HttpPlatformHandler v1.2(x64) 설치(https://www.iis.net/downloads/microsoft/httpplatformhandler)
+- IIS 설치 - 응용프로그램 개발 : .Net 확장성 4.X - 보안 : IP 및 도메인 제한 설치
+- 실행파일 위치에 web.config가 있고, IIS 루트를 실행파일 위치로 잡아야 함
+- 응용 프로그램 계속 유지 : 응용프로그램풀 → 고급 설정 → 1. 표준 시간 간격 0 세팅, 2. 프로세스 모델 - 유휴 시간 제한 0 세팅, AlwaysRunning
+
+## AES Code
+- 암호화 : SELECT TO_BASE64(AES_ENCRYPT('Password', 'ProjectName')); 
+- 복호화 : SELECT CAST(AES_DECRYPT(FROM_BASE64('sCode'), 'ProjectName') AS CHAR);
+- XXX.json에 sCode가 있는 경우 자동 sPass로 복호화
+
+## Base( XXX.json 기본 설정 )
+- bLog : true면 Log/YYYYMMDD/XXX_YYYYMMDD_HH.log 파일 로그 기록
+- bWeb : true면 웹 서버 실행( false면 웹 없이 호스트만 실행해 대기, 서비스 중지·Ctrl+C 시 종료 )
+- bAuth : true면 웹 로그인 사용( false·키 없음이면 로그인 없이 모든 접속 허용 )
+- sID, sCode : 웹 로그인 계정( sCode는 AES Code로 암호화한 값, 실행 시 sPass로 복호화 )
+- sZone : Dev, Alpha, Real → 웹 제목 "sZone XXX" 색( Dev 초록, Alpha 파랑, Real 빨강 )
+
+## 리얼 서버 iis Json 폴더 권한 추가 (하위 설정 파일 포함)
+icacls "C:\NHNServices\HMXServer\Json" /grant "IIS_IUSRS:(OI)(CI)(M)"
+
+## 클라 서비스 cmd 관리자 모드로 세팅
+C:\NHNServices\HMXClient\Client.exe -install
+C:\NHNServices\HMXClient\Client.exe -uninstall
+C:\NHNServices\HMXClient\Client.exe -start
+C:\NHNServices\HMXClient\Client.exe -stop
