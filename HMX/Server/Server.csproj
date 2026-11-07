@@ -8,13 +8,12 @@
 		<RunWorkingDirectory>$(MSBuildProjectDirectory)</RunWorkingDirectory>	<!-- 실행 폴더 = Server 폴더 (wwwroot 인식) -->
 		<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>					<!-- staticwebassets.runtime.json·endpoints.json 미생성 (UseStaticFiles 사용, MapStaticAssets 미사용) -->
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>							<!-- 윈도우 x64 고정: runtimes 폴더 미생성 (윈도우용 dll 바로 사용), 단일 exe 게시 조건 -->
-		<SelfContained>true</SelfContained>									<!-- 런타임 포함: .NET·ASP.NET Core 런타임 설치 없이 Server.exe 만으로 실행 (IIS: httpPlatformHandler 만) -->
+		<SelfContained>false</SelfContained>									<!-- 프레임워크 종속 고정 (RuntimeIdentifier 지정 시 게시가 self-contained 로 바뀌어 런타임 전체가 exe 폴더에 복사되는 것 방지) -->
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>	<!-- 출력 경로에 win-x64 하위 폴더 안 만듦 -->
+		<GenerateDependencyFile>false</GenerateDependencyFile>					<!-- Server.deps.json 미생성 (exe 폴더의 dll 직접 탐색) -->
 		<OutputPath>obj\$(Configuration)\out\</OutputPath>						<!-- 빌드 중간 출력: dll·runtimeconfig.json 등 단일 exe 재료 (F5 디버깅 실행 위치) -->
 		<PublishDir>bin\$(Configuration)\$(TargetFramework)\</PublishDir>		<!-- exe 폴더 = 게시 출력: Server.exe 단일 파일만 새로 생성 (그 외 파일은 직접 관리: 빌드·리빌드·clean·게시 시 복사·삭제 안 함) -->
-		<PublishSingleFile>true</PublishSingleFile>								<!-- 게시: dll·런타임·runtimeconfig.json 을 Server.exe 하나로 합침 -->
-		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>	<!-- 런타임 네이티브 dll 도 exe 안에 (exe 옆 파일 없음) -->
-		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>	<!-- exe 안 묶음 압축 (크기 줄임) -->
+		<PublishSingleFile>true</PublishSingleFile>								<!-- 게시: dll·runtimeconfig.json 을 Server.exe 하나로 합침 -->
 		<CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>	<!-- 게시: pdb 미복사 (빌드 중간 출력은 디버깅용 pdb 유지) -->
 		<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>		<!-- 게시: web.config 자동 변환(aspNetCore 핸들러 추가) 안 함 (HttpPlatformHandler 유지) -->
 		<ServerGarbageCollection>true</ServerGarbageCollection>				<!-- 서버 GC: 적재 워커 (코어 수 × 2.5) 가 동시에 할당 → 워크스테이션 GC 는 수집마다 모든 워커 중단 (부하 테스트: CPU 20% 에 워커당 1,300줄/s), .NET 9+ DATAS 기본 → 힙 수 동적 (장시간 실행 메모리 절약 유지), Server.cs 의 #:property 와 같음 -->
