@@ -6,7 +6,7 @@
 | 파일 | 클래스 | 역할 |
 |---|---|---|
 | Global.cs | Global | 전역 함수: 기본 포트·머신 이름 (sMachine)·프로젝트명·설정 파일·설정 폴더 (기준 폴더\Json)·기준 폴더·KST 시각·남은 물리 메모리·TCP keepalive·오류 두 단어 (GetErrorText)·JSON 값 (GetText·GetLong)·와일드카드 (TryGetWild·IsWildMatch: ab*·*ab·*ab*, 서버 쿼리·알람·클라 서치 공통)·대기 (Delay) |
-| Config.cs | Config | 설정 Json\{프로젝트명}.json + 따로 관리 키 파일 (Main.m_arrConfigSplit, 예: aQuery → Query.json) 합쳐 로딩·조회 (문자열·정수·실수·bool·배열·하위 섹션)·최상위 배열 저장 (SetArray: 따로 관리 키 → 그 파일), sCode → sPass 복호화, 예전 형식: Base 묶음 → 최상위로 읽음·따로 관리 키가 기본 파일에만 있음 → 파일 만듦 (기본 파일 그대로)·Json 폴더에 없고 기준 폴더에 있음 → 그 파일 (경고) |
+| Config.cs | Config | 설정 Json\{프로젝트명}.json + 따로 관리 키 파일 (Main.m_arrConfigSplit, 예: aQuery → Query.json) 합쳐 로딩·조회 (문자열·정수·실수·bool·배열·하위 섹션)·최상위 배열 저장 (SetArray: 따로 관리 키 → 그 파일), sCode → sPass 복호화, 경로 값 `\` 하나 허용 (FixPathEscape: "X:\…"·"\\…" 시작 문자열의 \ 를 모두 글자로, 그 밖 문자열은 표준 JSON), 예전 형식: Base 묶음 → 최상위로 읽음·따로 관리 키가 기본 파일에만 있음 → 파일 만듦 (기본 파일 그대로)·Json 폴더에 없고 기준 폴더에 있음 → 그 파일 (경고) |
 | Log.cs | Log | 시간별 로그 Log\yyyyMMdd\{프로젝트명}_yyyyMMdd_HH.log (bLog), 콘솔 레벨 색 |
 | AES.cs | AES | MySQL AES-128-ECB 호환 암호화·복호화 (키 = 마스터 키 GetMasterKey: 메모리만, 서버: 로그인 사용 첫 접속 입력·안 씀 솔루션명 HMX, Client: 서버에서 받음 (TCP MasterKey)) |
 | Count.cs | Count | 로그 감시 받은 진행 Data\Count\머신\대상 폴더\Count.data |

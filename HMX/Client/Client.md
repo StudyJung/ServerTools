@@ -75,7 +75,7 @@
 | sMachine | 서버에 보낼 머신 이름 (키 없음: 컴퓨터 이름, 한 PC 여러 클라 테스트: 클라마다 다르게, 예: Client1) |
 | nLogRead / nLogSend | 파일당 주기별 최대 읽기 줄 (1000) / 전송 줄 (100) |
 | aLogType | 전송 로그 레벨 (NOTI·ERROR·FATAL) |
-| aLogFolder | 기준 폴더 배열 (필수, 예: C:\NHNServices) |
+| aLogFolder | 기준 폴더 배열 (필수, 예: C:\NHNServices, 경로는 `\` 하나로 써도 됨: 공통 Config.FixPathEscape) |
 | aBlockQuery·aBlockSearch·aBlockFile·aBlockDump | 탭별 막는 경로 (전체 경로: 그 경로 자신·하위, 폴더 이름·중간 경로 (예: test·Test\S·TEST1/5/5): 경로 안 어디든 이름 단위 정확히 일치하는 폴더 자신·하위 (test1·MyTest: 안 막음), 대소문자 무시, 형식 오류 (빈 값·.·..·C:Log·와일드카드): 경고 후 뺌, 현재: C:\NHNServices\HMXServer\Data) |
 | aDeleteFolder | 날짜 폴더 자동 삭제 `[{sPath, nDay, nHour}]` (기본: 빈 sPath 1개 = 꺼짐, aLogFolder 와 무관, 바꿈: 재시작): sPath 전체 경로 자신·하위 4단계 날짜 폴더(yyyyMMdd) 중 오늘 - nDay 일 이전 통째 삭제 (nDay 최소·기본 1: 어제 이전, 오늘: 안 지움), 매일 nHour 시 정각 (0~23, 기본 6, KST, 시작 때 바로 안 함), 날짜 폴더 안·숨김·시스템·정션·심볼릭 링크: 안 들어감·안 지움 (안에 링크 폴더 있는 날짜 폴더: 경고 후 안 지움), 상대 경로·드라이브 루트·형식 오류: 경고 후 뺌, 같은 경로: 첫 항목만·경고, 겹친 항목: 하위 항목 경로 자신·하위는 그 항목 규칙만 (예: C:\NHNServices\HMXServer\Data + C:\NHNServices\HMXServer\Data\Test → Test: Test 항목, Data\Test2: Data 규칙, 대소문자 무시), 폴더마다 Throttle, 실패 (사용 중): 경고 후 다음 폴더 |
 | (aField) | 클라 설정 없음 → Server.json aField 로 옮김 (남은 예전 설정: 경고 후 무시) |

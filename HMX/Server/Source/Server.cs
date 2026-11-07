@@ -44,6 +44,7 @@
 
 # 설정 파일: 기준 폴더 (exe 폴더·dotnet run: 실행 폴더) 하위 Json 폴더 프로젝트명.json (모든 설정 json: Json 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고) → Config.GetString("DB:Dev:sHost")·GetInt("DB:Dev:nPort") (키 없음: 기본값)
    ## sCode 키: 로딩 시 AES 복호화 → 같은 위치 sPass (예: "DB:Dev:sCode" → GetString("DB:Dev:sPass"))
+   ## 경로 값 (공통 Config.FixPathEscape, 서버·클라 모든 설정 json): "X:\…"·"\\…" 로 시작하는 문자열은 \ 하나로 써도 됨 (예: "D:\SRC\Log", 표준 "D:\\SRC\\Log" 도 같음, 끝 \ 뒤 " 는 문자열 끝), 웹에서 저장하면 표준 \\ 로 다시 씀, 그 밖 문자열 (정규식 등): 표준 JSON 그대로
       AES 키: 마스터 키 (메모리만, 파일·코드 저장 안 함), bWeb·bAuth: 서버 오픈 뒤 첫 접속 1회 로그인 페이지에서 계정 (관리 계정·aAccount) 아이디·비밀번호·마스터 키 같이 받음
          → 그 계정 sCode 를 그 키로 복호화 = 비밀번호: 마스터 키 메모리 + 설정 다시 로딩 (모든 sCode → sPass 메모리), 불일치: X초 지연
          그 전: 첫 접속 계정 + 마스터 키만 (웹 로그인만) → 복호화·계정 로그인·Redis 연결·메일 인증 안 함, 기능 (타이머·알람·TCP 수신 (클라 접속·로그)·운영 탭 동접 기록): 입력 뒤 시작 (Main.RunAll), 외부 API (/api/external): 503 마스터 키 입력 전 (보낸 쪽 다시, TCP 수신: 그대로)

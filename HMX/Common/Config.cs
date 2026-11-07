@@ -170,7 +170,93 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 			return null;
 		}
 
-		return JsonNode.Parse(File.ReadAllText(sPath), null, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject();
+		return JsonNode.Parse(FixPathEscape(File.ReadAllText(sPath)), null, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })?.AsObject() ?? new JsonObject();
+	}
+
+	public static string FixPathEscape(string sJson)	// 설정 JSON 글의 윈도 경로 문자열 ("X:\…"·"\\…" 시작): \ 하나도 허용 (서버·클라 공통) → \ 는 모두 글자로 보고 \\ 로 (제대로 쓴 \\ 는 \ 하나, 끝 \" 는 뒤가 구분자면 문자열 끝), 그 밖 문자열: 표준 그대로
+	{
+		StringBuilder	kOut	= new StringBuilder(sJson.Length + 64);
+		int				nPos	= 0;
+
+		while (nPos < sJson.Length)
+		{
+			char cChar = sJson[nPos++];
+
+			kOut.Append(cChar);
+
+			if (cChar != '"')
+			{
+				continue;
+			}
+
+			if (!IsPathText(sJson, nPos))	// 보통 문자열: 이스케이프 그대로
+			{
+				while (nPos < sJson.Length)
+				{
+					cChar = sJson[nPos++];
+
+					kOut.Append(cChar);
+
+					if (cChar == '\\' && nPos < sJson.Length)
+					{
+						kOut.Append(sJson[nPos++]);
+					}
+					else if (cChar == '"')
+					{
+						break;
+					}
+				}
+
+				continue;
+			}
+
+			while (nPos < sJson.Length)	// 경로 문자열
+			{
+				cChar = sJson[nPos++];
+
+				if (cChar == '"')
+				{
+					if (sJson[nPos - 2] != '\\' || IsDelimiterAfter(sJson, nPos))	// 끝 (앞 \ 는 글자)
+					{
+						kOut.Append('"');
+
+						break;
+					}
+
+					kOut.Append("\\\"");
+				}
+				else if (cChar == '\\')
+				{
+					if (nPos < sJson.Length && sJson[nPos] == '\\')	// \\ 도 \ 하나
+					{
+						++nPos;
+					}
+
+					kOut.Append("\\\\");
+				}
+				else
+				{
+					kOut.Append(cChar);
+				}
+			}
+		}
+
+		return kOut.ToString();
+	}
+
+	private static bool IsPathText(string sJson, int nPos)	// 문자열 시작이 윈도 경로 (X:\ 또는 \\)
+	{
+		return (nPos + 2 < sJson.Length && char.IsAsciiLetter(sJson[nPos]) && sJson[nPos + 1] == ':' && sJson[nPos + 2] == '\\') || (nPos + 1 < sJson.Length && sJson[nPos] == '\\' && sJson[nPos + 1] == '\\');
+	}
+
+	private static bool IsDelimiterAfter(string sJson, int nPos)	// nPos 부터 빈칸 건너뛴 다음 글자가 JSON 구분자 (, ] } :)·끝
+	{
+		while (nPos < sJson.Length && char.IsWhiteSpace(sJson[nPos]))
+		{
+			++nPos;
+		}
+
+		return nPos >= sJson.Length || sJson[nPos] is ',' or ']' or '}' or ':';
 	}
 
 	private static string WriteJson(string sPath, JsonObject kRoot)	// JSON 파일 저장 (폴더 없음: 만듦, 임시 파일 후 교체 → 쓰는 중 실패: 원본 유지, 반환: 오류, 성공: "")
