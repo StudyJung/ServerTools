@@ -5480,7 +5480,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static OpenAlarm(kAlarm)	// 알람 추가·수정 창 열기 (쿼리 추가 창 + 알람 칸, kAlarm: 수정할 알람 → 그 값, null: 추가 → 기본값)
 		    {
 		        Query.nEditID				= kAlarm?.nID ?? 0;
-		        kQuerySaveTitle.textContent	= kAlarm == null ? "알람 추가" : "알람 수정";
+		        kQuerySaveTitle.textContent	= kAlarm == null ? "알람 추가" : "알람";
 		        kQuerySaveQueryLabel.textContent	= "쿼리";	// 서치 저장 창 뒤 "검색어" 되돌림
 		        kQuerySaveKey.value			= kAlarm?.sKey ?? "";
 		        kQuerySaveQuery.value		= kAlarm?.sQuery ?? "";
