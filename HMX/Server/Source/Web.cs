@@ -12,6 +12,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	private const string	m_sHsts	= "max-age=31536000";	// HSTS 유지 (초, 1년: 브라우저가 이 주소를 https 로만)
 
+	private static readonly string[]	m_arrDebugPath	= { "/api/client" };	// 요청 로그 DEBUG 경로 (페이지 폴링: 접속 머신 X초마다)
+
 	public Web(int nPort, string sHost)
 	{
 		bool	bIIS	= Environment.GetEnvironmentVariable("HTTP_PLATFORM_PORT") != null;	// IIS 실행 (HttpPlatformHandler)
@@ -161,7 +163,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		});
 	}
 
-	private static void UseRequestLog(WebApplication WebApp)	// 요청 로그: [KST 시각] 메서드 경로 -> 상태코드 (소요ms)
+	private static void UseRequestLog(WebApplication WebApp)	// 요청 로그 (콘솔만): [KST 시각] 메서드 경로 -> 상태코드 (소요ms), 폴링 경로 (m_arrDebugPath): DEBUG 레벨
 	{
 		WebApp.Use(async (HttpContext kContext, RequestDelegate funcNext) =>
 		{
@@ -169,7 +171,16 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 			await funcNext(kContext);
 
-			Console.WriteLine($"[{GetNowText()}] {kContext.Request.Method} {Auth.GetLogPath(kContext)}{kContext.Request.QueryString} -> {kContext.Response.StatusCode} ({Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds:F1}ms)");
+			string	sLine	= $"{kContext.Request.Method} {Auth.GetLogPath(kContext)}{kContext.Request.QueryString} -> {kContext.Response.StatusCode} ({Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds:F1}ms)";
+
+			if (m_arrDebugPath.Contains(kContext.Request.Path.Value ?? "", StringComparer.OrdinalIgnoreCase))
+			{
+				Log.Write(DEBUG, sLine, false);
+			}
+			else
+			{
+				Console.WriteLine($"[{GetNowText()}] {sLine}");
+			}
 		});
 	}
 

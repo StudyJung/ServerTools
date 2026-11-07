@@ -42,7 +42,7 @@
 | Auth.cs | Auth | 쿠키 인증 등록·로그인 검사·로그인·로그아웃·계정 API·계정 메뉴 검사·LoginHtml, 로그 수신 토큰 검사 |
 | IPList.cs | IPList | 접속 IP 목록 (Json/IP.json: aWhiteTCP 클라 TCP 허용·aBlackWeb 웹 막음, 칸 범위 '*', 파일 바뀜: 바로 반영, 웹: Web.UseIPList 403·TCP: AcceptLoop 끊음) |
 | ConfigCheck.cs | ConfigCheck | 서버 시작 맨 앞 Json 폴더 모든 json 형식·값 검사 (오류: 파일·필드·이유 로그 → 종료, 기능별 CheckConfig: SavedList·TabQuery·Auth·OperationMonitor·IPList) |
-| Web.cs | Web | Kestrel·미들웨어 (요청 로그·정적 파일), 기본 페이지 (IndexHtml = IndexHead + 탭 *HTML + IndexTail), 제목·존 색·알람 링크 주소 |
+| Web.cs | Web | Kestrel·미들웨어 (요청 로그 (콘솔만, 폴링 /api/client: DEBUG)·정적 파일), 기본 페이지 (IndexHtml = IndexHead + 탭 *HTML + IndexTail), 제목·존 색·알람 링크 주소 |
 | API.cs | API | 공통 API (/api/info·echo·client·log), 클라 조각 읽기 재요청·응답 조립 (탭 공용) |
 | TCPServer.cs | TCPServer·ClientInfo·LineWriter·LineReader | Client TCP 수신·요청 중계·Pause/Resume, 접속 클라 정보 |
 | TabSearch.cs | TabSearch·SearchTrack·SearchNode | 서치 탭 API (서치·보기 Gate, 제한 시간 nLimit → 클라, 저장 서치 SavedList) + SearchHTML (페이지 JS Search), 머신별 검색 진행, 검색어 트리 |

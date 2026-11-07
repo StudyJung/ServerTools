@@ -28,7 +28,7 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 		return sTitle == "" ? "" : $"[{sTitle}_]";
 	}
 
-	public static void Write(string sLevel, string sMessage)	// 로그 한 줄 추가 (콘솔 모드: 콘솔도, 파일: bLog true 일 때만)
+	public static void Write(string sLevel, string sMessage, bool bFile = true)	// 로그 한 줄 추가 (콘솔 모드: 콘솔도, 파일: bLog true 일 때만, bFile false: 콘솔만)
 	{
 		DateTimeOffset	kNow	= GetNow();
 		string			sFile	= GetFile(kNow.ToString("yyyyMMdd_HH", CultureInfo.InvariantCulture));
@@ -39,7 +39,7 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 			WriteConsole(sLevel, sLine);
 		}
 
-		if (!Config.GetBool("bLog"))	// 키 없음·설정 로딩 전: false
+		if (!bFile || !Config.GetBool("bLog"))	// 키 없음·설정 로딩 전: false
 		{
 			return;
 		}

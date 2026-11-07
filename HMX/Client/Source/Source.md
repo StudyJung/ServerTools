@@ -92,6 +92,6 @@
    ### 머신당 최대 nMax 건·X초, 동시 16건 안전 상한 (서버: 세션마다 1건씩 동시, 넘음: 20초 대기 후 거절, 게임 서버 폭주 방지)
    ### 부하 조절: 검색·보기 Throttle (X ms 일하면 X ms 쉼)
    ### 보기 허용: aLogFolder 하위 *.log·*.txt·*.json·*.ini·*.bat·*.xml·*.config·*.md·*.lua (그 외 거부), 인코딩: 줄마다 UTF-8·CP949 판별 (UTF-8·UTF-16 BOM 지원)
-## 로그: bLog 가 true 일 때만 기준 폴더 Log/YYYYMMDD/Client_YYYYMMDD_HH.log 기록 → Log.Write(INFO_, "메시지") (레벨: DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL)
+## 로그: bLog 가 true 일 때만 기준 폴더 log/YYYYMMDD/Client_YYYYMMDD_HH.log 기록 → Log.Write(INFO_, "메시지") (레벨: DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL)
 ## 타이머: Timer.Start → 별도 스레드 X초마다 Batch (X분마다 Alive 로그), 종료 시 Timer.Stop
 ## 종료: Ctrl+C (서비스: 서비스 중지)
