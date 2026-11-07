@@ -281,6 +281,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        AddCell(kRow, String(nIndex + 1), "num");
 		        AddCell(kRow, kItem.sMachine, "nowrap");
+		        AddFolderCell(kRow, GetLogFolder(kLine.sPath));	// 대상 폴더 (날짜 폴더 뺌, 마지막 두 폴더)
 		        AddFileNameCell(kRow, kItem.sMachine, kLine.sPath, kLine.nLine, Search.sResultKey);	// 파일명 (Ctrl·Alt+클릭: 그 줄 강조)
 		        AddCell(kRow, String(kLine.nLine), "num");
 		        Key.AppendHighlight(AddCell(kRow, "", "log"), kLine.sText, Search.sResultKey);

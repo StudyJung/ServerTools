@@ -6496,7 +6496,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        arrItem.splice(nFolder >= 0 ? nFolder + 1 : Math.min(1, arrItem.length), 0, { sName: "File", sValue: sFile });
 
 		        kDetail.className	= "detail";
-		        kCell.colSpan		= 5;
+		        kCell.colSpan		= kRow.cells.length;	// 펼친 줄: 표 칸 전체
 		        kField.className	= "querymeta queryfield";	// 항목 (이름: 값) 단위로 줄바꿈
 
 		        kField.append(...arrItem.map(kItem =>	// 이름: 값 (· 구분: CSS)
