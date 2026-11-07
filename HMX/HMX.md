@@ -29,7 +29,8 @@
 - 수집: Client 가 대상 폴더 최신 시간 로그의 aLogType 줄 (NOTI·ERROR·FATAL) + aField 추출 값 전송 (aField: Field.json 정의 → 접속 때 Count 답으로 받음), Count 동기화로 중복·누락 방지
 - 적재·쿼리: Server 원문 저장 + 단어·필드 세그먼트 역색인 → 기간 쿼리, 시간·분·초별 건수, 필드별 통계
 - 알람: 쿼리 조건 nMinute 분 nCount 건 이상 → 메일·Dooray 훅 (SMS: 설정만, 미구현)
-- 서치: 여러 머신 원본 로그 파일 직접 검색 (Client 처리, 1건씩·Throttle 부하 제한)
+- 서치: 여러 머신 원본 로그 파일 직접 검색 (Client 처리, 동시 2건·Throttle 부하 제한, 제한 시간 nLimit, 저장 서치 Search.json)
+- 부하 분산 (Server Gate): 기능마다 세션 1건 → 전체 X건 (쿼리·서치·보기·덤프 다운·파일 다운 따로) + 스레드 양보 (연속 0.5초 → 0.1초 쉼, 클라 Throttle 과 같음) + 제한 시간 (페이지 설정 버튼: 서치·쿼리 기본 60초)
 - 덤프·파일: 머신 `*.dmp` 목록·zip 수집·삭제, 로그 폴더 트리·파일 다운
 - 운영 (ServerManager 이식, 서버 운영 탭): 게임 서버 XLO 모니터 점검·패치 시각·X분 동접 기록 (Redis)·동접 차트·모니터 (서버 목록: Server\Json\Manager.json)
 - 흐름 제어: 서버 적재 밀림 시 전 클라 Pause → 안정 시 Resume
@@ -45,7 +46,7 @@
 - 공통·기능 연결은 Main (서버: 라우트·TCP 시작·타이머 / 클라: 탭 준비 순서·서버 요청 분배·접속·Pause), 탭 기능: TabQuery·TabSearch·TabDump·TabFile (서버·클라 각각)
 - 빌드 후 PublishExe 타깃 → bin\Release\net10.0 에 단일 exe (프레임워크 종속 win-x64, 워크스테이션 GC, Json 폴더 보존)
 - 설정 Json\{프로젝트명}.json (모든 설정 json: 기준 폴더 하위 Json 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고, bLog 등 최상위, Base 묶음 없음), `sCode` 키 → MySQL 호환 AES 복호화 → 같은 위치 `sPass` 로 메모리 보관
-- 웹에서 고치는 설정은 키별 json 따로 관리 (서버: aQuery → Query.json·aAlarm → Alarm.json·aField → Field.json, Main.m_arrConfigSplit)
+- 웹에서 고치는 설정은 키별 json 따로 관리 (서버: aQuery → Query.json·aSearch → Search.json·aAlarm → Alarm.json·aField → Field.json, Main.m_arrConfigSplit)
 - 로그 Log\yyyyMMdd\{프로젝트명}_yyyyMMdd_HH.log (레벨 DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, bLog)
 - 공통 클래스 (Common, 같이 씀): Global·Config·Log·AES·Count·Define (프로젝트별 값: 각 Main 상수), 프로젝트별: Timer·TCP (서버 TCPServer·클라 TCPClient)·SearchNode·LineWriter·LineReader (같은 규칙, 코드 다름)
 - 검색어 규칙: 대문자 AND·OR·NOT·괄호, 왼쪽부터 (클라 SearchNode = 서버 SearchNode = 페이지 Key)

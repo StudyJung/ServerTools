@@ -24,7 +24,7 @@
 | m_nDefaultPort | 800 (웹) | 9091 (Server TCP) | Global.GetDefaultPort |
 | m_sPeerOff | Client Off | Server Off | Global.GetErrorText (상대 끊김) |
 | m_sSelfError | Server Error | Client Error | Global.GetErrorText (그 밖 오류) |
-| m_arrConfigSplit | aQuery → Query.json, aAlarm → Alarm.json, aField → Field.json, Manager → Manager.json | 없음 | Config 따로 관리 설정 (웹에서 고치는 키, 파일: `{"키": [...]}`) |
+| m_arrConfigSplit | aQuery → Query.json, aSearch → Search.json, aAlarm → Alarm.json, aField → Field.json, Manager → Manager.json | 없음 | Config 따로 관리 설정 (웹에서 고치는 키, 파일: `{"키": [...]}`) |
 
 ## 프로젝트가 줄 것
 - Main 상수 4개 (위 표), global using (System.Net.Sockets·System.Runtime.InteropServices·System.Text.Json·System.Text.Json.Nodes·System.Text.Encodings.Web·Microsoft.Extensions.Hosting.WindowsServices·`using static Global`·`using static Log`)

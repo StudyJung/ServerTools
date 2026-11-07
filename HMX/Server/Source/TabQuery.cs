@@ -10,6 +10,11 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	private const int						m_nCacheSec			= 60;				// 쿼리 결과 보관 (초, 같은 쿼리·기간 페이지 넘김은 다시 계산 안 함)
 	private const int						m_nCacheMax			= 16;				// 쿼리 결과 보관 수 (여러 사용자·창, 넘으면 가장 오래된 것부터 뺌)
 	private const long						m_nCacheHitMax		= 8000000;			// 쿼리 결과 보관분 맞는 줄 (줄당 8바이트) 합 최대 (넘음: 오래된 것부터 뺌 → 큰 쿼리 여러 개 메모리 점유 방지)
+	private const int						m_nQueryLimitSec	= 60;				// 쿼리 제한 시간 기본 (초, 요청 nLimit 없음, 페이지 설정 기본과 같음)
+	private const int						m_nQueryLimitMax	= 3600;				// 쿼리 제한 시간 최대 (초)
+	private const int						m_nQueryConcurrent	= 2;				// 동시 쿼리 (전체, 통계·렌즈 포함, 세션마다 1건)
+	private static readonly int				m_nQueryParallel	= Math.Max(1, Environment.ProcessorCount / 2);	// 시간 폴더 병렬 수 (코어 절반: 적재·수신 여유)
+	private static readonly Gate			m_kGate				= new Gate(m_nQueryConcurrent);	// 쿼리·통계·렌즈 자리 (세션 1건 → 전체)
 	private const int						m_nQueryDayMax		= 1096;				// 쿼리·통계 기간 최대 (일, 3년, 시간 수만큼 배열·폴더 확인 → 잘못된 요청 하나의 서버 점유 방지, 페이지 QUERY_DAY_MAX 와 같음)
 	private const int						m_nHitKeepHour		= 2;				// 기간 X시간 이하: 맞는 줄 결과에 보관 (분별 건수·페이지 다시 안 읽음, 긴 기간: 페이지 때 그 시간만 다시 읽음)
 	private const int						m_nLensBarMax		= 86400;			// 렌즈 초·분봉 칸 최대 (페이지 LENS_BAR_MAX 와 같음, 24시간 초봉)
@@ -59,12 +64,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	private static volatile bool			m_bFieldLoaded;						// field.txt 읽음
 	private const int						m_nFieldRegexMax	= 500;				// 추가 필드 정규식 최대 글자 (클라와 같음)
 	private static volatile FieldRule[]		m_arrFieldRule		= LoadFieldRule();	// 줄 추가 필드 정의 (설정 aField, TCP: 클라 Count 답·얼라이브 답 (클라 1분마다, 바뀜: 바로)으로 내려줌, HTTP /api/external/log·TCP 받은 필드: 이 키만, 바꿀 때 배열 통째로)
-	private static volatile List<(string sKey, string sQuery, int nMinute)>	m_listSaved	= LoadSaved();	// 저장 쿼리 (설정 aQuery, 바꿀 때 목록 통째로)
-	private static readonly object			m_kSavedLock		= new object();		// 저장 쿼리·알람·필드 정의 바꾸기 1건씩 (설정 파일 쓰기)
-	private const int						m_nSavedKeyMax		= 50;				// 저장 쿼리·알람 제목 최대 글자
-	private const int						m_nSavedQueryMax	= 1000;				// 저장 쿼리·알람 쿼리 최대 글자 (쿼리와 같음)
-	private const int						m_nSavedMinuteMax	= 129600;			// 저장 쿼리 간격 최대 (분, 페이지 SAVED_MINUTE_MAX 와 같음)
-	private const int						m_nSavedMinute		= 10;				// 저장 쿼리 간격 없음·오류: 기본 (분, 페이지 SAVED_MINUTE 와 같음)
+	private static readonly SavedList		m_kSaved			= new SavedList("aQuery", "저장 쿼리", "쿼리", "arrQuery");	// 저장 쿼리 (설정 aQuery → Query.json)
+	private static readonly object			m_kSavedLock		= new object();		// 알람·필드 정의 바꾸기 1건씩 (설정 파일 쓰기)
 	private static volatile List<AlarmItem>	m_listAlarm			= LoadAlarm();		// 알람 (설정 aAlarm, 바꿀 때 목록 통째로)
 	private const int						m_nAlarmMinuteMax	= 1440;				// 알람 간격 최대 (분, 하루: 구간은 KST 자정 안 넘김)
 	private const int						m_nAlarmDelayMax	= 1440;				// 알람 억제 최대 (분)
@@ -111,10 +112,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		WebApp.MapGet("/api/query/lens", OnLens);			// 렌즈 초·분봉 (쿼리·기간 맞는 줄의 초·분별 건수)
 		WebApp.MapGet("/api/query/field", OnFieldList);		// 필드 목록 (기본 + 추가: 설정 aField 로 받은 이름)
 		WebApp.MapGet("/api/query/machine", OnMachineList);	// 머신 목록 (색인된 머신, 쿼리 M)
-		WebApp.MapGet("/api/query/saved", OnSavedList);		// 저장 쿼리 목록 (설정 aQuery)
-		WebApp.MapPost("/api/query/saved", OnSavedSave);	// 저장 쿼리 저장 (같은 이름: 바꿈, 본문 JSON)
-		WebApp.MapPost("/api/query/saved/delete", OnSavedDelete);	// 저장 쿼리 삭제 (본문 JSON)
-		WebApp.MapPost("/api/query/saved/move", OnSavedMove);		// 저장 쿼리 순서 바꿈 (본문 JSON)
+		m_kSaved.MapRoute(WebApp, "/api/query/saved");		// 저장 쿼리 (목록·저장·삭제·순서, SavedList)
 		WebApp.MapGet("/api/alarm", OnAlarmList);					// 알람 목록 (설정 aAlarm)
 		WebApp.MapPost("/api/alarm", OnAlarmSave);					// 알람 추가·수정 (본문 JSON)
 		WebApp.MapPost("/api/alarm/delete", OnAlarmDelete);			// 알람 삭제 (본문 JSON)
@@ -134,35 +132,67 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return Web.MakePage("field");
 	}
 
-	private static IResult OnQuery(string? sKey, long? nStart, long? nEnd, int? nPage, int? nOffset, int? nCount, CancellationToken kToken)	// 쿼리: 시간 폴더마다 병렬로 포스팅만 읽어 AND·OR·NOT 정렬 병합 → 시간별·분별 건수 + nPage 페이지 원문 (m_nCacheSec 초 보관, 응답: Server.cs 머리, 요청 끊김: 보관 안 함)
+	private static async Task<IResult> OnQuery(string? sKey, long? nStart, long? nEnd, int? nPage, int? nOffset, int? nCount, int? nLimit, HttpContext kContext)	// 쿼리 (응답: Server.cs 머리, 부하 제한: Gate·GetLimitSource·Yield, 요청 끊김: 응답 없음, 제한 시간 넘음: sError)
 	{
+		long			nBegin		= Stopwatch.GetTimestamp();
+		string			sQuery		= (sKey ?? "").Trim();
+		int				nLimitSec	= GetLimitSec(nLimit);
+		int				nSkip		= Math.Clamp(nOffset ?? 0, 0, m_nQueryPage);					// 페이지 안 시작 (스크롤 이어 읽기)
+		int				nTake		= Math.Clamp(nCount ?? m_nQueryPage, 0, m_nQueryPage - nSkip);	// 페이지 안 줄 수
+		int				nCur		= 0;															// 지금 페이지 (범위 밖: 끝)
+		QueryResult		kResult;
+		List<object>	listLine	= new List<object>();											// 이 페이지 줄 (원문은 이것만 읽음)
+		string			sError;
+
 		try
 		{
-			long			nBegin		= Stopwatch.GetTimestamp();
-			string			sQuery		= (sKey ?? "").Trim();
-			int				nSkip		= Math.Clamp(nOffset ?? 0, 0, m_nQueryPage);													// 페이지 안 시작 (페이지가 스크롤로 이어 읽음)
-			int				nTake		= Math.Clamp(nCount ?? m_nQueryPage, 0, m_nQueryPage - nSkip);									// 페이지 안 줄 수
-			QueryResult		kResult		= GetQueryResult(sQuery, nStart ?? 0, nEnd ?? 0, (nPage ?? 0) > 0 || nSkip > 0, kToken);		// 쿼리 결과 (페이지 넘김·이어 읽기: 보관분)
-			int				nCur		= Math.Clamp(nPage ?? 0, 0, Math.Max(0, (kResult.m_nTotal + m_nQueryPage - 1) / m_nQueryPage - 1));	// 지금 페이지 (범위 밖: 끝)
-			string			sError		= kResult.m_sError;
-			List<object>	listLine;																									// 이 페이지 줄 (원문은 이것만 읽음)
+			using IDisposable				kGate	= await m_kGate.EnterAsync(kContext);
+			using CancellationTokenSource	kLimit	= GetLimitSource(kContext, nLimitSec);
+
+			kResult	= GetQueryResult(sQuery, nStart ?? 0, nEnd ?? 0, (nPage ?? 0) > 0 || nSkip > 0, kLimit.Token);	// 페이지 넘김·이어 읽기: 보관분
+			nCur	= Math.Clamp(nPage ?? 0, 0, Math.Max(0, (kResult.m_nTotal + m_nQueryPage - 1) / m_nQueryPage - 1));
+			sError	= kResult.m_sError;
 
 			try
 			{
-				listLine = ReadPage(kResult, nCur * m_nQueryPage + nSkip, nTake);
+				listLine = ReadPage(kResult, nCur * m_nQueryPage + nSkip, nTake, kLimit.Token);
 			}
-			catch (Exception kException) when (kException is not OperationCanceledException)	// 원문 사용 중·잘림 등: 건수·막대는 그대로, 줄 없음
+			catch (Exception kException) when (kException is not OperationCanceledException)	// 원문 사용 중·잘림: 건수·막대는 그대로
 			{
-				listLine	= new List<object>();
-				sError		= GetErrorText(kException, "쿼리 원문 읽기");
+				sError = GetErrorText(kException, "쿼리 원문 읽기");
+			}
+		}
+		catch (OperationCanceledException)	// 요청 끊김: 응답 없음, 제한 시간: 오류
+		{
+			if (kContext.RequestAborted.IsCancellationRequested)
+			{
+				return Results.Empty;
 			}
 
-			return Results.Json(new { sKey = sQuery, nStart = nStart ?? 0, nEnd = nEnd ?? 0, nTotal = kResult.m_nTotal, nPage = nCur, nPageSize = m_nQueryPage, nOffset = nSkip, nElapsedMs = (long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds, sError, arrHour = kResult.m_arrHour.Select((nHour, nIndex) => new { nHour, nCount = kResult.m_arrCount[nIndex] }), arrMinute = kResult.m_listMinute, arrSecond = kResult.m_listSecond, arrLine = listLine });
+			kResult	= new QueryResult("");
+			sError	= GetLimitError("쿼리", nLimitSec);
 		}
-		catch (OperationCanceledException)	// 페이지가 요청 끊음 (중단): 응답 안 받음
-		{
-			return Results.Empty;
-		}
+
+		return Results.Json(new { sKey = sQuery, nStart = nStart ?? 0, nEnd = nEnd ?? 0, nTotal = kResult.m_nTotal, nPage = nCur, nPageSize = m_nQueryPage, nOffset = nSkip, nElapsedMs = (long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds, sError, arrHour = kResult.m_arrHour.Select((nHour, nIndex) => new { nHour, nCount = kResult.m_arrCount[nIndex] }), arrMinute = kResult.m_listMinute, arrSecond = kResult.m_listSecond, arrLine = listLine });
+	}
+
+	private static int GetLimitSec(int? nLimit)	// 제한 시간 (초, 없음: 기본)
+	{
+		return Math.Clamp(nLimit ?? m_nQueryLimitSec, 1, m_nQueryLimitMax);
+	}
+
+	private static CancellationTokenSource GetLimitSource(HttpContext kContext, int nLimitSec)	// 제한 시간 + 요청 끊김 토큰
+	{
+		CancellationTokenSource kLimit = CancellationTokenSource.CreateLinkedTokenSource(kContext.RequestAborted);
+
+		kLimit.CancelAfter(nLimitSec * 1000);
+
+		return kLimit;
+	}
+
+	private static string GetLimitError(string sWhat, int nLimitSec)	// 제한 시간 오류 글
+	{
+		return $"{sWhat} 제한 시간 초과 ({nLimitSec}초)";
 	}
 
 	public static async Task<IResult> OnExternalQuery(HttpRequest kRequest)	// 외부 API 쿼리 (/api/external/query/키/토큰/, 쿼리 권한 계정, 브라우저 GET: 키 계정 로그인 → 쿼리 탭 /?… 이동 (그 쿼리·기간 바로 실행), 그 외: JSON): 쿼리 문자열 (있음) 또는 POST 본문 JSON {sKey (없음: *), nStart·nEnd (yyyyMMddHHmm·yyyyMMddHHmmss, 시작 포함·끝 미포함, 끝 없음: 지금), nMinute (시작 없음: 끝 X분 전, 없음: X분), nPage, nOffset, nCount} → /api/query 와 같은 응답
@@ -223,13 +253,14 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 			return Results.Redirect(Web.GetQueryPath(sKey, kFrom, kTo));
 		}
 
-		return OnQuery(sKey == "" ? "*" : sKey, nStart, nEnd, (int?)funcLong("nPage"), (int?)funcLong("nOffset"), (int?)funcLong("nCount"), kStop);
+		return await OnQuery(sKey == "" ? "*" : sKey, nStart, nEnd, (int?)funcLong("nPage"), (int?)funcLong("nOffset"), (int?)funcLong("nCount"), (int?)funcLong("nLimit"), kRequest.HttpContext);
 	}
 
-	private static IResult OnLens(string? sKey, long? nStart, long? nEnd, int? nSec, CancellationToken kToken)	// 렌즈 초·분봉: 쿼리·기간 맞는 줄 → 칸 (nSec 1: 초, 그 외: 분) 마다 건수 (기간 첫 칸 정각부터 모든 칸 0 포함, m_nLensBarMax 칸 넘음: 오류, 원문 안 읽음, 보관 안 함)
+	private static async Task<IResult> OnLens(string? sKey, long? nStart, long? nEnd, int? nSec, int? nLimit, HttpContext kContext)	// 렌즈 초·분봉: 쿼리·기간 맞는 줄 → 칸 (nSec 1: 초, 그 외: 분) 마다 건수 (기간 첫 칸 정각부터 모든 칸 0 포함, m_nLensBarMax 칸 넘음: 오류, 원문 안 읽음, 보관 안 함, 부하 제한: OnQuery 와 같음)
 	{
 		long		nBegin		= Stopwatch.GetTimestamp();
 		int			nCell		= nSec == 1 ? 1 : 60;												// 칸 (초)
+		int			nLimitSec	= GetLimitSec(nLimit);
 		QueryResult	kPlan		= new QueryResult("");												// 쿼리 조건 (보관 안 함)
 		string		sError		= PrepareQuery(kPlan, (sKey ?? "").Trim(), nStart ?? 0, nEnd ?? 0);	// 조건 오류
 		DateTime	kFirst		= kPlan.m_kFrom.Date.AddHours(kPlan.m_kFrom.Hour).AddMinutes(kPlan.m_kFrom.Minute).AddSeconds(nCell == 1 ? kPlan.m_kFrom.Second : 0);	// 기간 첫 칸 (정각 분·초)
@@ -244,21 +275,31 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		{
 			try
 			{
-				(sError, arrCount) = RunLens(kPlan, kFirst, nCell, kToken);
+				using IDisposable				kGate	= await m_kGate.EnterAsync(kContext);
+				using CancellationTokenSource	kLimit	= GetLimitSource(kContext, nLimitSec);
+
+				(sError, arrCount) = RunLens(kPlan, kFirst, nCell, kLimit.Token);
 			}
-			catch (OperationCanceledException)	// 페이지가 요청 끊음: 응답 안 받음
+			catch (OperationCanceledException)	// 요청 끊김: 응답 없음, 제한 시간: 오류
 			{
-				return Results.Empty;
+				if (kContext.RequestAborted.IsCancellationRequested)
+				{
+					return Results.Empty;
+				}
+
+				sError		= GetLimitError("렌즈", nLimitSec);
+				arrCount	= Array.Empty<int>();
 			}
 		}
 
 		return Results.Json(new { sError, nElapsedMs = (long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds, arrTime = arrCount.Select((nCount, nIndex) => { DateTime kCell = kFirst.AddSeconds((long)nIndex * nCell); long nMinute = ToHour(kCell) * 100 + kCell.Minute; return new { nTime = nCell == 1 ? nMinute * 100 + kCell.Second : nMinute, nCount }; }) });	// nTime: 초봉 yyyyMMddHHmmss, 분봉 yyyyMMddHHmm
 	}
 
-	private static IResult OnStat(string? sKey, long? nStart, long? nEnd, string? sField, CancellationToken kToken)	// 필드별 통계: 쿼리·기간 맞는 줄 ∩ 필드 값 포스팅 → 값마다 건수 (원문 안 읽음, sField: 그 필드 값 전체, 응답: Server.cs 머리)
+	private static async Task<IResult> OnStat(string? sKey, long? nStart, long? nEnd, string? sField, int? nLimit, HttpContext kContext)	// 필드별 통계: 쿼리·기간 맞는 줄 ∩ 필드 값 포스팅 → 값마다 건수 (원문 안 읽음, sField: 그 필드 값 전체, 응답: Server.cs 머리, 부하 제한: OnQuery 와 같음)
 	{
 		long										nBegin		= Stopwatch.GetTimestamp();
 		string										sQuery		= (sKey ?? "").Trim();
+		int											nLimitSec	= GetLimitSec(nLimit);
 		QueryResult									kPlan		= new QueryResult("");																// 쿼리 조건 (보관 안 함)
 		Dictionary<string, (string sKey, int nCount)>	hmapCount	= new Dictionary<string, (string sKey, int nCount)>(StringComparer.OrdinalIgnoreCase);	// 필드 키 (필드\t값) → 첫 표기·건수
 		string										sError		= PrepareQuery(kPlan, sQuery, nStart ?? 0, nEnd ?? 0);								// 조건 오류
@@ -268,11 +309,21 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		{
 			try
 			{
-				(sError, nTotal) = RunStat(kPlan, hmapCount, kToken);
+				using IDisposable				kGate	= await m_kGate.EnterAsync(kContext);
+				using CancellationTokenSource	kLimit	= GetLimitSource(kContext, nLimitSec);
+
+				(sError, nTotal) = RunStat(kPlan, hmapCount, kLimit.Token);
 			}
-			catch (OperationCanceledException)	// 페이지가 요청 끊음 (중단·다음 쿼리): 응답 안 받음
+			catch (OperationCanceledException)	// 요청 끊김: 응답 없음, 제한 시간: 오류
 			{
-				return Results.Empty;
+				if (kContext.RequestAborted.IsCancellationRequested)
+				{
+					return Results.Empty;
+				}
+
+				sError = GetLimitError("통계", nLimitSec);
+
+				hmapCount.Clear();
 			}
 		}
 
@@ -323,104 +374,6 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		string[] arrMachine = m_hmapMachine.Values.Order(StringComparer.OrdinalIgnoreCase).ToArray();	// 색인된 머신 (대소문자 무시 중복 뺌)
 
 		return Results.Json(new { arrMachine });
-	}
-
-	private static IResult OnSavedList()	// 저장 쿼리 목록 → {arrQuery: [{sKey, sQuery, nMinute}]} (팝업 열 때마다: 설정 파일 다시 읽음)
-	{
-		ReloadSaved();
-
-		return Results.Json(new { arrQuery = GetSavedList() });
-	}
-
-	private static IEnumerable<object> GetSavedList()	// 저장 쿼리 응답 [{sKey, sQuery, nMinute}]
-	{
-		return m_listSaved.Select(kSaved => new { kSaved.sKey, kSaved.sQuery, kSaved.nMinute });
-	}
-
-	private static IResult OnSavedSave(SavedParam kParam, HttpRequest kRequest)	// 저장 쿼리 저장: 검사 → sOldKey: 그 자리 수정 (제목 겹침: 오류), 없음: 같은 제목 바꿈·끝에 추가 → 설정 aQuery (요청자 IP 로그)
-	{
-		string sKey		= (kParam.sKey ?? "").Trim();		// 제목
-		string sQuery	= (kParam.sQuery ?? "").Trim();		// 쿼리 (비움: 저장 안 함)
-		string sOldKey	= (kParam.sOldKey ?? "").Trim();	// 수정할 저장 쿼리 제목 (비움: 추가)
-		int nMinute		= kParam.nMinute ?? m_nSavedMinute;	// 간격 (분)
-		string sError	= sKey == "" || sKey.Length > m_nSavedKeyMax ? $"제목 없음·{m_nSavedKeyMax}자 넘음" : (sQuery == "" || sQuery.Length > m_nSavedQueryMax ? $"쿼리 없음·{m_nSavedQueryMax}자 넘음" : (!SearchNode.IsValid(sQuery) ? "쿼리 형식 오류 (예: A AND (B NOT C) OR D)" : (nMinute < 1 || nMinute > m_nSavedMinuteMax ? $"간격 1 ~ {m_nSavedMinuteMax}분" : "")));	// 오류 (제목·쿼리 모두 필요, 쿼리는 검색어 규칙 형식)
-
-		if (sError == "")
-		{
-			lock (m_kSavedLock)
-			{
-				List<(string sKey, string sQuery, int nMinute)>	listSaved	= new List<(string sKey, string sQuery, int nMinute)>(m_listSaved);	// 바꿀 목록
-				int									nSame		= listSaved.FindIndex(kSaved => string.Equals(kSaved.sKey, sKey, StringComparison.OrdinalIgnoreCase));		// 같은 제목
-				int									nOld		= sOldKey == "" ? -1 : listSaved.FindIndex(kSaved => string.Equals(kSaved.sKey, sOldKey, StringComparison.OrdinalIgnoreCase));	// 수정할 자리
-				string								sAction		= nOld >= 0 ? "수정" : (nSame >= 0 ? "바꿈" : "추가");	// 로그
-
-				if (sOldKey != "" && nOld < 0)
-				{
-					sError = "없는 제목";
-				}
-				else if (nOld >= 0 && nSame >= 0 && nSame != nOld)
-				{
-					sError = "이미 있는 제목";
-				}
-				else
-				{
-					if (nOld >= 0)
-					{
-						listSaved[nOld] = (sKey, sQuery, nMinute);
-					}
-					else if (nSame >= 0)
-					{
-						listSaved[nSame] = (listSaved[nSame].sKey, sQuery, nMinute);
-					}
-					else
-					{
-						listSaved.Add((sKey, sQuery, nMinute));
-					}
-
-					sError = SaveSaved(listSaved);
-				}
-
-				if (sError == "")
-				{
-					Log.Write(INFO_, $"저장 쿼리 {sAction}: {(nOld >= 0 && sOldKey != sKey ? sOldKey + " → " : "")}{sKey} ({sQuery}, {nMinute}분) 요청자 {Web.GetAddr(kRequest.HttpContext)}");
-				}
-			}
-		}
-
-		return Results.Json(new { sError, arrQuery = GetSavedList() });
-	}
-
-	private static IResult OnSavedDelete(SavedParam kParam, HttpRequest kRequest)	// 저장 쿼리 삭제 → 설정 aQuery (없는 이름: 오류, 요청자 IP 로그)
-	{
-		string sKey		= (kParam.sKey ?? "").Trim();	// 이름
-		string sError	= "";
-
-		lock (m_kSavedLock)
-		{
-			List<(string sKey, string sQuery, int nMinute)> listSaved = m_listSaved.Where(kSaved => !string.Equals(kSaved.sKey, sKey, StringComparison.OrdinalIgnoreCase)).ToList();	// 지운 목록
-
-			sError = listSaved.Count == m_listSaved.Count ? "없는 제목" : SaveSaved(listSaved);
-
-			if (sError == "")
-			{
-				Log.Write(INFO_, $"저장 쿼리 삭제: {sKey} 요청자 {Web.GetAddr(kRequest.HttpContext)}");
-			}
-		}
-
-		return Results.Json(new { sError, arrQuery = GetSavedList() });
-	}
-
-	private static string SaveSaved(List<(string sKey, string sQuery, int nMinute)> listSaved)	// 저장 쿼리 잠금 안에서: 설정 aQuery 에 [{sKey, sQuery, nMinute}] 저장 → 성공: 메모리 목록 바꿈 (반환: 오류, 없음: "")
-	{
-		JsonArray	kArray	= new JsonArray(listSaved.Select(kSaved => (JsonNode?)new JsonObject { ["sKey"] = kSaved.sKey, ["sQuery"] = kSaved.sQuery, ["nMinute"] = kSaved.nMinute }).ToArray());	// 설정 aQuery
-		string		sError	= Config.SetArray("aQuery", kArray);
-
-		if (sError == "")
-		{
-			m_listSaved = listSaved;
-		}
-
-		return sError;
 	}
 
 	private static FieldRule[] LoadFieldRule(IEnumerable<IConfigurationSection>? listSection = null, List<string>? listWarn = null)	// 설정 aField → 줄 추가 필드 정의 (키: 형식·m_nFieldKeyMax 자 이하·기본 필드·중복 (대소문자 무시) 아님·최대 m_nLineFieldMax 개, sValue 있음: m_nFieldValueMax 자 이하 (정규식 안 씀), 없음: 정규식 m_nFieldRegexMax 자 이하·형식 맞음, 오류: 오류 글 후 뺌, listSection 없음: 메모리 설정 (시작: 정의 출력), listWarn: 오류 글 모음 (없음: 바로 출력))
@@ -583,7 +536,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 			List<FieldRule>	listRule	= new List<FieldRule>(m_arrFieldRule);
 			int				nFrom		= listRule.FindIndex(kRule => string.Equals(kRule.sKey, sKey, StringComparison.OrdinalIgnoreCase));	// 옮길 자리
 
-			sError = nFrom < 0 ? "없는 필드" : SaveFieldRule(MoveItem(listRule, nFrom, kParam.nTo ?? nFrom));
+			sError = nFrom < 0 ? "없는 필드" : SaveFieldRule(SavedList.MoveItem(listRule, nFrom, kParam.nTo ?? nFrom));
 
 			if (sError == "")
 			{
@@ -664,60 +617,6 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		{
 			Log.Write(WARN_, $"쿼리 필드 순서 실패: {kException.Message}");
 		}
-	}
-
-	private static List<(string sKey, string sQuery, int nMinute)> LoadSaved(IEnumerable<IConfigurationSection>? listSection = null, List<string>? listWarn = null)	// 설정 aQuery → 저장 쿼리 (이름 없음·너무 김·같은 이름: 오류 글 후 뺌, 간격 없음·범위 밖: 기본, listSection 없음: 메모리 설정, listWarn: 오류 글 모음 (없음: 바로 출력))
-	{
-		List<(string sKey, string sQuery, int nMinute)> listSaved = new List<(string sKey, string sQuery, int nMinute)>();	// 저장 쿼리
-
-		foreach (IConfigurationSection kSection in listSection ?? Config.GetChildren("aQuery"))
-		{
-			string sKey		= (kSection["sKey"] ?? "").Trim();
-			string sQuery	= (kSection["sQuery"] ?? "").Trim();
-			int nMinute		= int.TryParse(kSection["nMinute"], out int nValue) && nValue >= 1 && nValue <= m_nSavedMinuteMax ? nValue : m_nSavedMinute;	// 간격 (분)
-
-			if (sKey == "" || sKey.Length > m_nSavedKeyMax || sQuery.Length > m_nSavedQueryMax || listSaved.Any(kSaved => string.Equals(kSaved.sKey, sKey, StringComparison.OrdinalIgnoreCase)))
-			{
-				AddWarn(listWarn, $"저장 쿼리 설정 오류: aQuery {sKey}");
-
-				continue;
-			}
-
-			listSaved.Add((sKey, sQuery, nMinute));
-		}
-
-		return listSaved;
-	}
-
-	private static IResult OnSavedMove(SavedParam kParam, HttpRequest kRequest)	// 저장 쿼리 순서 바꿈: 그 제목 → nTo 자리 (요청자 IP 로그)
-	{
-		string sKey		= (kParam.sKey ?? "").Trim();	// 제목
-		string sError	= "";
-
-		lock (m_kSavedLock)
-		{
-			int nFrom = m_listSaved.FindIndex(kSaved => string.Equals(kSaved.sKey, sKey, StringComparison.OrdinalIgnoreCase));	// 옮길 자리
-
-			sError = nFrom < 0 ? "없는 제목" : SaveSaved(MoveItem(m_listSaved, nFrom, kParam.nTo ?? nFrom));
-
-			if (sError == "")
-			{
-				Log.Write(INFO_, $"저장 쿼리 순서: {sKey} → {(kParam.nTo ?? nFrom) + 1}번 요청자 {Web.GetAddr(kRequest.HttpContext)}");
-			}
-		}
-
-		return Results.Json(new { sError, arrQuery = GetSavedList() });
-	}
-
-	private static List<T> MoveItem<T>(List<T> listItem, int nFrom, int nTo)	// nFrom 항목을 nTo 자리로 옮긴 새 목록 (nTo 범위 밖: 처음·끝)
-	{
-		List<T>	listMove	= new List<T>(listItem);
-		T		kItem		= listMove[nFrom];
-
-		listMove.RemoveAt(nFrom);
-		listMove.Insert(Math.Clamp(nTo, 0, listMove.Count), kItem);
-
-		return listMove;
 	}
 
 	public static List<AlarmItem> GetAlarmList()	// 알람 목록 (시작 때 Alarm)
@@ -867,7 +766,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		{
 			int nFrom = m_listAlarm.FindIndex(kAlarm => kAlarm.nID == nID);	// 옮길 자리
 
-			sError = nFrom < 0 ? "없는 알람" : SaveAlarm(MoveItem(m_listAlarm, nFrom, kParam.nTo ?? nFrom));
+			sError = nFrom < 0 ? "없는 알람" : SaveAlarm(SavedList.MoveItem(m_listAlarm, nFrom, kParam.nTo ?? nFrom));
 
 			if (sError == "")
 			{
@@ -899,13 +798,13 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	{
 		string sError = "";
 
-		if (kAlarm.sKey == "" || kAlarm.sKey.Length > m_nSavedKeyMax)
+		if (kAlarm.sKey == "" || kAlarm.sKey.Length > SavedList.m_nKeyMax)
 		{
-			sError = $"제목 없음·{m_nSavedKeyMax}자 넘음";
+			sError = $"제목 없음·{SavedList.m_nKeyMax}자 넘음";
 		}
-		else if (kAlarm.sQuery == "" || kAlarm.sQuery.Length > m_nSavedQueryMax)
+		else if (kAlarm.sQuery == "" || kAlarm.sQuery.Length > SavedList.m_nQueryMax)
 		{
-			sError = $"쿼리 없음·{m_nSavedQueryMax}자 넘음";
+			sError = $"쿼리 없음·{SavedList.m_nQueryMax}자 넘음";
 		}
 		else if (!SearchNode.IsValid(kAlarm.sQuery))
 		{
@@ -1057,33 +956,6 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 			return null;
 		}
-	}
-
-	private static void ReloadSaved()	// 저장 쿼리 팝업 열 때 (목록 요청): 설정 파일 aQuery 다시 읽음 → 메모리와 다름: 바꿈 (json 직접 고침, 오류 글: 그때만)
-	{
-		IConfigurationRoot? kConfig = ReadConfigFile("aQuery");
-
-		if (kConfig == null)
-		{
-			return;
-		}
-
-		List<string>									listWarn	= new List<string>();											// 오류 글
-		List<(string sKey, string sQuery, int nMinute)>	listSaved	= LoadSaved(kConfig.GetSection("aQuery").GetChildren(), listWarn);	// 파일 저장 쿼리
-
-		lock (m_kSavedLock)
-		{
-			if (listSaved.SequenceEqual(m_listSaved))
-			{
-				return;
-			}
-
-			m_listSaved = listSaved;
-		}
-
-		listWarn.ForEach(sWarn => Log.Write(WARN_, sWarn));
-
-		Log.Write(INFO_, $"저장 쿼리 다시 읽음: 설정 파일 aQuery {listSaved.Count}개 (json 직접 고침)");
 	}
 
 	private static void ReloadAlarm()	// 알람 팝업 열 때 (목록 요청): 설정 파일 aAlarm 다시 읽음 → 메모리와 다름: 바꿈·매칭 스냅샷 교체 (json 직접 고침, 오류 글: 그때만)
@@ -1250,7 +1122,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		kResult.m_arrHour	= new long[nHourCount];
 		kResult.m_arrCount	= new int[nHourCount];
 
-		Parallel.For(0, nHourCount, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = kToken }, nIndex =>	// 시간 폴더마다 병렬 (없는 시간: 0건, 중단: 남은 시간 안 읽음)
+		Parallel.For(0, nHourCount, new ParallelOptions { MaxDegreeOfParallelism = m_nQueryParallel, CancellationToken = kToken }, nIndex =>	// 시간 폴더마다 병렬 (없는 시간: 0건, 중단: 남은 시간 안 읽음)
 		{
 			DateTime	kHour		= kHourFirst.AddHours(nIndex);					// 이 시간 (정각)
 			long		nHour		= ToHour(kHour);								// yyyyMMddHH
@@ -1276,19 +1148,19 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 				if (nHourCount > m_nHitKeepHour)	// 긴 기간: 건수만 (시간 전체: 줄 목록 안 읽음, 페이지 때 그 시간만 다시 읽음)
 				{
-					kResult.m_arrCount[nIndex] = ReadHourDoc(kResult, sHourDir, nMsFrom, nMsTo).Length;
+					kResult.m_arrCount[nIndex] = ReadHourDoc(kResult, sHourDir, nMsFrom, nMsTo, kToken).Length;
 
 					return;
 				}
 
-				(int nMs, int nDoc)[] arrHit = ReadHourHit(kResult, sHourDir, nMsFrom, nMsTo);	// 맞는 줄 (분초·줄 번호)
+				(int nMs, int nDoc)[] arrHit = ReadHourHit(kResult, sHourDir, nMsFrom, nMsTo, kToken);	// 맞는 줄 (분초·줄 번호)
 
 				kResult.m_arrCount[nIndex] = arrHit.Length;
 				kResult.m_hmapHit[nHour] = arrHit;	// 짧은 기간: 분별 건수·페이지에 다시 씀
 
 				Interlocked.Add(ref kResult.m_nHitCount, arrHit.Length);
 			}
-			catch (Exception kException)	// 사용 중·권한 없음·형식 오류 (첫 오류만)
+			catch (Exception kException) when (kException is not OperationCanceledException)	// 사용 중·권한 없음·형식 오류 (첫 오류만, 중단·제한 시간: 그대로 나감)
 			{
 				lock (kResult)
 				{
@@ -1368,7 +1240,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		object		kLock		= new object();																		// 오류 잠금
 		string		sError		= "";																				// 첫 오류
 
-		Parallel.For(0, nHourCount, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = kToken }, nIndex =>	// 시간 폴더마다 병렬 (시간마다 다른 칸 → 잠금 없음, 중단: 남은 시간 안 읽음)
+		Parallel.For(0, nHourCount, new ParallelOptions { MaxDegreeOfParallelism = m_nQueryParallel, CancellationToken = kToken }, nIndex =>	// 시간 폴더마다 병렬 (시간마다 다른 칸 → 잠금 없음, 중단: 남은 시간 안 읽음)
 		{
 			DateTime	kHour		= kHourFirst.AddHours(nIndex);						// 이 시간 (정각)
 			string		sHourDir	= GetHourDir(ToHour(kHour));						// 시간 폴더
@@ -1383,7 +1255,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 					return;
 				}
 
-				foreach ((int nMs, _) in ReadHourHit(kPlan, sHourDir, nMsFrom, nMsTo))
+				foreach ((int nMs, _) in ReadHourHit(kPlan, sHourDir, nMsFrom, nMsTo, kToken))
 				{
 					++arrCount[(nBase + nMs / 1000) / nCell];
 				}
@@ -1411,7 +1283,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		string		sError		= "";																// 첫 오류
 		int			nTotal		= 0;																// 맞는 줄 수
 
-		Parallel.For(0, nHourCount, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = kToken }, nIndex =>	// 시간 폴더마다 병렬 (중단: 남은 시간 안 읽음)
+		Parallel.For(0, nHourCount, new ParallelOptions { MaxDegreeOfParallelism = m_nQueryParallel, CancellationToken = kToken }, nIndex =>	// 시간 폴더마다 병렬 (중단: 남은 시간 안 읽음)
 		{
 			DateTime	kHour		= kHourFirst.AddHours(nIndex);			// 이 시간 (정각)
 			string		sHourDir	= GetHourDir(ToHour(kHour));			// 시간 폴더
@@ -1425,7 +1297,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 					return;
 				}
 
-				int[] arrDoc = ReadHourDoc(kPlan, sHourDir, nMsFrom, nMsTo);	// 맞는 줄 번호
+				int[] arrDoc = ReadHourDoc(kPlan, sHourDir, nMsFrom, nMsTo, kToken);	// 맞는 줄 번호
 
 				if (arrDoc.Length == 0)
 				{
@@ -1471,10 +1343,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 		ReadSegments(sHourDir, (kStream, kHead) =>
 		{
-			if (kToken.IsCancellationRequested)	// 중단: 남은 세그먼트 안 읽음 (Parallel.For 가 중단으로 끝냄)
-			{
-				return;
-			}
+			Gate.Yield(kToken);
 
 			List<FieldEntry> listDict = ReadFieldDict(kStream, kHead);	// 필드 사전
 
@@ -1492,6 +1361,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 			foreach (FieldEntry kEntry in listDict)
 			{
 				int nHit = 0;	// 맞는 줄 수
+
+				Gate.Yield(kToken);
 
 				foreach (int nDoc in DecodePosting(arrBlob.AsSpan(kEntry.nOffset - nFrom, kEntry.nBytes), kEntry.nCount))
 				{
@@ -1541,9 +1412,9 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return nCount;
 	}
 
-	private static (int nMs, int nDoc)[] ReadHourHit(QueryResult kResult, string sHourDir, int nMsFrom, int nMsTo)	// 시간 폴더 하나 맞는 줄 (분초·줄 번호): 포스팅 조건 계산 → doc.bin 분초로 기간 안 (nMsFrom 포함·nMsTo 미포함)
+	private static (int nMs, int nDoc)[] ReadHourHit(QueryResult kResult, string sHourDir, int nMsFrom, int nMsTo, CancellationToken kToken)	// 시간 폴더 하나 맞는 줄 (분초·줄 번호): 포스팅 조건 계산 → doc.bin 분초로 기간 안 (nMsFrom 포함·nMsTo 미포함)
 	{
-		int[] arrDoc = EvalHour(kResult, sHourDir);	// 맞는 줄 번호
+		int[] arrDoc = EvalHour(kResult, sHourDir, kToken);	// 맞는 줄 번호
 
 		if (arrDoc.Length == 0)
 		{
@@ -1558,6 +1429,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 			foreach (int nDoc in arrDoc)
 			{
+				Gate.Yield(kToken);
+
 				if (ReadDocRecord(kDoc, nDoc, out int nMs, out _, out _, out _) && nMs >= nMsFrom && nMs < nMsTo)
 				{
 					listHit.Add((nMs, nDoc));
@@ -1571,6 +1444,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 		foreach (int nDoc in arrDoc)
 		{
+			Gate.Yield(kToken);
+
 			if (TryGetDoc(arrTable, nDoc, out int nMs, out _, out _, out _) && nMs >= nMsFrom && nMs < nMsTo)
 			{
 				listHit.Add((nMs, nDoc));
@@ -1580,9 +1455,9 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return listHit.ToArray();
 	}
 
-	private static int[] ReadHourDoc(QueryResult kPlan, string sHourDir, int nMsFrom, int nMsTo)	// 시간 폴더 하나 맞는 줄 번호 (오름차순, 시간 전체: 줄 목록 안 읽음, 기간 양끝 시간: 줄 목록 분초로 기간 안만)
+	private static int[] ReadHourDoc(QueryResult kPlan, string sHourDir, int nMsFrom, int nMsTo, CancellationToken kToken)	// 시간 폴더 하나 맞는 줄 번호 (오름차순, 시간 전체: 줄 목록 안 읽음, 기간 양끝 시간: 줄 목록 분초로 기간 안만)
 	{
-		int[] arrDoc = EvalHour(kPlan, sHourDir);	// 맞는 줄 번호
+		int[] arrDoc = EvalHour(kPlan, sHourDir, kToken);	// 맞는 줄 번호
 
 		if (arrDoc.Length == 0 || (nMsFrom == 0 && nMsTo == m_nHourMs))
 		{
@@ -1591,16 +1466,21 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 		byte[] arrTable = ReadDocTable(sHourDir);	// 줄 목록
 
-		return arrDoc.Where(nDoc => TryGetDoc(arrTable, nDoc, out int nMs, out _, out _, out _) && nMs >= nMsFrom && nMs < nMsTo).ToArray();
+		return arrDoc.Where(nDoc =>
+		{
+			Gate.Yield(kToken);
+
+			return TryGetDoc(arrTable, nDoc, out int nMs, out _, out _, out _) && nMs >= nMsFrom && nMs < nMsTo;
+		}).ToArray();
 	}
 
-	private static int[] EvalHour(QueryResult kResult, string sHourDir)	// 시간 폴더 하나 조건 계산 (IP·날짜·시간 검색어: 후보 줄 원문 글자 확인, 원문 파일: 이 시간 안에서만 열고 닫음)
+	private static int[] EvalHour(QueryResult kResult, string sHourDir, CancellationToken kToken)	// 시간 폴더 하나 조건 계산 (IP·날짜·시간 검색어: 후보 줄 원문 글자 확인, 원문 파일: 이 시간 안에서만 열고 닫음)
 	{
 		Dictionary<int, FileStream> hmapStream = new Dictionary<int, FileStream>();	// 원문 파일 번호 → 연 원문 파일
 
 		try
 		{
-			return EvalQuery(kResult.m_kRoot!, ReadHourPosting(kResult, sHourDir), kResult.m_bExact ? MakeTextReader(sHourDir, hmapStream) : null);
+			return EvalQuery(kResult.m_kRoot!, ReadHourPosting(kResult, sHourDir, kToken), kResult.m_bExact ? MakeTextReader(sHourDir, hmapStream, kToken) : null);
 		}
 		finally
 		{
@@ -1611,12 +1491,14 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		}
 	}
 
-	private static Func<int, string?> MakeTextReader(string sHourDir, Dictionary<int, FileStream> hmapStream)	// 시간 폴더 줄 번호 → 원문에서 앞 시간 뺀 내용 (색인과 같은 범위, 줄 목록은 처음 쓸 때 1번 읽음, 없음: null)
+	private static Func<int, string?> MakeTextReader(string sHourDir, Dictionary<int, FileStream> hmapStream, CancellationToken kToken)	// 시간 폴더 줄 번호 → 원문에서 앞 시간 뺀 내용 (색인과 같은 범위, 줄 목록은 처음 쓸 때 1번 읽음, 없음: null)
 	{
 		byte[]? arrTable = null;	// 줄 목록
 
 		return nDoc =>
 		{
+			Gate.Yield(kToken);
+
 			arrTable ??= ReadDocTable(sHourDir);
 
 			if (!TryGetDoc(arrTable, nDoc, out _, out int nFileId, out long nOffset, out int nLength))
@@ -1631,7 +1513,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		};
 	}
 
-	private static Dictionary<string, int[]> ReadHourPosting(QueryResult kResult, string sHourDir)	// 쿼리 단어·필드마다 포스팅: 세그먼트마다 사전에서 찾아 세그먼트 순 이어 붙임 (범위 안 겹침 → 줄 번호 오름차순, 없음: 빈 배열)
+	private static Dictionary<string, int[]> ReadHourPosting(QueryResult kResult, string sHourDir, CancellationToken kToken)	// 쿼리 단어·필드마다 포스팅: 세그먼트마다 사전에서 찾아 세그먼트 순 이어 붙임 (범위 안 겹침 → 줄 번호 오름차순, 없음: 빈 배열)
 	{
 		Dictionary<string, List<int[]>> hmapPart = new Dictionary<string, List<int[]>>(StringComparer.OrdinalIgnoreCase);	// 단어·필드 키 → 세그먼트마다 포스팅
 
@@ -1649,6 +1531,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		{
 			foreach ((string sWord, ulong nHash) in kResult.m_listWord)
 			{
+				Gate.Yield(kToken);
+
 				if (FindTerm(kStream, kHead, nHash, out int nOffset, out int nCount, out int nBytes))
 				{
 					hmapPart[sWord].Add(ReadPosting(kStream, kHead, nOffset, nCount, nBytes));
@@ -1662,6 +1546,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 
 			foreach (FieldEntry kEntry in ReadFieldDict(kStream, kHead))
 			{
+				Gate.Yield(kToken);
+
 				if (hmapPart.TryGetValue(kEntry.sKey, out List<int[]>? listPart))	// 쿼리 필드 (필드 키에만 탭 → 단어와 안 겹침)
 				{
 					listPart.Add(ReadPosting(kStream, kHead, kEntry.nOffset, kEntry.nCount, kEntry.nBytes));
@@ -2291,7 +2177,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return listField;
 	}
 
-	private static List<object> ReadPage(QueryResult kResult, int nSkip, int nCount)	// 최신 순 nSkip 번째부터 nCount 줄: 그 시간 맞는 줄 (없음: 그 시간만 다시 읽음) → 원문 파일 번호·위치로 원문만 읽음 (없음: "(원문 없음)") + 줄 필드
+	private static List<object> ReadPage(QueryResult kResult, int nSkip, int nCount, CancellationToken kToken)	// 최신 순 nSkip 번째부터 nCount 줄: 그 시간 맞는 줄 (없음: 그 시간만 다시 읽음) → 원문 파일 번호·위치로 원문만 읽음 (없음: "(원문 없음)") + 줄 필드
 	{
 		List<object>							listLine	= new List<object>();										// 이 페이지 줄
 		List<(long nHour, int nMs, int nDoc)>	listPick	= new List<(long nHour, int nMs, int nDoc)>(nCount);	// 고른 줄
@@ -2309,7 +2195,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 			}
 
 			long					nHour	= kResult.m_arrHour[nIndex];
-			(int nMs, int nDoc)[]	arrHit	= GetHourHit(kResult, nHour);	// 맞는 줄 (최신 순)
+			(int nMs, int nDoc)[]	arrHit	= GetHourHit(kResult, nHour, kToken);	// 맞는 줄 (최신 순)
 
 			for (int nHit = Math.Max(0, nSkip - nPos); nHit < arrHit.Length && listPick.Count < nCount; ++nHit)
 			{
@@ -2326,6 +2212,8 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		{
 			foreach ((long nHour, int nMs, int nDoc) in listPick)
 			{
+				Gate.Yield(kToken);
+
 				if (!hmapDoc.TryGetValue(nHour, out FileStream? kDoc))	// 처음 보는 시간: 줄 목록 열기
 				{
 					hmapDoc[nHour] = kDoc = OpenDocTable(GetHourDir(nHour));
@@ -2369,30 +2257,32 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return listField;
 	}
 
-	private static (int nMs, int nDoc)[] GetHourHit(QueryResult kResult, long nHour)	// 시간 하나 맞는 줄 최신 순 (결과에 둔 것: 처음 1번만 정렬, 없음: 그 시간만 다시 읽음, 동시 정렬 방지 잠금)
+	private static (int nMs, int nDoc)[] GetHourHit(QueryResult kResult, long nHour, CancellationToken kToken)	// 시간 하나 맞는 줄 최신 순 (결과에 둔 것: 처음 1번만 정렬, 없음: 그 시간만 다시 읽음 (잠금 밖, 동시 읽음: 먼저 넣은 것), 정렬: 잠금)
 	{
-		lock (kResult)
+		if (!kResult.m_hmapHit.TryGetValue(nHour, out (int nMs, int nDoc)[]? arrHit))	// 긴 기간: 이 시간만 다시 읽음
 		{
-			if (!kResult.m_hmapHit.TryGetValue(nHour, out (int nMs, int nDoc)[]? arrHit))	// 긴 기간: 이 시간만 다시 읽음
+			(int nMsFrom, int nMsTo) = GetMsRange(kResult.m_kFrom, kResult.m_kTo, FromHour(nHour));
+
+			string					sHourDir	= GetHourDir(nHour);	// 시간 폴더
+			(int nMs, int nDoc)[]	arrRead		= Directory.Exists(sHourDir) ? ReadHourHit(kResult, sHourDir, nMsFrom, nMsTo, kToken) : Array.Empty<(int nMs, int nDoc)>();
+
+			arrHit = kResult.m_hmapHit.GetOrAdd(nHour, arrRead);
+
+			if (ReferenceEquals(arrHit, arrRead))
 			{
-				(int nMsFrom, int nMsTo) = GetMsRange(kResult.m_kFrom, kResult.m_kTo, FromHour(nHour));
-
-				string sHourDir = GetHourDir(nHour);	// 시간 폴더
-
-				arrHit = Directory.Exists(sHourDir) ? ReadHourHit(kResult, sHourDir, nMsFrom, nMsTo) : Array.Empty<(int nMs, int nDoc)>();
-
-				kResult.m_hmapHit[nHour] = arrHit;
-
 				Interlocked.Add(ref kResult.m_nHitCount, arrHit.Length);	// 보관분 늘어남 (상한 넘음: 타이머가 오래된 결과부터 뺌)
 			}
+		}
 
+		lock (kResult)
+		{
 			if (kResult.m_setSorted.Add(nHour))	// 처음 보는 시간: 최신 순 정렬
 			{
 				Array.Sort(arrHit, (kLeft, kRight) => kRight.nMs != kLeft.nMs ? kRight.nMs.CompareTo(kLeft.nMs) : kRight.nDoc.CompareTo(kLeft.nDoc));
 			}
-
-			return arrHit;
 		}
+
+		return arrHit;
 	}
 
 	private static string? ReadOrigin(Dictionary<int, FileStream> hmapStream, int nFileId, string sMachine, string sPath, long nOffset, int nLength, out long nLine)	// 원문: 레코드 [원문] 안 nOffset 부터 nLength 바이트 (최대 m_nOriginLineMax, 없음·위치 밖: null), nLine: 원문 앞 [줄 번호] (예전 레코드: 0)
@@ -4180,6 +4070,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static sEditKey		= "";		// 쿼리 추가·수정 창에서 수정할 저장 쿼리 제목 ("": 추가)
 		    static bAlarm		= false;	// 쿼리 설정 알람 탭
 		    static bRule		= false;	// 쿼리 설정 필드 탭 (설정 aField, 알람 탭과 같이 안 켜짐)
+		    static bSearch		= false;	// 설정 창: 저장 서치 (서치 탭 저장 버튼, 저장 쿼리 창·기능 공용, 목록·선택: Search.arrSaved·sSavedKey)
 		    static arrRule		= [];		// 필드 정의 { sKey, sRegex, sValue } (sValue 있음: 고정값)
 		    static sEditRule	= "";		// 필드 추가·수정 창에서 수정할 필드 이름 ("": 추가)
 		    static RULE_KEY_MAX		= 32;	// 필드 이름 최대 글자 (서버와 같음)
@@ -4944,7 +4835,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/query?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nPage: String(nPage), nOffset: "0", nCount: String(Query.CHUNK) }), { signal: kAbort.signal });	// 페이지 처음 CHUNK 건 (나머지: 아래로 내리면 LoadMore)
+		            const kResponse = await fetch("/api/query?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nPage: String(nPage), nOffset: "0", nCount: String(Query.CHUNK), nLimit: String(nQueryLimitSec) }), { signal: kAbort.signal });	// 페이지 처음 CHUNK 건 (나머지: 아래로 내리면 LoadMore)
 
 		            if (!kResponse.ok)
 		            {
@@ -5019,22 +4910,39 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        Query.kStatAbort?.abort();
 		    }
 
-		    static async LoadSaved(sShowKey = "")	// 저장 쿼리 목록 가져와 쿼리 설정 목록 그리기 (서버: 설정 파일 다시 읽음, sShowKey: 그 제목 줄 보이게, 실패: 빈 목록)
+		    static GetSavedPath(sTail = "")	// 저장 쿼리·저장 서치 API 경로 (지금 설정 창 기능, sTail: /delete·/move)
+		    {
+		        return (Query.bSearch ? "/api/search/saved" : "/api/query/saved") + sTail;
+		    }
+
+		    static GetSavedName()	// 저장 쿼리·저장 서치 이름 (알림·삭제 확인)
+		    {
+		        return Query.bSearch ? "저장 서치" : "저장 쿼리";
+		    }
+
+		    static GetSavedList(kData)	// 응답 목록 (arrQuery·arrSearch)
+		    {
+		        return Query.bSearch ? kData.arrSearch : kData.arrQuery;
+		    }
+
+		    static async LoadSaved(sShowKey = "", bSearch = false)	// 저장 쿼리·저장 서치 목록 가져와 설정 창 그리기 (서버: 설정 파일 다시 읽음, sShowKey: 그 제목 줄 보이게, 실패: 빈 목록)
 		    {
 		        try
 		        {
-		            const kResponse = await fetch("/api/query/saved");
+		            const kResponse = await fetch(bSearch ? "/api/search/saved" : "/api/query/saved");
 
 		            if (!kResponse.ok)
 		            {
 		                throw new Error(`HTTP ${kResponse.status}`);
 		            }
 
-		            Query.ShowSaved((await kResponse.json()).arrQuery, sShowKey);
+		            const kData = await kResponse.json();
+
+		            Query.ShowSaved(bSearch ? kData.arrSearch : kData.arrQuery, sShowKey, bSearch);
 		        }
 		        catch (kError)	// 요청 실패
 		        {
-		            Query.ShowSaved([]);
+		            Query.ShowSaved([], "", bSearch);
 		        }
 		    }
 
@@ -5209,18 +5117,20 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        return { Sent: "발송", Resent: "재발송", Failed: "실패" }[sResult] ?? sResult;
 		    }
 
-		    static ShowSaved(arrQuery, sShowKey = "")	// 저장 쿼리 목록 바꿈 (sShowKey: 그 제목 줄 보이게, 선택한 제목 없어짐: 선택 해제) → 쿼리 탭이면 다시 그림
+		    static ShowSaved(arrItem, sShowKey = "", bSearch = false)	// 저장 쿼리·저장 서치 목록 바꿈 (bSearch: Search 에 둠, sShowKey: 그 제목 줄 보이게, 선택한 제목 없어짐: 선택 해제) → 그 기능 창이면 다시 그림
 		    {
-		        Query.arrSaved = arrQuery;
+		        const kOwner = bSearch ? Search : Query;	// 목록·선택 제목 둘 곳
 
-		        if (!arrQuery.some(kSaved => kSaved.sKey === Query.sSavedKey))
+		        kOwner.arrSaved = arrItem;
+
+		        if (!arrItem.some(kSaved => kSaved.sKey === kOwner.sSavedKey))
 		        {
-		            Query.sSavedKey = "";
+		            kOwner.sSavedKey = "";
 		        }
 
-		        if (!Query.bAlarm && !Query.bRule)
+		        if (!Query.bAlarm && !Query.bRule && Query.bSearch === bSearch)
 		        {
-		            Query.ShowEditList(arrQuery.findIndex(kSaved => kSaved.sKey === sShowKey));
+		            Query.ShowEditList(arrItem.findIndex(kSaved => kSaved.sKey === sShowKey));
 		        }
 		    }
 
@@ -5270,17 +5180,18 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		    static GetEditItems()	// 쿼리 설정 지금 탭 목록 (저장 쿼리·알람·필드 정의)
 		    {
-		        return Query.bRule ? Query.arrRule : (Query.bAlarm ? Query.arrAlarm : Query.arrSaved);
+		        return Query.bRule ? Query.arrRule : (Query.bAlarm ? Query.arrAlarm : (Query.bSearch ? Search.arrSaved : Query.arrSaved));
 		    }
 
-		    static ShowSettingTab(bAlarm, bRule = false)	// 쿼리 설정 창 기능: 저장 (저장 쿼리)·알람·필드 (필드 정의, 누른 버튼 하나만, 제목: 버튼 이름, 같은 줄·추가 틀, 맨 위부터)
+		    static ShowSettingTab(bAlarm, bRule = false, bSearch = false)	// 쿼리 설정 창 기능: 저장 (저장 쿼리·저장 서치)·알람·필드 (필드 정의, 누른 버튼 하나만, 제목: 버튼 이름, 같은 줄·추가 틀, 맨 위부터)
 		    {
-		        Query.bAlarm	= bAlarm && !bRule;
-		        Query.bRule	= bRule;
+		        Query.bAlarm	= bAlarm && !bRule && !bSearch;
+		        Query.bRule	= bRule && !bSearch;
+		        Query.bSearch	= bSearch;
 
 		        kQuerySettingTitle.textContent = bRule ? "필드" : (bAlarm ? "알람" : "저장");
 
-		        kQueryEditAdd.title = bRule ? "필드 추가" : (bAlarm ? "알람 추가" : "쿼리 추가");
+		        kQueryEditAdd.title = bSearch ? "서치 추가" : (bRule ? "필드 추가" : (bAlarm ? "알람 추가" : "쿼리 추가"));
 		        kQueryEditScroll.scrollTop = 0;
 
 		        Query.ShowEditList();
@@ -5298,7 +5209,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		            kRow.dataset.index	= String(nIndex);	// 목록 위치
 		            kRow.draggable		= true;
-		            kRow.className		= Query.bRule ? "" : (Query.bAlarm ? (kItem.bEnable ? "" : "off") : (kItem.sKey === Query.sSavedKey ? "sel" : ""));
+		            kRow.className		= Query.bRule ? "" : (Query.bAlarm ? (kItem.bEnable ? "" : "off") : (kItem.sKey === (Query.bSearch ? Search.sSavedKey : Query.sSavedKey) ? "sel" : ""));
 		            kKey.textContent	= kItem.sKey;
 		            kKey.title			= Query.bRule ? Query.GetRuleText(kItem) : kItem.sQuery;	// 쿼리 (필드: 정규식·고정값)
 		            kAct.className		= "act";
@@ -5490,11 +5401,11 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        }
 		        else
 		        {
-		            const kData = await Query.PostSaved("/api/query/saved/move", { sKey: kItem.sKey, nTo }, "저장 쿼리");
+		            const kData = await Query.PostSaved(Query.GetSavedPath("/move"), { sKey: kItem.sKey, nTo }, Query.GetSavedName());
 
 		            if (kData != null)
 		            {
-		                Query.ShowSaved(kData.arrQuery, kItem.sKey);
+		                Query.ShowSaved(Query.GetSavedList(kData), kItem.sKey, Query.bSearch);
 		            }
 		        }
 		    }
@@ -5511,8 +5422,31 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        SyncQueryMachine();
 		    }
 
-		    static async ChooseSaved(kItem)	// 쿼리 설정 제목 더블클릭: 창 닫고 쿼리칸·기간 넣고 바로 쿼리 (쿼리 중: 중단 후)
+		    static async ChooseSaved(kItem)	// 쿼리 설정 제목 더블클릭: 창 닫고 쿼리칸·기간 넣고 바로 쿼리 (쿼리 중: 중단 후), 저장 서치: 검색어칸·기간 → 서치 (서치 중: 중지 → 끝난 뒤 다시)
 		    {
+		        if (Query.bSearch)
+		        {
+		            Search.sSavedKey	= kItem.sKey;
+		            kKey.value			= kItem.sQuery;
+
+		            kQuerySettingDialog.close();
+
+		            Query.SetRange(kItem.nMinute);
+
+		            if (Search.bSearching)
+		            {
+		                Search.bRunAfterStop = true;
+
+		                Search.StopSearch();
+
+		                return;
+		            }
+
+		            Search.SearchLog();
+
+		            return;
+		        }
+
 		        Query.sSavedKey	= Query.bAlarm ? "" : kItem.sKey;
 		        kQueryKey.value		= kItem.sQuery;
 
@@ -5533,7 +5467,8 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static OpenSaved(kSaved)	// 쿼리 추가·수정 창 열기 (kSaved: 수정할 저장 쿼리, null: 추가 → 빈칸·기본 간격)
 		    {
 		        Query.sEditKey			= kSaved?.sKey ?? "";
-		        kQuerySaveTitle.textContent	= kSaved == null ? "쿼리 추가" : "쿼리 수정";
+		        kQuerySaveTitle.textContent	= `${Query.bSearch ? "서치" : "쿼리"} ${kSaved == null ? "추가" : "수정"}`;
+		        kQuerySaveQueryLabel.textContent	= Query.bSearch ? "검색어" : "쿼리";
 		        kQuerySaveKey.value			= kSaved?.sKey ?? "";
 		        kQuerySaveQuery.value		= kSaved?.sQuery ?? "";
 		        kQuerySaveMinute.value		= String(kSaved?.nMinute ?? Query.SAVED_MINUTE);	// 간격 (추가: 기본)
@@ -5577,9 +5512,11 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            return null;
 		        }
 
+		        const sWord = Query.bSearch ? "검색어" : "쿼리";	// 알림 이름
+
 		        if (sQuery === "")
 		        {
-		            alert("쿼리를 입력해 주세요.");
+		            alert(`${sWord}를 입력해 주세요.`);
 		            kQueryInput.focus();
 
 		            return null;
@@ -5587,7 +5524,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        if (!Key.IsValid(sQuery))
 		        {
-		            alert("쿼리 형식을 확인해 주세요.\nAND·OR·NOT (대소문자 무시) 앞뒤에 검색어, 괄호 안에 검색어, 앞뒤 * 와일드카드 (예: A AND (B NOT C) OR D, ab*·*ab·*ab*)");
+		            alert(`${sWord} 형식을 확인해 주세요.\nAND·OR·NOT (대소문자 무시) 앞뒤에 검색어, 괄호 안에 검색어, 앞뒤 * 와일드카드 (예: A AND (B NOT C) OR D, ab*·*ab·*ab*)`);
 		            kQueryInput.focus();
 
 		            return null;
@@ -5734,18 +5671,20 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            return;
 		        }
 
-		        const kData		= kInput == null ? null : await Query.PostSaved("/api/query/saved", { ...kInput, nMinute, sOldKey }, "저장 쿼리");	// 응답 (실패: null)
+		        const kData		= kInput == null ? null : await Query.PostSaved(Query.GetSavedPath(), { ...kInput, nMinute, sOldKey }, Query.GetSavedName());	// 응답 (실패: null)
 
 		        if (kData != null)
 		        {
-		            if (sOldKey !== "" && Query.sSavedKey === sOldKey)	// 선택한 제목 수정: 새 제목으로
+		            const kOwner = Query.bSearch ? Search : Query;	// 선택 제목 둔 곳
+
+		            if (sOldKey !== "" && kOwner.sSavedKey === sOldKey)	// 선택한 제목 수정: 새 제목으로
 		            {
-		                Query.sSavedKey = kInput.sKey;
+		                kOwner.sSavedKey = kInput.sKey;
 		            }
 
 		            kQuerySaveDialog.close();
 
-		            Query.ShowSaved(kData.arrQuery, kInput.sKey);	// 추가·수정한 제목 줄 보이게
+		            Query.ShowSaved(Query.GetSavedList(kData), kInput.sKey, Query.bSearch);	// 추가·수정한 제목 줄 보이게
 		        }
 		    }
 
@@ -5796,16 +5735,16 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		    static DeleteSaved(kSaved)	// 쿼리 설정 삭제: 확인 팝업 → RunDeleteSaved
 		    {
-		        AskDelete("저장 쿼리 삭제", kSaved.sKey, kSaved.sQuery, () => Query.RunDeleteSaved(kSaved));
+		        AskDelete(`${Query.GetSavedName()} 삭제`, kSaved.sKey, kSaved.sQuery, () => Query.RunDeleteSaved(kSaved));
 		    }
 
 		    static async RunDeleteSaved(kSaved)	// 쿼리 설정 삭제 실행 → 목록 다시 (선택한 제목: 선택 해제)
 		    {
-		        const kData = await Query.PostSaved("/api/query/saved/delete", { sKey: kSaved.sKey }, "저장 쿼리");	// 응답 (실패: null)
+		        const kData = await Query.PostSaved(Query.GetSavedPath("/delete"), { sKey: kSaved.sKey }, Query.GetSavedName());	// 응답 (실패: null)
 
 		        if (kData != null)
 		        {
-		            Query.ShowSaved(kData.arrQuery);
+		            Query.ShowSaved(Query.GetSavedList(kData), "", Query.bSearch);
 		        }
 		    }
 
@@ -6226,7 +6165,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/query/lens?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nSec: nLevel === 0 ? "1" : "60" }));
+		            const kResponse = await fetch("/api/query/lens?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nSec: nLevel === 0 ? "1" : "60", nLimit: String(nQueryLimitSec) }));
 
 		            if (!kResponse.ok)
 		            {
@@ -6481,7 +6420,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/query?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nPage: String(Query.nPage), nOffset: String(Query.arrLine.length), nCount: String(nCount) }));
+		            const kResponse = await fetch("/api/query?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nPage: String(Query.nPage), nOffset: String(Query.arrLine.length), nCount: String(nCount), nLimit: String(nQueryLimitSec) }));
 
 		            if (!kResponse.ok)
 		            {
@@ -6629,18 +6568,24 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        FitHeight(kQueryScroll, kQueryPanel);
 		    }
 
-		    static OpenSetting(bAlarm = false, bRule = false)	// 쿼리 설정 창 열기 (누른 버튼 기능만, 저장 버튼: 제목 저장·저장 쿼리 목록·선택한 제목 줄 보이게, 알람 버튼: 제목 알람·알람 목록, 필드 버튼: 제목 필드·필드 정의 목록)
+		    static OpenSetting(bAlarm = false, bRule = false, bSearch = false)	// 쿼리 설정 창 열기 (누른 버튼 기능만, 저장 버튼: 제목 저장·저장 쿼리 목록·선택한 제목 줄 보이게, 알람 버튼: 제목 알람·알람 목록, 필드 버튼: 제목 필드·필드 정의 목록, bSearch: 서치 탭 저장 버튼 → 저장 서치 목록)
 		    {
-		        Query.ShowSettingTab(bAlarm, bRule);
-		        Query.LoadAlarm();	// 알람 목록 (열 때마다 새로, 서버: 설정 파일 다시 읽음)
-		        Query.LoadRule();		// 필드 정의 목록 (열 때마다 새로, 서버: 설정 파일 다시 읽음)
+		        Query.ShowSettingTab(bAlarm, bRule, bSearch);
+
+		        if (!bSearch)
+		        {
+		            Query.LoadAlarm();	// 알람 목록 (열 때마다 새로, 서버: 설정 파일 다시 읽음)
+		            Query.LoadRule();		// 필드 정의 목록 (열 때마다 새로, 서버: 설정 파일 다시 읽음)
+		        }
 
 		        kQuerySettingDialog.showModal();
 
 		        kQuerySettingDialog.scrollTop = 0;	// 맨 위부터 (닫기 버튼 autofocus → 아래로 스크롤된 것 되돌림, 포커스: 닫기 그대로)
 
-		        Query.ShowSaved(Query.arrSaved, Query.sSavedKey);	// 선택한 제목 줄 보이게 (창 열린 뒤, 먼저 둔 목록)
-		        Query.LoadSaved(Query.sSavedKey);					// 저장 쿼리 목록 (열 때마다 새로, 서버: 설정 파일 다시 읽음)
+		        const kOwner = bSearch ? Search : Query;	// 목록·선택 제목 둔 곳
+
+		        Query.ShowSaved(kOwner.arrSaved, kOwner.sSavedKey, bSearch);	// 선택한 제목 줄 보이게 (창 열린 뒤, 먼저 둔 목록)
+		        Query.LoadSaved(kOwner.sSavedKey, bSearch);					// 목록 (열 때마다 새로, 서버: 설정 파일 다시 읽음)
 		    }
 
 		    static async LoadField()	// 왼쪽 필드 이름만 (통계 전·통계 실패 대비: 값 수 -, 그새 통계로 필드 그림: 안 그림)
@@ -6680,7 +6625,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/query/stat?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd) }), { signal: kAbort.signal });
+		            const kResponse = await fetch("/api/query/stat?" + new URLSearchParams({ sKey: Query.sQueryKey, nStart: String(Query.nStart), nEnd: String(Query.nEnd), nLimit: String(nQueryLimitSec) }), { signal: kAbort.signal });
 
 		            if (!kResponse.ok)
 		            {
@@ -7084,7 +7029,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/query/stat?" + new URLSearchParams({ sKey, nStart: String(nStart), nEnd: String(nEnd), sField: Query.sFieldName }));
+		            const kResponse = await fetch("/api/query/stat?" + new URLSearchParams({ sKey, nStart: String(nStart), nEnd: String(nEnd), sField: Query.sFieldName, nLimit: String(nQueryLimitSec) }));
 
 		            if (!kResponse.ok)
 		            {

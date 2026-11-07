@@ -3,10 +3,18 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 	private const int	m_nKeyMax			= 200;	// 검색어 최대 글자
 	private const int	m_nSearchMax		= 1000000;	// 머신당 검색 결과 최대 건수 상한 (= 페이지 MACHINE_LIMIT, 요청 nMax: 1 ~ 이 값)
 	private const int	m_nSearchDefault	= 1000;	// 머신당 검색 결과 최대 건수 기본값 (요청 nMax 없음, = 페이지 MACHINE_DEFAULT)
-	private const int	m_nSearchWaitSec	= 90;	// 검색 결과 대기 (초, 클라 검색 제한 + 여유)
+	private const int	m_nSearchLimitSec	= 60;	// 서치 제한 시간 기본 (초, 요청 nLimit 없음, 클라 검색 마감, 페이지 설정 기본과 같음)
+	private const int	m_nSearchLimitMax	= 3600;	// 서치 제한 시간 최대 (초)
+	private const int	m_nSearchWaitSec	= 30;	// 검색 결과 대기 여유 (초, 제한 시간 + 이 값)
+	private const int	m_nSearchConcurrent	= 2;	// 동시 서치 (전체, 세션마다 1건, 클라 동시 처리 수와 같음)
+	private const int	m_nViewConcurrent	= 4;	// 동시 파일 보기 (전체, 세션마다 1건)
 	private const int	m_nViewCount		= 500;	// 보기 기본 줄 수 (요청 nCount 없음)
 	private const int	m_nViewCountMax		= 2000;	// 보기 최대 줄 수
 	private const int	m_nExternalHour		= 1;		// 외부 API 서치 기본 기간 (시간, 시작 없음: 끝 시간만)
+
+	private static readonly Gate		m_kGate		= new Gate(m_nSearchConcurrent);	// 서치 자리
+	private static readonly Gate		m_kViewGate	= new Gate(m_nViewConcurrent);		// 파일 보기 자리
+	private static readonly SavedList	m_kSaved	= new SavedList("aSearch", "저장 서치", "검색어", "arrSearch");	// 저장 서치 (설정 aSearch → Search.json)
 
 	private readonly TCPServer		m_kListener;		// Client TCP 수신 (Main 이 넘김)
 
@@ -26,6 +34,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		}
 
 		WebApp.MapPost("/api/search", OnSearch);	// 로그 검색 (여러 머신 동시, 본문 JSON)
+		m_kSaved.MapRoute(WebApp, "/api/search/saved");	// 저장 서치 (목록·저장·삭제·순서, SavedList)
 		WebApp.MapGet("/api/progress", OnProgress);	// 검색 진행 (sToken)
 		WebApp.MapGet("/api/stop", OnStop);			// 검색 중지 (sToken)
 		WebApp.MapMethods(API.SEARCH_PATH + "{**sToken}", new[] { HttpMethods.Get, HttpMethods.Post }, OnExternalSearch);	// 외부 API 서치 (경로 키/토큰: aAPI 서치 권한 계정, 쿼리 문자열·본문 JSON, /api/search 와 같은 응답)
@@ -43,6 +52,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		long		nStart		= kParam.nStart ?? 0;							// 시작 yyyyMMddHH
 		long		nEnd		= kParam.nEnd ?? 0;								// 종료 yyyyMMddHH
 		int			nMax		= Math.Clamp(kParam.nMax ?? m_nSearchDefault, 1, m_nSearchMax);	// 머신당 최대 (페이지 설정값, 없으면 기본값)
+		int			nLimit		= Math.Clamp(kParam.nLimit ?? m_nSearchLimitSec, 1, m_nSearchLimitMax);	// 서치 제한 시간 (초, 페이지 설정값)
 
 		if (arrMachine.Length > Define.m_nMachineMax)	// 머신 수 초과: 조기 반환
 		{
@@ -63,13 +73,20 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 				return;
 			}
 
+			using IDisposable? kGate = await m_kGate.TryEnterAsync(kContext);	// 세션 1건 → 전체 X건 (기다리는 중 요청 끊김: null)
+
+			if (kGate == null)
+			{
+				return;
+			}
+
 			ConcurrentDictionary<long, SearchTrack>? hmapTrack = m_kListener.BeginTrack(kParam.sToken);	// 진행 조회·중지 등록 (sToken 없음: null)
 
 			using CancellationTokenRegistration kAbortReg = kContext.RequestAborted.Register(() => _ = m_kListener.Stop(kParam.sToken));	// 페이지 닫힘·새로고침·경유 끊김: 머신들 검색 중지 (게임 서버 검색이 끝까지 돌지 않게)
 
 			try
 			{
-				Task<(int nIndex, byte[]? arrResult, string sError)>[] arrTask = arrMachine.Select((sMachine, nIndex) => RequestSearch(nIndex, sMachine, nStart, nEnd, sKey.Trim(), nMax, hmapTrack)).ToArray();	// 모든 머신 동시 요청
+				Task<(int nIndex, byte[]? arrResult, string sError)>[] arrTask = arrMachine.Select((sMachine, nIndex) => RequestSearch(nIndex, sMachine, nStart, nEnd, sKey.Trim(), nMax, nLimit, hmapTrack)).ToArray();	// 모든 머신 동시 요청
 
 				await foreach (Task<(int nIndex, byte[]? arrResult, string sError)> kTask in Task.WhenEach(arrTask))	// 끝난 순서대로 전송 (결과 바이트는 보내고 바로 해제)
 				{
@@ -138,10 +155,11 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 			nEnd		= nEnd,
 			sKey		= funcText("sKey"),
 			nMax		= (int?)funcLong("nMax"),
+			nLimit		= (int?)funcLong("nLimit"),
 		}, kRequest.HttpContext);
 	}
 
-	private async Task<(int nIndex, byte[]? arrResult, string sError)> RequestSearch(int nIndex, string sMachine, long nStart, long nEnd, string sKey, int nMax, ConcurrentDictionary<long, SearchTrack>? hmapTrack)	// 머신 1대 검색 요청 (nIndex: 결과 순서, hmapTrack: 진행 조회·중지)
+	private async Task<(int nIndex, byte[]? arrResult, string sError)> RequestSearch(int nIndex, string sMachine, long nStart, long nEnd, string sKey, int nMax, int nLimit, ConcurrentDictionary<long, SearchTrack>? hmapTrack)	// 머신 1대 검색 요청 (nIndex: 결과 순서, nLimit: 클라 검색 마감 초, hmapTrack: 진행 조회·중지)
 	{
 		Dictionary<string, object> hmapRequest = new Dictionary<string, object>	// Search 요청 (머신마다 따로: Request 가 nReqId 추가)
 		{
@@ -150,14 +168,15 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 			["nEnd"]	= nEnd,
 			["sKey"]	= sKey,
 			["nMax"]	= nMax,
+			["nLimit"]	= nLimit,
 		};
 
-		(byte[]? arrResult, string sError) = await m_kListener.Request(sMachine, hmapRequest, m_nSearchWaitSec, hmapTrack);
+		(byte[]? arrResult, string sError) = await m_kListener.Request(sMachine, hmapRequest, nLimit + m_nSearchWaitSec, hmapTrack);
 
 		return (nIndex, arrResult, sError);
 	}
 
-	private async Task<IResult> OnView(string? sMachine, string? sPath, long? nStart, int? nCount)	// 파일 보기 (머신 1대): 클라에 View → kResult 그대로 (오류: sError)
+	private async Task<IResult> OnView(string? sMachine, string? sPath, long? nStart, int? nCount, HttpContext kContext)	// 파일 보기 (머신 1대): 클라에 View → kResult 그대로 (오류: sError, 세션 1건 → 전체 X건)
 	{
 		if (string.IsNullOrEmpty(sMachine) || string.IsNullOrEmpty(sPath) || sPath.Length > 1000)
 		{
@@ -171,6 +190,13 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 			["nStart"]	= nStart ?? 1,
 			["nCount"]	= Math.Clamp(nCount ?? m_nViewCount, 1, m_nViewCountMax),
 		};
+
+		using IDisposable? kGate = await m_kViewGate.TryEnterAsync(kContext);
+
+		if (kGate == null)	// 기다리는 중 요청 끊김
+		{
+			return Results.Empty;
+		}
 
 		(byte[]? arrResult, string sError) = await m_kListener.Request(sMachine, hmapRequest, Define.m_nViewWaitSec);
 
@@ -237,6 +263,9 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		    static RUN_NONE			= { nWait: 0, nFileTotal: 0, nFileDone: 0, nFound: 0 };	// 진행 중인 머신 합 없음 (/api/progress 응답 형식)
 		    static sSearchToken		= "";		// 이번 검색 표시 (서버 진행 조회·중지용)
 		    static bStopRequested	= false;	// 중지 요청됨
+		    static arrSaved			= [];		// 저장 서치 { sKey, sQuery, nMinute } (쿼리 설정 창 공용: Query.OpenSetting(false, false, true))
+		    static sSavedKey		= "";		// 고른 저장 서치 제목 (설정 목록 강조, "": 없음)
+		    static bRunAfterStop	= false;	// 저장 서치 고름 (서치 중): 중지 끝난 뒤 다시 실행
 		    static kProgressInfo	= null;		// 진행 표시 정보 { nCount, nDone, nFileDone, nFound, kRun, nBegin } (검색 중만, kRun: 진행 중인 머신 합)
 		    static bProgressLoading	= false;	// 진행 조회 중 (겹침 방지)
 		    static mapStepResult	= new WeakMap();	// 단계 → 마지막 결과 { arrReceived, sResultKey, sTitle } (← →·새 창 복사: 다시 검색 안 함)
@@ -537,6 +566,16 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        }
 		    }
 
+		    static OnKeyInput()	// 검색어칸 고침: 고른 저장 서치와 달라지면 선택 해제
+		    {
+		        const kSaved = Search.arrSaved.find(kItem => kItem.sKey === Search.sSavedKey);
+
+		        if (kSaved !== undefined && kKey.value.trim() !== kSaved.sQuery)
+		        {
+		            Search.sSavedKey = "";
+		        }
+		    }
+
 		    static IsInRange(kLine, nFrom, nTo)	// 결과 줄이 초 범위 안 (yyyyMMddHHmmss, S <= 줄 < E, 초 없는 줄: 그 분 0초, 시간 없는 줄: 그 파일 시간 정각)
 		    {
 		        const kMatch	= /^\[(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?/.exec(kLine.sText);	// 줄 앞 시간
@@ -590,7 +629,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        Search.bSearching		= true;
 		        kSearchButton.disabled	= true;
-		        kSearchSettingButton.disabled	= true;
+		        kSettingButton.disabled	= true;
 		        kStopButton.disabled	= false;
 		        kDumpButton.disabled	= true;
 		        kFileButton.disabled	= true;
@@ -749,7 +788,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        try
 		        {
-		            const kResponse = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arrMachine: arrMachine, nStart: kFilter.nStart, nEnd: kFilter.nEnd, sKey: kFilter.sKey, nMax: nSearchMachineMax, sToken: Search.sSearchToken }), cache: "no-store", signal: kAbort.signal });	// 모든 머신 동시 검색 (한 줄 = 머신 1대, 끝난 순서)
+		            const kResponse = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arrMachine: arrMachine, nStart: kFilter.nStart, nEnd: kFilter.nEnd, sKey: kFilter.sKey, nMax: nSearchMachineMax, nLimit: nSearchLimitSec, sToken: Search.sSearchToken }), cache: "no-store", signal: kAbort.signal });	// 모든 머신 동시 검색 (한 줄 = 머신 1대, 끝난 순서, nLimit: 서치 제한 시간 설정)
 
 		            if (!kResponse.ok)
 		            {
@@ -820,13 +859,20 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        Search.bSearching		= false;
 		        kSearchButton.disabled	= false;
 		        kSearchButton.textContent	= "실행";
-		        kSearchSettingButton.disabled	= false;
+		        kSettingButton.disabled	= false;
 		        kStopButton.disabled	= true;
 		        kDumpButton.disabled	= Dump.bDumpLoading;
 		        kFileButton.disabled	= false;
 		        kQueryButton.disabled	= false;
 		        Search.kProgressInfo	= null;
 		        kProgress.hidden		= true;
+
+		        if (Search.bRunAfterStop)	// 저장 서치 고름 (서치 중 중지): 이 검색 마무리 뒤 다시 실행
+		        {
+		            Search.bRunAfterStop = false;
+
+		            setTimeout(() => Search.SearchLog());
+		        }
 
 		        if (!bReplay)	// 들어온 단계 남김 (지금 단계 뒤 버림, ← → 다시 실행: 그대로)
 		        {

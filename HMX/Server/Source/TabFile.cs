@@ -3,6 +3,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 	private const int					m_nDownLineMax	= 4 * Define.m_nDumpChunk;	// 다운 줄 끝 기다림 최대 (바이트, 넘음: 줄 중간이라도 변환)
 	private static readonly byte[]		m_arrUtf8Bom	= { 0xEF, 0xBB, 0xBF };		// 다운 앞 UTF-8 BOM (편집기 인코딩 판별)
 	private static Encoding?			m_kCp949;									// CP949 (처음 쓸 때 생성 → Main 의 코드 페이지 등록 뒤)
+	private const int					m_nDownConcurrent	= 2;					// 동시 파일 다운 (전체, 세션마다 1건)
+	private static readonly Gate		m_kGate			= new Gate(m_nDownConcurrent);	// 파일 다운 자리
 	private readonly TCPServer		m_kListener;		// Client TCP 수신 (Main 이 넘김)
 
 	public TabFile(TCPServer kListener)
@@ -35,6 +37,13 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		string											sAddr	= Web.GetAddr(kResponse.HttpContext);					// 요청자 IP
 		CancellationToken								kAbort	= kResponse.HttpContext.RequestAborted;					// 브라우저 다운 취소
+		using IDisposable?								kGate	= await m_kGate.TryEnterAsync(kResponse.HttpContext);	// 세션 1건 → 전체 X건 (기다리는 중 취소: null)
+
+		if (kGate == null)
+		{
+			return;
+		}
+
 		(byte[]? arrData, long nSize, string sError)	kChunk	= await API.RequestRead(m_kListener, "FileRead", sMachine, sPath, 0, Define.m_nDumpChunk);	// 첫 조각 (파일 크기 확인)
 
 		if (kChunk.arrData == null)	// 첫 조각 오류 (미접속·허용 안 된 경로·읽기 실패): 응답 전 → 오류 문구
@@ -89,6 +98,8 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 					int		nEnd	= nOffset >= nSize || arrData.Length >= m_nDownLineMax ? arrData.Length : Array.LastIndexOf(arrData, (byte)'\n') + 1;	// 변환 끝 (마지막 줄 끝, 파일 끝·아주 긴 줄: 전부)
 
 					nEnd = Math.Max(nEnd, nStart);
+
+					Gate.Yield(kAbort);	// 변환 CPU 양보
 
 					await kResponse.Body.WriteAsync(ToUtf8(arrData.AsSpan(nStart, nEnd - nStart)), kAbort);
 

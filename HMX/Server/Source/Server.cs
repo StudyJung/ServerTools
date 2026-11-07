@@ -15,6 +15,8 @@
 #:include Web.cs
 #:include API.cs
 #:include TCPServer.cs
+#:include Gate.cs
+#:include SavedList.cs
 #:include TabSearch.cs
 #:include TabDump.cs
 #:include TabFile.cs
@@ -53,9 +55,9 @@
          쿼리: 적재 워커·색인·알람·필드 (TabQuery 안 건드림, 페이지 스크립트: QueryPage), 클라 Log·받은 진행 (Count) 안 받음 (접속 때 Pause → 클라 로그 전송 멈춤, 위치 유지), /api/external/log 없음
          쿼리·서치·파일·덤프 모두 빠짐: TCP 수신 포트 안 엶 (/api/client 없음), 파일 보기·다운 (/view·/api/view·/api/files/download): 서치·파일 공용 (둘 중 하나 있음: 엶)
          운영: 서버 목록·동접 기록 타이머, 반영: Redis 프로세스 목록
-   ## 따로 관리 (웹에서 고침, Main.m_arrConfigSplit): aQuery → Query.json·aAlarm → Alarm.json·aField → Field.json·Manager → Manager.json (운영 탭 서버 목록, 웹에서 안 고침)·aAccount → Account.json (로그인 계정, 계정 팝업에서 고침) (파일: {"키": [...]}, 웹 저장: 그 파일 통째로, 예전 형식 프로젝트명.json 에 있음·파일 없음: 로딩 때 파일 만듦, 예전 Base 묶음: 최상위로 풀어 읽음)
+   ## 따로 관리 (웹에서 고침, Main.m_arrConfigSplit): aQuery → Query.json·aSearch → Search.json·aAlarm → Alarm.json·aField → Field.json·Manager → Manager.json (운영 탭 서버 목록, 웹에서 안 고침)·aAccount → Account.json (로그인 계정, 계정 팝업에서 고침) (파일: {"키": [...]}, 웹 저장: 그 파일 통째로, 예전 형식 프로젝트명.json 에 있음·파일 없음: 로딩 때 파일 만듦, 예전 Base 묶음: 최상위로 풀어 읽음)
    ## aAccount: 로그인 계정 [{sID, sCode (비밀번호 AES.Encrypt, 로딩: 복호화 → sPass), aMenu (접근 탭 이름, 없음: 켜진 탭 전체), aAPI (외부 API 권한: 쿼리 (/api/external/query)·서치 (/api/external/search)·로그 (/api/external/log), 없음: 외부 API 못 씀, 예전 aMenu 의 로그: 로그 권한)}] (관리 계정 sID 와 겹침·sID·sCode 없음·복호화 실패: 뺌)
-   ## aQuery: 저장 쿼리 [{sKey, sQuery, nMinute}], aAlarm: 알람 [{nID, sKey, sQuery, nMinute, nCount, nDelay, aMail, sHook, aSMS (받을 아이디, 영문·숫자·._- X자 이하), bEnable}]
+   ## aQuery: 저장 쿼리 [{sKey, sQuery, nMinute}], aSearch: 저장 서치 (같은 형식, SavedList 공용), aAlarm: 알람 [{nID, sKey, sQuery, nMinute, nCount, nDelay, aMail, sHook, aSMS (받을 아이디, 영문·숫자·._- X자 이하), bEnable}]
    ## aField: 줄 추가 필드 정의 [{sKey, sRegex 또는 sValue}] (sValue 있음: 정규식 안 씀·모든 줄 그 값 (예: 존 {"sKey":"zone","sValue":"Dev"}), sRegex: 첫 () 값, 없음: 맞은 부분, 키: 영문 시작·영문·숫자·_ X자 이하·Machine·Folder·Type 불가, 최대 X개, 오류·중복: 출력 후 뺌, 바꿈: 쿼리 필드 버튼 → 바로 적용 (Field.json 직접 고침: 필드 팝업 열 때 반영))
       → TCP: 클라 Count 답·클라 얼라이브 (1분마다) 답 {"sType":"Alive","aField":[...],"sTime":""} 으로 내려줌 + 바뀜: 접속 클라 모두에 얼라이브 답 바로 (Count 답과 같은 aField, 클라: 바뀜만 적용, 클라가 값 뽑아 보냄, 이 키·고정값만 받음: 그 밖 버림), HTTP /api/external/log: 이 키·고정값만 받음 (그 밖: 400), 설정 순서 = 필드 목록 순서
    ## Mail: sHost·nPort (기본 25, bSsl: STARTTLS 587, 암시적 SSL 465 미지원)·bSsl·sFrom (없음: sID)·sID·sCode (알람 메일 SMTP, sHost 없음·sFrom·sID 모두 없음: 메일 실패 → 펜딩·재시도 후 포기, sID 있음: 인증)
@@ -91,13 +93,14 @@
 
 # 웹 API
    ## 쿼리·알람 (TabQuery·Alarm·AlarmLog)
-      ### 쿼리 (TabQuery): /api/query?sKey=&nStart=&nEnd=&nPage=&nOffset=&nCount=  (기간 yyyyMMddHHmm·초별 막대 클릭 1초: yyyyMMddHHmmss (통계·필드 값 목록도 같음), 시작 포함·끝 미포함, nOffset·nCount: 페이지 안 이어 읽기) → 시간 폴더마다 병렬로 포스팅만 읽어 AND·OR·NOT 정렬 병합 (sKey: SearchNode 규칙, 필드:값 → 그 필드 값 줄, * → 전체, 단어·필드 1개·시간 전체: 사전 건수 합) → 시간별·분별 건수 + 최신 순 X건 페이지만 원문 읽음 (같은 쿼리·기간: X초 보관) {sKey, nStart, nEnd, nTotal, nPage, nPageSize, nElapsedMs, sError, arrHour: [{nHour, nCount}], arrMinute: [{nMinute, nCount}] (기간 1시간 이하), arrSecond: [{nSecond, nCount}] (기간 1분 이하), arrLine: [{sTime, sMachine, sPath, sFolder, sText (시간 뒤 원문), sOrigin (원문 그대로), nLine, arrField: [{sName, sValue}]}]}
+      ### 쿼리 부하 제한 (TabQuery, 쿼리·렌즈·통계 공통): 세션 (로그인 계정, 없음: IP) 1건 → 전체 X건 (SemaphoreSlim, 넘침: 대기), 제한 시간 nLimit 초 (기본 60, 페이지 설정, 넘음: sError "제한 시간 초과"), 시간 폴더 병렬 = 코어 절반, 양보 Yield: 스레드마다 연속 X ms 넘음 → X ms 쉼 + 취소 확인 (세그먼트·줄 단위)
+      ### 쿼리 (TabQuery): /api/query?sKey=&nStart=&nEnd=&nPage=&nOffset=&nCount=&nLimit=  (기간 yyyyMMddHHmm·초별 막대 클릭 1초: yyyyMMddHHmmss (통계·필드 값 목록도 같음), 시작 포함·끝 미포함, nOffset·nCount: 페이지 안 이어 읽기) → 시간 폴더마다 병렬로 포스팅만 읽어 AND·OR·NOT 정렬 병합 (sKey: SearchNode 규칙, 필드:값 → 그 필드 값 줄, * → 전체, 단어·필드 1개·시간 전체: 사전 건수 합) → 시간별·분별 건수 + 최신 순 X건 페이지만 원문 읽음 (같은 쿼리·기간: X초 보관) {sKey, nStart, nEnd, nTotal, nPage, nPageSize, nElapsedMs, sError, arrHour: [{nHour, nCount}], arrMinute: [{nMinute, nCount}] (기간 1시간 이하), arrSecond: [{nSecond, nCount}] (기간 1분 이하), arrLine: [{sTime, sMachine, sPath, sFolder, sText (시간 뒤 원문), sOrigin (원문 그대로), nLine, arrField: [{sName, sValue}]}]}
       ### 렌즈 초·분봉 (TabQuery): /api/query/lens?sKey=&nStart=&nEnd=&nSec=  (기간: 쿼리와 같음, nSec 1: 초봉·그 외: 분봉, 최대 X칸) → 시간 폴더마다 병렬로 맞는 줄 분초 → {sError, nElapsedMs, arrTime: [{nTime, nCount}] (초봉 yyyyMMddHHmmss·분봉 yyyyMMddHHmm, 기간 첫 칸 정각부터 모든 칸 0 포함)} (보관 안 함)
       ### 필드별 통계 (TabQuery): /api/query/stat?sKey=&nStart=&nEnd=&sField=  → 쿼리·기간 줄 ∩ 필드 값 포스팅 → {sKey, nTotal, nElapsedMs, sError, arrField: [{sName, bBase, nValue, arrValue: [{sValue, nCount}] (건수 순 X개, sField: 그 필드 전체)}]}
       ### 필드 값 목록 새 창 (TabQuery): /query/field?sKey=&nStart=&nEnd=&sField=  → 필드 모드 페이지 (값 X개씩 페이지, 창 너비: 전체 값 중 가장 긴 줄에 맞춰 넓힘, Count: 숫자만, 값 클릭: 연 창에서 필드:값 쿼리 후 이 창 닫음, 제목 클릭: 그 칸 기준 보이는 페이지만 내림차순 ▼ → 오름차순 ▲ → 원래 순서 (페이지 넘김: 같은 정렬))
       ### 필드 목록 (TabQuery): /api/query/field → {arrField: [{sName, bBase}]} (기본 필드 + 설정 aField 추가 필드)
       ### 머신 목록 (TabQuery): /api/query/machine → {arrMachine} (Data\Index\file.txt 의 머신, 접속 안 된 머신 포함 → 쿼리 M 목록: 접속 머신과 합침)
-      ### 저장 쿼리 (TabQuery): /api/query/saved → {arrQuery: [{sKey, sQuery, nMinute}]}, POST /api/query/saved {sKey, sQuery, nMinute, sOldKey} (같은 이름: 교체, sOldKey: 그 자리 수정)·/api/query/saved/delete {sKey}·/api/query/saved/move {sKey, nTo} → 프로젝트명.json 의 aQuery (요청자 IP 로그)
+      ### 저장 쿼리 (SavedList): /api/query/saved → {sError, arrQuery: [{sKey, sQuery, nMinute}]}, POST /api/query/saved {sKey, sQuery, nMinute, sOldKey} (같은 이름: 교체, sOldKey: 그 자리 수정)·/api/query/saved/delete {sKey}·/api/query/saved/move {sKey, nTo} → Query.json 의 aQuery (요청자 IP 로그), 저장 서치: /api/search/saved (같은 형식, arrSearch, Search.json 의 aSearch)
       ### 알람 목록 (TabQuery): /api/alarm → {arrAlarm}, POST /api/alarm {nID (0: 추가), 값}·/api/alarm/delete {nID}·/api/alarm/move {nID, nTo}·/api/alarm/test {값} (메일·훅 바로, 저장 안 함) → 프로젝트명.json 의 aAlarm (요청자 IP 로그)
       ### 필드 정의 (TabQuery): /api/field → {arrField: [{sKey, sRegex, sValue}]}, POST /api/field {sKey, sRegex, sValue, sOldKey} (sOldKey: 그 자리 수정, 없음: 끝에 추가, 이름 겹침: 오류)·/api/field/delete {sKey}·/api/field/move {sKey, nTo} → 프로젝트명.json 의 aField → 바로 적용·접속 클라 알림 (요청자 IP 로그)
       ### 알람 (Alarm): 적재 때 매칭 (앵커 단어·필드로 후보만 조건 평가, 쿼리와 같은 규칙, 워커 카운터) → Stat 매분 합산 (수신 시각)·nMinute 분 구간 끝 (KST 자정부터 X분마다, 하루 안 넘김, 최대 1440) 판정·nDelay 분 억제 (발송 뒤 X분: 그 시간과 겹친 구간 판정 안 함 → 그 뒤 구간부터)·분당 X건 한도
@@ -111,8 +114,9 @@
       ### 설정 버전: 기준 폴더 하위 Data\프로젝트명.txt (예: Data\Server.txt, 등록·수정·삭제·이름 변경 성공: +1, 요청 버전 다름: stale 응답 → 화면 새로 고침 안내, 버전 검증~증가: 직렬화)
       ### 반영 로그: 공통 Log 파일에 레벨 뒤 [v.버전] 표시 (예: [시각] [HMX_][INFO_] [v.4] 수정: …, 등록·수정·이름·삭제·액션·클릭·버전 불일치·오류, 끝: 아이디@IP), 로그 조회: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만, Redis 오류: X초 지연 후 오류 응답
    ## 클라 요청 (TabSearch·TabDump·TabFile: 머신마다 Client 에 요청)
+      ### 부하 자리 (Gate, 기능마다 따로: 세션 1건 → 전체 서치 2·보기 4·덤프 다운 2·파일 다운 2, 넘침: 대기, 덤프 다운: 저장 작업 안에서 잡음 → 기다리는 동안 진행 0) + 조각마다 Gate.Yield (압축·변환 CPU 양보), 클라: 검색 동시 2건·Throttle 0.5초 → 0.1초
       ### 접속 클라 목록: /api/client (클라마다 받은 메시지·바이트·Log 줄 누적 nRecv*, 분당 (지난 1분) nMin*, 밀림 멈춤 bPaused)
-      ### 로그 검색 (TabSearch, 여러 머신): POST /api/search {arrMachine, nStart, nEnd, sKey, nMax, sToken}  (sKey: AND·OR·NOT·괄호·앞뒤 * 와일드카드, 클라 SearchNode 처리, 예: A AND (B NOT C) OR D)  → 머신마다 클라에 Search, 끝난 순서로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON)
+      ### 로그 검색 (TabSearch, 여러 머신): POST /api/search {arrMachine, nStart, nEnd, sKey, nMax, nLimit, sToken}  (sKey: AND·OR·NOT·괄호·앞뒤 * 와일드카드, 클라 SearchNode 처리, 예: A AND (B NOT C) OR D, nLimit: 서치 제한 시간 초 (기본 60, 클라 검색 마감, 서버 대기 = + 여유 X초))  → 머신마다 클라에 Search, 끝난 순서로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON)
       ### 파일 보기 (TabSearch, 머신 1대): /api/view?sMachine=&sPath=&nStart=&nCount=  → 클라에 View (nStart 0: 마지막)
       ### 검색 진행·중지 (TabSearch): /api/progress?sToken= (진행 머신들의 진행 합), /api/stop?sToken= (머신마다 Stop)
       ### 덤프 목록 (TabDump, 여러 머신): POST /api/dump {arrMachine}  → 머신마다 클라에 Dump, 끝난 순서로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON, kResult.arrFile[].bZip: Server Dump 폴더 zip 있음)
@@ -274,14 +278,14 @@
       M·D·S·E: 글자 없음 (입력 UI 만, 이름: 마우스 올림 title)
       S·E: 날짜 (폭: 날짜 글자 + 달력, 사이 좁게)·시·분·초 (00~59), S 뒤 흐린 글자 "이상"·E 뒤 "미만" (S <= Data < E: S 포함, E 미포함), 서치·쿼리 모두 초까지 (D: 지금 초 기준)
       실행 버튼: 일반 버튼 크기 (폭 고정 없음), 타이머 버튼: 숫자 네 자리 폭 (숫자 폭 같음)
-      명령 창 2줄 고정: 1줄 리셋·M·D·S·"이상"·E·"미만"·(오른쪽 끝, 실행·중단 위) 타이머·쿼리 모드 필드·기록·알람·저장 / 서치 모드 설정, 2줄 검색칸 (나머지 폭 꽉)·실행·중단 (톱니 설정 버튼 없음)
+      명령 창 2줄 고정: 1줄 리셋·M·D·S·"이상"·E·"미만"·(오른쪽 끝, 실행·중단 위) 타이머·쿼리 모드 필드·기록·알람·저장·설정 / 서치 모드 저장·설정 (설정: 맨 오른쪽 공통 버튼, 제목 "설정", 지금 탭 항목만: 서치 한 머신당 최대·모든 머신 최대·서치 제한 시간·결과 정렬, 쿼리 쿼리 제한 시간, 기본 60초·상한 3,600, localStorage 한 키, 서치 중: 잠김), 2줄 검색칸 (나머지 폭 꽉)·실행·중단 (톱니 설정 버튼 없음)
       모래시계 버튼 (맨 앞 M 왼쪽, Octicons hourglass 정사각, 아이콘만 존 색, 누름: 모래시계 1회 뒤집기 X초, 돌아갈 실행 없음: 꺼짐·회색): 이전 실행으로 (서치·쿼리 따로)
          기억: 실행 버튼·Enter 마다 (Shift 옮겨 실행·저장 쿼리·처음 입장·F5 리셋 쿼리·Ctrl·Alt 놓기·필드 값 클릭 자동 실행 포함) M·D·S·E·입력칸, 탭마다 최근 X회 (브라우저 메모리만: 브라우저 새로 고침 지움), 앞 기억과 같음: 안 넣음, 타이머·← →: 안 넣음
          누름: 지금 실행 기억 지움 (돌아가면 그 뒤 기억 지움, 예: 9회 → 8회: 9회 지움) → 앞 기억 M·D·S·E·입력칸 그대로 → 그 S·E 그대로 실행 (D 다시 계산 안 함, 기억 안 넣음), 실행 중: 중단 뒤, 지금 탭 타이머: 끔, 누르는 중 다시 누름: 무시
       F5·새로 고침 버튼: 최초 입장 리셋 (지금 탭을 최초 입장 상태로, 탭마다 동작 다름)
          명령 창 1줄 왼쪽 인스턴스 값 (M 전체·D 1일·S·E 세션 최초 방문 시각 기준·지금 탭 타이머 끔·기본 X초) + 검색칸·쿼리칸 비움 + 결과 메모리 (단계·보관 결과·막대·렌즈 스냅샷·필드 통계) 버림 + 스텝 ← 0 →·포지션 « 0 » (서치 2번 창 보기 비움), 실행 중: 중단 뒤 끝날 때까지 (서치 중지 안 됨: X초마다 다시), 타이머: 먼저 끔, 리셋 중 다시 누름: 무시
          쿼리 탭: 최초 입장처럼 실행까지, 서치 탭: 빈 첫 화면 (실행 안 함), 그대로: 직접 저장한 설정 (저장 쿼리·알람·서치 설정: 머신당·전체 최대 건수·정렬)
-      타이머 버튼 (오른쪽 버튼 묶음 맨 앞: 쿼리 필드·서치 설정 왼쪽, 서치·쿼리 따로: 탭마다 주기·도는 중 따로, 버튼: 지금 탭 타이머): 숫자만 ("초" 글자 없음), 주기 초 표시 (기본 X초)
+      타이머 버튼 (오른쪽 버튼 묶음 맨 앞: 쿼리 필드·서치 저장 왼쪽, 서치·쿼리 따로: 탭마다 주기·도는 중 따로, 버튼: 지금 탭 타이머): 숫자만 ("초" 글자 없음), 주기 초 표시 (기본 X초)
          누름 → 초 입력 (정수, 최소 X초 ~ 최대 X초, 포지션 입력과 같음) → Enter: 시작, Esc·밖: 취소
          도는 중: 남은 초 (1초마다 줄어듦, 시각 기준), 글자 존 색, 0: 그 탭 보는 중 → 존 색 1회 반짝 + 그 탭 실행 (실행 중: 건너뜀, 다른 탭·덤프·파일 보는 중: 건너뜀) → 다시, 누름: 중지 (주기 초 표시)
          시작 (Enter): S·E 를 지금 + 간격으로 맞춤 (E = 지금 + X초, S = E - 간격, 간격: D 있음 D, 없음 지금 S·E 길이) → 바로 1회 실행 (반짝) → 타이머
@@ -298,7 +302,7 @@
       스냅샷: 넓힌 단계 스텝 0 ↓ = 넓히기 전 단계, 스텝 0 ↑ = 넓혀 둔 다음 단계 (보관 결과 그대로, 다시 쿼리 안 함), 단계마다 렌즈 스텝·초·분봉 보관 (← →·렌즈 오감: 그대로, 다시 안 가져옴), 스텝 툴팁: 지금 단위 (예: 시봉), 새 결과: 0, 단계 이동: 그 단계 마지막 스텝, 페이지 넘김: 그대로
       기본 단위보다 작은 초·분봉: /api/query/lens 따로 가져옴 (진행 팝업, 실패: 제목 "초봉·분봉 실패"), x축 라벨: 막대 많음 → 정각·자정 기준 X칸마다 (렌즈 자정: 월/일)
    ## 쿼리 결과 제목 기간: 막대 단위 (1초: 1초, 초별: 60초, 분별: 60분, 시간별: 24시간, 날짜별: N일), 초별·분별 x축 첫 라벨: 숫자만 (예: 0)
-   ## 쿼리 설정 창: 누른 버튼 기능 하나만 (저장 버튼: 제목 저장·저장 쿼리 aQuery, 알람 버튼: 제목 알람·알람 aAlarm (서버가 매분 판정·발송), 필드 버튼: 제목 필드·필드 정의 aField (줄: 이름만, 정규식·고정값: 툴팁, 더블클릭: 수정, 저장: 바로 적용·접속 클라 알림), 창 안 바꾸기 없음), 필드 추가 창: 이름·정규식·고정값 (고정값 있음: 정규식 안 씀), 쿼리 추가 창: 제목·쿼리·간격 (분 직접 입력), 알람 추가 창: 제목·쿼리·간격·건수·억제 (한 줄)·메일·SMS (추가 버튼·Enter → 밑 목록, 줄마다 삭제)·훅·사용, 테스트 버튼: 창 값으로 메일·훅 바로 발송 (결과 알림)
+   ## 쿼리 설정 창 (서치 탭 저장 버튼도 같은 창: 제목 저장·저장 서치 aSearch, 추가 창 "서치 추가"·"검색어" 칸, 더블클릭: 검색어·기간 넣고 서치 (서치 중: 중지 → 끝난 뒤 다시), 서버 API /api/search/saved): 누른 버튼 기능 하나만 (저장 버튼: 제목 저장·저장 쿼리 aQuery, 알람 버튼: 제목 알람·알람 aAlarm (서버가 매분 판정·발송), 필드 버튼: 제목 필드·필드 정의 aField (줄: 이름만, 정규식·고정값: 툴팁, 더블클릭: 수정, 저장: 바로 적용·접속 클라 알림), 창 안 바꾸기 없음), 필드 추가 창: 이름·정규식·고정값 (고정값 있음: 정규식 안 씀), 쿼리 추가 창: 제목·쿼리·간격 (분 직접 입력), 알람 추가 창: 제목·쿼리·간격·건수·억제 (한 줄)·메일·SMS (추가 버튼·Enter → 밑 목록, 줄마다 삭제)·훅·사용, 테스트 버튼: 창 값으로 메일·훅 바로 발송 (결과 알림)
 
 # 반영 탭 전용 (HMXServer 이식, 충돌: HMX 공통 기준 → 탭 구조·버튼·존 색·진행 표시·오류 글·연결 끊김·단축키·dialog)
    ## 구성: 탭 버튼 반영 (운영 뒤) → 반영 창 #ProcessPanel (스크립트 TabProcess.ProcessHTML class Process, 마크업·CSS Web.cs, id·localStorage: Process 접두사, CSS: 반영 범위만) = 버전 불일치 배너 → 현황 (요약 카드·필터 줄) → 서버 목록 상자 + 상세 패널·줄 메뉴·공통 팝업, 토스트: 창 밖 (다른 탭에서도 보임)
@@ -371,7 +375,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 	public const string	TAB_MANAGER	= "운영";
 	public const string	TAB_PROCESS	= "반영";
 	public static readonly string[]	m_arrTab	= { TAB_QUERY, TAB_SEARCH, TAB_FILE, TAB_DUMP, TAB_MANAGER, TAB_PROCESS };	// 모든 탭 (페이지 순서)
-	public static readonly (string sKey, string sFile)[]	m_arrConfigSplit	= { ("aQuery", "Query.json"), ("aAlarm", "Alarm.json"), ("aField", "Field.json"), ("Manager", "Manager.json"), ("aAccount", "Account.json"), ("sKey", "Account.json"), ("sRand", "Account.json"), ("sToken", "Account.json") };	// 따로 관리 설정 (웹에서 고침: 저장 쿼리·알람·필드 → 키별 json, 운영 탭 서버 목록, 계정·관리 계정 외부 API 토큰 sToken·키 sKey: Account.json, 공통 Config)
+	public static readonly (string sKey, string sFile)[]	m_arrConfigSplit	= { ("aQuery", "Query.json"), ("aSearch", "Search.json"), ("aAlarm", "Alarm.json"), ("aField", "Field.json"), ("Manager", "Manager.json"), ("aAccount", "Account.json"), ("sKey", "Account.json"), ("sRand", "Account.json"), ("sToken", "Account.json") };	// 따로 관리 설정 (웹에서 고침: 저장 쿼리·저장 서치·알람·필드 → 키별 json, 운영 탭 서버 목록, 계정·관리 계정 외부 API 토큰 sToken·키 sKey: Account.json, 공통 Config)
 
 	private const int	m_nStartFailWaitSec	= 10;	// 시작 실패 시 콘솔 종료 대기 (초, 더블클릭 실행에서 사유 확인)
 	private const int	m_nShutdownSec		= 300;	// 종료 정리 최대 대기 (초, 호스트 ShutdownTimeout → 서비스: 이 동안 중지 대기 상태 유지, 밀린 적재·색인 많을 때)
@@ -601,6 +605,9 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 		{
 			RunAll();
 		}
+
+		ThreadPool.GetMinThreads(out int nWorker, out int nIO);
+		ThreadPool.SetMinThreads(Math.Max(nWorker, Environment.ProcessorCount * 2), nIO);	// 쿼리 병렬 (동시 X건 × 코어 절반) 중에도 웹·TCP 수신 스레드 여유
 
 		try
 		{

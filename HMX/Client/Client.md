@@ -6,7 +6,7 @@
 - 유형: 콘솔 / 윈도우 서비스 (Worker SDK, BackgroundService), .NET 10 file-based app
 - 프레임워크: net10.0, Microsoft.Extensions.Hosting.WindowsServices 10.0.10, StackExchange.Redis 2.13.17, win-x64 프레임워크 종속 단일 exe
 - 역할: 게임 서버 머신마다 설치 → aLogFolder 하위 로그 감시·전송, `*.dmp` 감시, Server 원격 요청 처리, 실행 기능 (Redis 목록 중 이 머신 항목 Git 동기화·실행·종료)
-- 부하 정책: 프로세스 우선순위 BelowNormal, 검색 1건씩·보기 동시 2건, Throttle (100ms 작업마다 10ms 쉼)
+- 부하 정책: 프로세스 우선순위 BelowNormal, 검색 동시 2건 (서버 Gate 와 같음)·보기 동시 2건, Throttle (500ms 작업마다 100ms 쉼, 서버 Gate.Yield 와 같음)
 
 ## 구조
 | 경로 | 설명 |
@@ -47,7 +47,7 @@
 - 필드 추출: 서버 aField (Server.json, 접속 때 Count 답·1분 Alive 답·필드 버튼 저장 때 받음 → 바뀜만 다음 Log 부터, 클라 설정 없음) 정규식 첫 그룹 → 줄마다 {키: 값} (정규식 100ms 제한, sValue 있음: 정규식 안 씀·모든 줄 고정값 (존 등), 키 예약어 Machine·Folder·Type 불가, 예전 서버: 필드 없이)
 - 진행 보정: 접속 시 Count 동기화 → 서버 받은 진행 기준 건너뜀·재전송 (중복·누락 방지), 끊김 중 위치 유지, 예전 LMClient.data 자동 이전
 - 흐름 제어: 서버 Pause·Resume 수신 → 감시 멈춤·재개, 전송 큐 최대 1만 건 (초과: 오래된 것부터 버림)
-- 원격 검색: 기간 (yyyyMMddHH) 로그 파일에서 검색어 포함 줄, 최대 nMax (기본 1,000)·60초, 1초마다 SearchProgress, Stop 지원
+- 원격 검색: 기간 (yyyyMMddHH) 로그 파일에서 검색어 포함 줄, 최대 nMax (기본 1,000)·nLimit 초 (서버 서치 제한 시간 설정, 없음: 60초, 상한 3,600), 1초마다 SearchProgress, Stop 지원
 - 인코딩: 줄마다 UTF-8·CP949 판별, UTF-8·UTF-16 BOM 지원
 - 파일 보기: *.log·txt·json·ini·bat·xml·config·md·lua, 기본 500·최대 2,000줄
 - 덤프: FileSystemWatcher `*.dmp` 이벤트 전송 (Changed: 1초 묶음), 목록 (최대 1만)·4MB 조각 다운·삭제

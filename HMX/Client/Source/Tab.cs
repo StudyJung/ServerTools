@@ -447,10 +447,10 @@ static class Tab	// 탭 공통: aLogFolder 기준 폴더·막는 폴더 규칙·
 	}
 }
 
-class Throttle	// 부하 조절: m_nBusyMs 연속 작업 시 m_nRestMs 쉼 (블록마다 확인, 실서버 CPU·디스크 양보)
+class Throttle	// 부하 조절 (서치·보기·덤프·정리 공통): m_nBusyMs 연속 작업 시 m_nRestMs 쉼 (블록마다 확인, 실서버 CPU·디스크 양보, 서버 Gate.Yield 와 같은 값)
 {
-	private const int	m_nBusyMs	= 100;	// 연속 작업 시간 (ms)
-	private const int	m_nRestMs	= 10;	// 쉬는 시간 (ms)
+	private const int	m_nBusyMs	= 500;	// 연속 작업 시간 (ms)
+	private const int	m_nRestMs	= 100;	// 쉬는 시간 (ms)
 
 	private long		m_nSliceStart	= Stopwatch.GetTimestamp();	// 작업 시작 타임스탬프
 

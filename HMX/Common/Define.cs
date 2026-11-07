@@ -50,6 +50,7 @@ class SearchParam	// 로그 검색 요청 본문 (POST /api/search, JSON)
 	public long?		nEnd		{ get; set; }	// 종료 yyyyMMddHH (24시 = 그날 23시 파일까지)
 	public string?		sKey		{ get; set; }	// 검색어
 	public int?			nMax		{ get; set; }	// 머신당 최대 건수 (페이지 설정값)
+	public int?			nLimit		{ get; set; }	// 서치 제한 시간 (초, 페이지 설정값, 클라 검색 마감)
 	public string?		sToken		{ get; set; }	// 진행 조회·중지용 (페이지가 만든 검색 표시)
 }
 
@@ -60,11 +61,11 @@ class DumpParam	// 덤프 요청 본문 (POST /api/dump: arrMachine, /api/dump/d
 	public string?		sPath		{ get; set; }	// 다운·삭제할 덤프 (클라 전체 경로)
 }
 
-class SavedParam	// 저장 쿼리 본문 (POST /api/query/saved: sKey·sQuery·nMinute·sOldKey, /api/query/saved/delete: sKey, /api/query/saved/move: sKey·nTo, JSON)
+class SavedParam	// 저장 쿼리·저장 서치 본문 (POST /api/query/saved·/api/search/saved: sKey·sQuery·nMinute·sOldKey, /delete: sKey, /move: sKey·nTo, JSON)
 {
 	public string?	sKey	{ get; set; }	// 제목
-	public string?	sQuery	{ get; set; }	// 쿼리
-	public string?	sOldKey	{ get; set; }	// 수정할 저장 쿼리 제목 (비움: 추가·같은 제목이면 쿼리만 바꿈)
+	public string?	sQuery	{ get; set; }	// 쿼리·검색어
+	public string?	sOldKey	{ get; set; }	// 수정할 제목 (비움: 추가·같은 제목이면 쿼리만 바꿈)
 	public int?		nMinute	{ get; set; }	// 간격 (분, 페이지 D)
 	public int?		nTo		{ get; set; }	// 옮길 자리 (0부터)
 }

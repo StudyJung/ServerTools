@@ -92,7 +92,7 @@
 //   {"sType":"Count","arrCount":[{"sFolder":"","sRel":"","nLine":0}],"aField":[{"sKey":"","sRegex":"","sValue":""}]} Count 답 한 패킷 (서버 받은 진행 있는 폴더만, aField: 서버 설정 → 이 접속 보낼 줄 필드) → 보정 뒤 Log 전송 시작
 //   {"sType":"Alive","aField":[{"sKey":"","sRegex":"","sValue":""}],"sTime":""} 얼라이브 답·서버 필드 정의 바뀜 (쿼리 필드 버튼, 바로) → 바뀜만 다음 Log 부터 새 줄 필드 (받은 진행 없음: 보정 안 함)
 // 요청 (서버 → 클라) / 결과 (클라 → 서버), nReqId 로 짝, sPath: 전체 경로
-//   {"sType":"Search","nReqId":0,"nStart":2026102600,"nEnd":2026102624,"sKey":"","nMax":1000}
+//   {"sType":"Search","nReqId":0,"nStart":2026102600,"nEnd":2026102624,"sKey":"","nMax":1000,"nLimit":60}	(nLimit: 마감 초, 없음: 60)
 //     → {"sType":"SearchResult","nReqId":0,"bTruncated":false,"bStopped":false,"nFileCount":0,"nElapsedMs":0,"sError":"","arrLine":[{"sPath":"","nDateHour":0,"nLine":0,"sText":""}]}
 //     → 검색 중 X초마다 {"sType":"SearchProgress","nReqId":0,"nFileTotal":0,"nFileDone":0,"nFound":0,"nElapsedMs":0}	(nFileTotal -1: 앞 검색 대기 중)
 //   {"sType":"Stop","nReqId":0}	검색 중지 → 그때까지 결과 bStopped=true
@@ -560,7 +560,7 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 
 				try
 				{
-					kResult = await TabSearch.Search(nReqId, GetLong(kRoot, "nStart"), GetLong(kRoot, "nEnd"), GetText(kRoot, "sKey"), (int)GetLong(kRoot, "nMax"), kJob, kStop);
+					kResult = await TabSearch.Search(nReqId, GetLong(kRoot, "nStart"), GetLong(kRoot, "nEnd"), GetText(kRoot, "sKey"), (int)GetLong(kRoot, "nMax"), (int)GetLong(kRoot, "nLimit"), kJob, kStop);
 				}
 				finally
 				{

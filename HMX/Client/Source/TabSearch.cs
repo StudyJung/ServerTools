@@ -2,7 +2,9 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 {
 	private const int	m_nSearchMax		= 1000000;	// 검색 결과 최대 건수 (서버 nMax 상한)
 	public const int	m_nSearchDefault	= 1000;	// 검색 결과 최대 건수 기본값 (nMax 없음, 서버와 같음)
-	public const int	m_nSearchLimitSec	= 60;		// 검색 최대 시간 (초, 초과 시 그때까지 결과만)
+	public const int	m_nSearchLimitSec	= 60;		// 검색 최대 시간 기본 (초, 서버 nLimit 없음, 초과 시 그때까지 결과만)
+	private const int	m_nSearchLimitMax	= 3600;		// 검색 최대 시간 상한 (초, 서버 nLimit)
+	private const int	m_nSearchConcurrent	= 2;		// 동시 검색 (서버 동시 서치 수와 같음, 게임 서버 부하 제한)
 	private const int	m_nSearchTextMax	= 1000;		// 검색 결과 줄 최대 글자 (초과: "…")
 	private const long	m_nSearchTextTotal	= 300000000;	// 검색 결과 글자 수 합 최대 (초과: 그때까지 결과만, 브라우저 문자열 한도·서버 m_nLineMax 안쪽)
 	private const int	m_nViewCount		= 500;		// 보기 기본 줄 수
@@ -11,7 +13,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 	private const int	m_nSearchWaitSec	= 20;		// 앞 검색 처리 중일 때 대기 (초, 초과: 거절 → 밀린 검색 방지)
 	private const int	m_nProgressMs		= 1000;			// 검색 진행 알림 주기 (ms)
 
-	private static readonly SemaphoreSlim						m_kSearchLock = new SemaphoreSlim(1, 1);	// 검색 1건씩 (게임 서버 부하 제한)
+	private static readonly SemaphoreSlim						m_kSearchLock = new SemaphoreSlim(m_nSearchConcurrent, m_nSearchConcurrent);	// 동시 검색 X건 (한 검색이 오래 걸려도 다른 사용자 검색)
 	public static readonly ConcurrentDictionary<long, SearchJob>	m_hmapJob = new ConcurrentDictionary<long, SearchJob>();	// 진행 중인 검색 (요청 번호 → 진행·중지)
 	public static string[]							m_arrBlockSearch = Array.Empty<string>();	// aBlockSearch 막는 경로 (전체 경로·\이름\, 자신·하위: 서치 제외, 다른 탭: 그대로)
 	public static volatile string[]							m_arrLogFolder	= Array.Empty<string>();	// 서치 대상 폴더 (aBlockSearch 제외, 탐색 시 새 배열로 교체 → 다른 스레드 읽기)
@@ -37,7 +39,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 		}
 	}
 
-	public static async Task<object> Search(long nReqId, long nStart, long nEnd, string sKey, int nMax, SearchJob kJob, CancellationToken kStop)	// 로그 검색: 대상 파일(시간·경로 순)에서 검색어 포함 줄 (kJob: 진행 기록·중지 요청)
+	public static async Task<object> Search(long nReqId, long nStart, long nEnd, string sKey, int nMax, int nLimit, SearchJob kJob, CancellationToken kStop)	// 로그 검색: 대상 파일(시간·경로 순)에서 검색어 포함 줄 (nLimit: 마감 초, 없음·0 이하: 기본, kJob: 진행 기록·중지 요청)
 	{
 		long				nBegin		= kJob.m_nBegin;			// 검색 시작 타임스탬프
 		List<SearchLine>	listLine	= new List<SearchLine>();
@@ -45,6 +47,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 		bool				bTruncated	= false;					// 최대 건수·시간 초과·중지로 중단
 		bool				bStopped	= false;					// 중지 요청으로 중단
 		string				sError		= "";
+		int					nLimitSec	= nLimit > 0 ? Math.Min(nLimit, m_nSearchLimitMax) : m_nSearchLimitSec;	// 마감 (초)
 
 		nMax = nMax <= 0 ? m_nSearchDefault : Math.Min(nMax, m_nSearchMax);	// 없음: 기본값, 그 외: 상한까지
 
@@ -52,7 +55,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 
 		try
 		{
-			if (!await m_kSearchLock.WaitAsync(TimeSpan.FromSeconds(m_nSearchWaitSec), kCancel.Token))	// 검색 1건씩, 대기 초과: 거절 (밀린 검색 방지)
+			if (!await m_kSearchLock.WaitAsync(TimeSpan.FromSeconds(m_nSearchWaitSec), kCancel.Token))	// 동시 검색 X건, 대기 초과: 거절 (밀린 검색 방지)
 			{
 				return new { sType = "SearchResult", nReqId, bTruncated = false, bStopped = false, nFileCount = 0, nElapsedMs = 0L, sError = "다른 검색 처리 중 (잠시 후 다시)", arrLine = listLine };
 			}
@@ -74,7 +77,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 			{
 				SearchValues<string>	kKey		= SearchValues.Create(kCond.GetFirst(), StringComparison.OrdinalIgnoreCase);		// 블록에서 먼저 찾을 검색어 (맞는 줄에 꼭 있는 것, 벡터 검색)
 				SearchNode?				kCheck		= kCond.m_eOp == SEARCH_OP.SEARCH_OP_TERM ? null : kCond;						// 줄마다 확인할 조건 (연산자 없음: null → 찾은 줄 바로 추가)
-				long					nDeadline	= nBegin + m_nSearchLimitSec * Stopwatch.Frequency;								// 검색 마감 타임스탬프
+				long					nDeadline	= nBegin + nLimitSec * Stopwatch.Frequency;										// 검색 마감 타임스탬프
 
 				List<(long nDateHour, string sPath)>	listTarget	= GetTargetFile(nStart, nEnd);
 				Throttle								kThrottle	= new Throttle();				// 파일 바뀌어도 이어서 셈
@@ -94,7 +97,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 					if (Stopwatch.GetTimestamp() > nDeadline)	// 시간 초과
 					{
 						bTruncated	= true;
-						sError		= $"검색 시간 초과 ({m_nSearchLimitSec}초, 그때까지 결과만)";
+						sError		= $"검색 시간 초과 ({nLimitSec}초, 그때까지 결과만)";
 
 						break;
 					}
@@ -123,7 +126,7 @@ static class TabSearch	// 서치 탭: 로그 검색 (서치 대상 폴더 날짜
 						if (eStop == SEARCH_STOP.SEARCH_STOP_TIME)
 						{
 							bTruncated	= true;
-							sError		= $"검색 시간 초과 ({m_nSearchLimitSec}초, 그때까지 결과만)";
+							sError		= $"검색 시간 초과 ({nLimitSec}초, 그때까지 결과만)";
 
 							break;
 						}

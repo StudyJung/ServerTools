@@ -372,7 +372,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		.qdown{flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--fgColor-accent);font-size:0;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z'/%3E%3Cpath d='M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06l1.97 1.969Z'/%3E%3C/svg%3E")}.qdown::before{content:""}.qdown:hover:not(:disabled){background:var(--control-transparent-bgColor-hover)}
 		#ResultTable col:not(:last-child),#DumpTable col:not(:nth-last-child(2)){width:1px}#DumpTable tr>:last-child{position:sticky;right:0;background:var(--bgColor-default);box-shadow:inset 1px 0 0 var(--borderColor-default)}#DumpTable tbody tr:hover>:last-child{background:var(--bgColor-muted)}#DumpTable th:last-child{z-index:2;background:var(--bgColor-muted);box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable th,#DumpTable th{white-space:nowrap}#DumpBody tr{cursor:default}td.act{white-space:nowrap}td.act button{height:20px;padding:0 8px;font-size:0.75rem}td.act button+button{margin-left:4px}
 		dialog{top:30%;bottom:auto;margin:0 auto;transform:translateY(-30%);padding:16px;border:0;border-radius:var(--borderRadius-large);background:var(--overlay-bgColor);color:var(--fgColor-default);box-shadow:var(--shadow-floating-small)}dialog::backdrop{background:var(--overlay-backdrop-bgColor)}
-		.setting{display:grid;grid-template-columns:auto 110px auto;align-items:center;gap:8px 12px;margin:16px 0}.setting select{width:100%;min-width:0}.hint{color:var(--fgColor-muted)}#SettingDialog .toolright{justify-content:flex-end}#QuerySettingDialog{width:600px}#QuerySettingDialog[open]{display:flex;flex-direction:column}#QueryEditScroll{flex:0 1 600px;min-height:0;max-height:none}#QuerySettingDialog .toolright{justify-content:flex-end}#AlarmHistoryDialog{width:600px}#AlarmHistoryDialog[open]{display:flex;flex-direction:column}#AlarmHistoryScroll{flex:0 1 600px;min-height:0;max-height:none}#AlarmHistoryTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle;white-space:nowrap}#AlarmHistoryTable td.key{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#AlarmHistoryTable td.key:hover{text-decoration:underline}#AlarmHistoryTable td.fail{color:var(--fgColor-danger)}#AlarmHistoryTable td.empty{color:var(--fgColor-muted);text-align:center}#AlarmHistoryDialog .toolright,#AlarmHistoryViewDialog .toolright{justify-content:flex-end}#AlarmHistoryViewDialog{width:600px}#AlarmHistoryViewInfo{margin:4px 0 0}#AlarmHistoryViewBody.link{cursor:pointer}#AlarmHistoryViewBody hr{margin:4px 0;border:0;border-top:1px solid var(--borderColor-default)}#AlarmHistoryViewBody{max-height:60vh;overflow:auto;margin:12px 0 16px;padding:8px;border:1px solid var(--borderColor-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}#DownDialog{min-width:320px;max-width:600px}#AccountDialog{width:600px}#AccountEditDialog{width:480px}#DownDialog .toolright,#AccountDialog .toolright,#AccountEditDialog .toolright{justify-content:flex-end}#AccountTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle}#AccountTable td:first-child{white-space:nowrap}#AccountTable td.menu{width:100%;color:var(--fgColor-muted)}#AccountTable td.act{width:1px;color:var(--fgColor-muted)}#AccountEditDialog .setting{grid-template-columns:max-content minmax(0,1fr)}#AccountEditDialog .setting input:not([type="checkbox"]){width:100%}#AccountEditMenu,#AccountEditApi{display:flex;flex-wrap:wrap;gap:4px 12px;line-height:28px}#AccountEditMenu label,#AccountEditApi label{display:inline-flex;align-items:center;gap:4px}#AccountEditMenu input,#AccountEditApi input{margin:0}#AccountEditDialog.delete .editrow{display:none}#AccountEditDialog:not(.edit) .keyrow{display:none}#AccountEditDialog .keybox{display:flex;align-items:center;justify-content:space-between;gap:8px;line-height:28px}#AccountEditKey,#AccountEditToken{font-family:var(--fontStack-monospace);word-break:break-all;line-height:28px}#AccountEditKey.pending{color:var(--fgColor-accent);font-weight:600}#AccountEditDialog .adminbox{display:flex;align-items:center;gap:8px}#AccountEditDialog .adminbox input{flex:1;min-width:0}#DownName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DownPath{margin:0 0 16px;word-break:break-all}#DeleteDialog{min-width:320px;max-width:600px}#DeleteDialog .toolright{justify-content:flex-end}#DeleteText{margin:12px 0 16px;color:var(--fgColor-default);word-break:break-all}#DeleteName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DeleteName:empty{display:none}#DeleteName:not(:empty)+#DeleteText{margin-top:0}#HelpDialog{box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px)}#HelpScroll{overflow-y:auto;margin-bottom:12px}#HelpTable{width:100%;margin-bottom:0;border-collapse:collapse;font-size:0.875rem}#HelpTable tbody th{position:static}#HelpTable td:first-child{font-weight:600;white-space:nowrap}#HelpTable tr.group th{text-align:left}#HelpTabs{margin-bottom:8px}#HelpTabs button.cur,#HelpTabs button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#HelpTable[data-help="common"] tr:not([data-help="common"]),#HelpTable[data-help="rule"] tr:not([data-help="rule"]),#HelpTable[data-help="query"] tr:not([data-help="query"]),#HelpTable[data-help="search"] tr:not([data-help="search"]),#HelpTable[data-help="manager"] tr:not([data-help="manager"]),#HelpTable[data-help="process"] tr:not([data-help="process"]){display:none}#HelpTable tr.sep td{border-top:2px solid var(--borderColor-default)}#HelpDialog .toolright{justify-content:flex-end}
+		.setting{display:grid;grid-template-columns:auto 110px auto;align-items:center;gap:8px 12px;margin:16px 0}.setting select{width:100%;min-width:0}.hint{color:var(--fgColor-muted)}#SettingDialog .toolright{justify-content:flex-end}#SettingDialog.query .srow,#SettingDialog:not(.query) .qrow{display:none}#QuerySettingDialog{width:600px}#QuerySettingDialog[open]{display:flex;flex-direction:column}#QueryEditScroll{flex:0 1 600px;min-height:0;max-height:none}#QuerySettingDialog .toolright{justify-content:flex-end}#AlarmHistoryDialog{width:600px}#AlarmHistoryDialog[open]{display:flex;flex-direction:column}#AlarmHistoryScroll{flex:0 1 600px;min-height:0;max-height:none}#AlarmHistoryTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle;white-space:nowrap}#AlarmHistoryTable td.key{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#AlarmHistoryTable td.key:hover{text-decoration:underline}#AlarmHistoryTable td.fail{color:var(--fgColor-danger)}#AlarmHistoryTable td.empty{color:var(--fgColor-muted);text-align:center}#AlarmHistoryDialog .toolright,#AlarmHistoryViewDialog .toolright{justify-content:flex-end}#AlarmHistoryViewDialog{width:600px}#AlarmHistoryViewInfo{margin:4px 0 0}#AlarmHistoryViewBody.link{cursor:pointer}#AlarmHistoryViewBody hr{margin:4px 0;border:0;border-top:1px solid var(--borderColor-default)}#AlarmHistoryViewBody{max-height:60vh;overflow:auto;margin:12px 0 16px;padding:8px;border:1px solid var(--borderColor-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}#DownDialog{min-width:320px;max-width:600px}#AccountDialog{width:600px}#AccountEditDialog{width:480px}#DownDialog .toolright,#AccountDialog .toolright,#AccountEditDialog .toolright{justify-content:flex-end}#AccountTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle}#AccountTable td:first-child{white-space:nowrap}#AccountTable td.menu{width:100%;color:var(--fgColor-muted)}#AccountTable td.act{width:1px;color:var(--fgColor-muted)}#AccountEditDialog .setting{grid-template-columns:max-content minmax(0,1fr)}#AccountEditDialog .setting input:not([type="checkbox"]){width:100%}#AccountEditMenu,#AccountEditApi{display:flex;flex-wrap:wrap;gap:4px 12px;line-height:28px}#AccountEditMenu label,#AccountEditApi label{display:inline-flex;align-items:center;gap:4px}#AccountEditMenu input,#AccountEditApi input{margin:0}#AccountEditDialog.delete .editrow{display:none}#AccountEditDialog:not(.edit) .keyrow{display:none}#AccountEditDialog .keybox{display:flex;align-items:center;justify-content:space-between;gap:8px;line-height:28px}#AccountEditKey,#AccountEditToken{font-family:var(--fontStack-monospace);word-break:break-all;line-height:28px}#AccountEditKey.pending{color:var(--fgColor-accent);font-weight:600}#AccountEditDialog .adminbox{display:flex;align-items:center;gap:8px}#AccountEditDialog .adminbox input{flex:1;min-width:0}#DownName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DownPath{margin:0 0 16px;word-break:break-all}#DeleteDialog{min-width:320px;max-width:600px}#DeleteDialog .toolright{justify-content:flex-end}#DeleteText{margin:12px 0 16px;color:var(--fgColor-default);word-break:break-all}#DeleteName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DeleteName:empty{display:none}#DeleteName:not(:empty)+#DeleteText{margin-top:0}#HelpDialog{box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px)}#HelpScroll{overflow-y:auto;margin-bottom:12px}#HelpTable{width:100%;margin-bottom:0;border-collapse:collapse;font-size:0.875rem}#HelpTable tbody th{position:static}#HelpTable td:first-child{font-weight:600;white-space:nowrap}#HelpTable tr.group th{text-align:left}#HelpTabs{margin-bottom:8px}#HelpTabs button.cur,#HelpTabs button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#HelpTable[data-help="common"] tr:not([data-help="common"]),#HelpTable[data-help="rule"] tr:not([data-help="rule"]),#HelpTable[data-help="query"] tr:not([data-help="query"]),#HelpTable[data-help="search"] tr:not([data-help="search"]),#HelpTable[data-help="manager"] tr:not([data-help="manager"]),#HelpTable[data-help="process"] tr:not([data-help="process"]){display:none}#HelpTable tr.sep td{border-top:2px solid var(--borderColor-default)}#HelpDialog .toolright{justify-content:flex-end}
 		tbody tr{cursor:pointer}tbody tr:hover{background:var(--bgColor-muted)}tbody tr.sel{background:var(--bgColor-accent-muted)}mark{background:var(--highlight-neutral-bgColor);color:inherit;padding:0}
 		[hidden]{display:none!important}.resulthead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.toolright{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-left:auto}.pager{display:flex;flex-wrap:wrap;align-items:center;gap:4px}.pager button{min-width:28px;padding:0 8px;border-color:transparent;background:transparent;box-shadow:none;color:var(--fgColor-default);font-weight:400}.pager button:hover:not(:disabled){border-color:var(--borderColor-default);background:transparent}
 		.pager button.cur,.pager button.cur:hover:not(:disabled){border-color:transparent;background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}
@@ -414,7 +414,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<label title="Duration(최근 기간)"><select id="QueryRange"><option value="" hidden>기타</option><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="180">3시간</option><option value="360">6시간</option><option value="540">9시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="21600">15일</option><option value="43200">30일</option><option value="86400">60일</option></select></label>
 		<label title="Start(날짜, 시, 분, 초, 포함, 쿼리: E 기준 최대 3년)"><input type="date" id="StartDate" value="__YESTERDAY__"><select id="StartHour" class="hour"></select><select id="StartMinute" class="hour"></select><select id="StartSecond" class="hour"></select><span class="rangeop">이상</span></label>
 		<label title="End(날짜, 시, 분, 초, 미포함)"><input type="date" id="EndDate" value="__TODAY__"><select id="EndHour" class="hour"></select><select id="EndMinute" class="hour"></select><select id="EndSecond" class="hour"></select><span class="rangeop">미만</span></label>
-		<span class="toolright"><button type="button" id="TimerButton" title="타이머(입력 엔터 시작, 클릭 중지)">10</button><button type="button" id="SearchSettingButton" class="searchonly" title="검색 설정">설정</button><button type="button" id="QueryRuleButton" class="queryonly" title="필드 정의(추가, 수정, 순서, 설정 aField)">필드</button><button type="button" id="QueryHistoryButton" class="queryonly" title="알람 기록(발송, 실패, 최신 1,000건)">기록</button><button type="button" id="QueryAlarmButton" class="queryonly" title="알람(추가, 수정, 켜기)">알람</button><button type="button" id="QuerySavedButton" class="queryonly" title="저장 쿼리(추가, 수정, 실행)">저장</button></span>
+		<span class="toolright"><button type="button" id="TimerButton" title="타이머(입력 엔터 시작, 클릭 중지)">10</button><button type="button" id="SearchSavedButton" class="searchonly" title="저장 서치(추가, 수정, 실행)">저장</button><button type="button" id="QueryRuleButton" class="queryonly" title="필드 정의(추가, 수정, 순서, 설정 aField)">필드</button><button type="button" id="QueryHistoryButton" class="queryonly" title="알람 기록(발송, 실패, 최신 1,000건)">기록</button><button type="button" id="QueryAlarmButton" class="queryonly" title="알람(추가, 수정, 켜기)">알람</button><button type="button" id="QuerySavedButton" class="queryonly" title="저장 쿼리(추가, 수정, 실행)">저장</button><button type="button" id="SettingButton" title="설정">설정</button></span>
 		<div class="searchbox">
 		<input type="text" id="SearchKey" class="searchonly" title="검색어(AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
 		<input type="text" id="QueryKey" class="queryonly" title="쿼리(단어, 필드:값, AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
@@ -654,15 +654,17 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="colguide" id="ColGuide" hidden></div>
 		<dialog id="SettingDialog">
 		<div class="resulthead">
-		<div class="title">검색 설정</div>
+		<div class="title">설정</div>
 		<div class="toolright">
 		<button type="button" id="SettingDefault" title="기본값">기본</button>
 		</div>
 		</div>
 		<div class="setting">
-		<label for="MachineMaxInput">한 머신당 최대</label><input type="number" id="MachineMaxInput" min="1" step="1" autofocus><span class="hint" id="MachineMaxHint"></span>
-		<label for="ResultMaxInput">모든 머신 최대</label><input type="number" id="ResultMaxInput" min="1" step="1"><span class="hint" id="ResultMaxHint"></span>
-		<label for="SortSelect">결과 정렬</label><select id="SortSelect"><option value="time">시간 정렬</option><option value="base">머신 정렬</option></select><span class="hint" id="SortHint"></span>
+		<label for="MachineMaxInput" class="srow">한 머신당 최대</label><input type="number" id="MachineMaxInput" class="srow" min="1" step="1" autofocus><span class="hint srow" id="MachineMaxHint"></span>
+		<label for="ResultMaxInput" class="srow">모든 머신 최대</label><input type="number" id="ResultMaxInput" class="srow" min="1" step="1"><span class="hint srow" id="ResultMaxHint"></span>
+		<label for="SearchLimitInput" class="srow">서치 제한 시간</label><input type="number" id="SearchLimitInput" class="srow" min="1" step="1"><span class="hint srow" id="SearchLimitHint"></span>
+		<label for="SortSelect" class="srow">결과 정렬</label><select id="SortSelect" class="srow"><option value="time">시간 정렬</option><option value="base">머신 정렬</option></select><span class="hint srow" id="SortHint"></span>
+		<label for="QueryLimitInput" class="qrow">쿼리 제한 시간</label><input type="number" id="QueryLimitInput" class="qrow" min="1" step="1" autofocus><span class="hint qrow" id="QueryLimitHint"></span>
 		</div>
 		<div class="toolright">
 		<button type="button" id="SettingSave" class="primary">저장</button>
@@ -696,7 +698,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="title" id="QuerySaveTitle">쿼리 추가</div>
 		<div class="setting">
 		<label for="QuerySaveKey">제목</label><input type="text" id="QuerySaveKey" maxlength="50" autocomplete="off" autofocus>
-		<label for="QuerySaveQuery">쿼리</label><textarea id="QuerySaveQuery" rows="10" maxlength="1000" spellcheck="false"></textarea>
+		<label for="QuerySaveQuery" id="QuerySaveQueryLabel">쿼리</label><textarea id="QuerySaveQuery" rows="10" maxlength="1000" spellcheck="false"></textarea>
 		<label for="QuerySaveMinute" class="queryrow">간격</label><span class="queryrow"><input type="number" id="QuerySaveMinute" min="1" max="129600" step="1"> 분</span>
 		<label for="AlarmMinute" class="alarmrow">간격</label><span class="alarmrow"><input type="number" id="AlarmMinute" min="1" max="1440" step="1"> 분 동안 <input type="number" id="AlarmCount" min="1" step="1"> 건 이상 <label for="AlarmDelay" class="delay">억제</label><input type="number" id="AlarmDelay" min="0" max="1440" step="1"> 분</span>
 		<label for="AlarmMail" class="alarmrow">메일</label><span class="alarmrow alarmadd"><span class="alarminput"><select id="AlarmMail"></select><button type="button" id="AlarmMailAdd">추가</button></span><span class="alarmlist" id="AlarmMailList"></span></span>
@@ -1067,6 +1069,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const kQuerySaveDialog	    = document.getElementById("QuerySaveDialog");	// 쿼리·알람 추가·수정 창 (알람: class alarm → 알람 칸)
 		const kQuerySaveKey	        = document.getElementById("QuerySaveKey");		// 쿼리 추가·수정 제목
 		const kQuerySaveQuery	    = document.getElementById("QuerySaveQuery");	// 쿼리 추가·수정 쿼리 (줄바꿈: 빈칸으로 저장)
+		const kQuerySaveQueryLabel  = document.getElementById("QuerySaveQueryLabel");	// 쿼리 칸 이름 (저장 서치: 검색어)
 		const kQuerySaveTitle	    = document.getElementById("QuerySaveTitle");	// 쿼리 추가·수정 창 제목
 		const kQuerySaveMinute	    = document.getElementById("QuerySaveMinute");	// 쿼리 추가·수정 간격 (분)
 		const kAlarmMinute	        = document.getElementById("AlarmMinute");		// 알람 간격 (분)
@@ -1089,7 +1092,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const kAlarmHistoryViewBody	    = document.getElementById("AlarmHistoryViewBody");	// 알람 기록 내용
 		const kQueryEditScroll	    = document.getElementById("QueryEditScroll");	// 설정 창 줄 상자 (높이 고정, 넘침: 스크롤)
 		const kQueryEditList	    = document.getElementById("QueryEditList");		// 설정 창 줄 (저장 쿼리·알람)
-		const kSearchSettingButton  = document.getElementById("SearchSettingButton");	// 설정 버튼 (서치 모드: 검색 설정, 실행·중단 위)
+		const kSettingButton	    = document.getElementById("SettingButton");		// 설정 버튼 (서치·쿼리 공통, 맨 오른쪽: 서치 최대 건수·제한 시간·정렬, 쿼리 제한 시간)
+		const kSearchSavedButton    = document.getElementById("SearchSavedButton");	// 저장 버튼 (서치 모드: 저장 서치, 타이머 오른쪽)
 		const kQuerySavedButton	    = document.getElementById("QuerySavedButton");	// 저장 버튼 (쿼리 모드: 쿼리 설정 저장 탭, 실행·중단 위)
 		const kQueryAlarmButton	    = document.getElementById("QueryAlarmButton");	// 알람 버튼 (쿼리 모드: 쿼리 설정 알람 탭, 실행·중단 위)
 		const kQueryHistoryButton	= document.getElementById("QueryHistoryButton");	// 기록 버튼 (쿼리 모드: 알람 기록 창, 알람 버튼 왼쪽)
@@ -1099,13 +1103,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const kFieldRuleKey	        = document.getElementById("FieldRuleKey");		// 필드 이름
 		const kFieldRuleRegex	    = document.getElementById("FieldRuleRegex");	// 필드 정규식 (첫 () 값)
 		const kFieldRuleValue	    = document.getElementById("FieldRuleValue");	// 필드 고정값 (있음: 정규식 안 씀)
-		const kSettingDialog	    = document.getElementById("SettingDialog");	// 검색 설정 창
+		const kSettingDialog	    = document.getElementById("SettingDialog");	// 설정 창 (class query: 쿼리 줄만, 아니면 서치 줄만)
 		const kQuerySettingDialog	= document.getElementById("QuerySettingDialog");	// 쿼리 설정 창
 		const kDownDialog	        = document.getElementById("DownDialog");	// 다운 확인 팝업 (File 칸·파일 트리·덤프 zip 공통)
 		let funcDownYes		        = null;		// 다운 확인 예 동작 (null: 확인 중 아님)
 		let funcDeleteYes		    = null;		// 삭제 확인 동작 (null: 확인 중 아님)
 		const kMachineMaxInput	    = document.getElementById("MachineMaxInput");
 		const kResultMaxInput	    = document.getElementById("ResultMaxInput");
+		const kSearchLimitInput	    = document.getElementById("SearchLimitInput");	// 설정 창 서치 제한 시간 (초)
+		const kQueryLimitInput	    = document.getElementById("QueryLimitInput");	// 설정 창 쿼리 제한 시간 (초)
 		const kSortSelect		    = document.getElementById("SortSelect");	// 설정 창 결과 정렬
 		const kSortHint			    = document.getElementById("SortHint");		// 결과 정렬 설명
 		const kColGuide			    = document.getElementById("ColGuide");		// 칸 너비 드래그 위치 세로선 (표는 놓을 때 한 번만 배치)
@@ -1198,9 +1204,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const RESULT_LIMIT	        = 1000000;	// 전체 최대 건수 상한
 		const MACHINE_DEFAULT	    = 1000;	// 머신당 최대 건수 기본값 (서버·클라 m_nSearchDefault 와 같음)
 		const RESULT_DEFAULT	    = 10000;	// 전체 최대 건수 기본값 (모든 머신 합)
-		const LIMIT_KEY		        = "HMX.Limit";	// 검색 설정 localStorage 키
+		const LIMIT_KEY		        = "HMX.Limit";	// 설정 localStorage 키 (서치·쿼리)
+		const LIMIT_SEC_DEFAULT	    = 60;		// 서치·쿼리 제한 시간 기본값 (초, 서버 m_nSearchLimitSec·m_nQueryLimitSec 와 같음)
+		const LIMIT_SEC_MAX	        = 3600;		// 서치·쿼리 제한 시간 상한 (초, 서버와 같음)
 		let nMachineMax		        = MACHINE_DEFAULT;	// 머신당 최대 건수 (설정)
 		let nResultMax		        = RESULT_DEFAULT;	// 전체 최대 건수 (설정, 넘음: 이후 머신 검색 안 함)
+		let nSearchLimitSec	        = LIMIT_SEC_DEFAULT;	// 서치 제한 시간 (설정, 초, /api/search nLimit → 클라 마감)
+		let nQueryLimitSec	        = LIMIT_SEC_DEFAULT;	// 쿼리 제한 시간 (설정, 초, /api/query·stat·lens nLimit)
 		const SORT_TIME		        = "time";	// 시간 정렬 (Search.SortTime)
 		const SORT_BASE		        = "base";	// 머신 정렬 (받은 순서)
 		const SORT_DEFAULT	        = SORT_TIME;	// 결과 정렬 기본값
@@ -1281,9 +1291,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    return await kResponse.json();
 		}
 
-		function ShowStatus()	// 설정 버튼 툴팁 (서치 모드 검색 설정·상태 요약)
+		function ShowStatus()	// 설정 버튼 툴팁 (지금 탭 설정·상태 요약)
 		{
-		    kSearchSettingButton.title = `검색 설정(접속 ${nMachineCount}, 머신당 ${nMachineMax}, 최대 ${nResultMax}, ${sSort === SORT_TIME ? "시간" : "머신"} 정렬)`;
+		    kSettingButton.title = IsQueryMode() ? `설정(쿼리 제한 ${nQueryLimitSec}초)` : `설정(접속 ${nMachineCount}, 머신당 ${nMachineMax}, 최대 ${nResultMax}, 서치 제한 ${nSearchLimitSec}초, ${sSort === SORT_TIME ? "시간" : "머신"} 정렬)`;
 		}
 
 		function ClampLimit(value, nDefault, nLimit)	// 최대 건수 값 정리 (정수 1 ~ nLimit, 그 외: nDefault)
@@ -1308,7 +1318,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kSortHint.textContent = SORT_INFO[GetSort(kSortSelect.value)].sHint;
 		}
 
-		function LoadLimit()	// 저장된 검색 설정 읽기 (없음·오류: 기본값)
+		function LoadLimit()	// 저장된 설정 읽기 (서치·쿼리, 없음·오류: 기본값)
 		{
 		    try
 		    {
@@ -1316,9 +1326,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		        if (kSaved != null)
 		        {
-		            nMachineMax	= ClampLimit(kSaved.nMachineMax, MACHINE_DEFAULT, MACHINE_LIMIT);
-		            nResultMax	= ClampLimit(kSaved.nResultMax, RESULT_DEFAULT, RESULT_LIMIT);
-		            sSort		= GetSort(kSaved.sSort);	// 정렬 저장 전 설정: 기본값
+		            nMachineMax		= ClampLimit(kSaved.nMachineMax, MACHINE_DEFAULT, MACHINE_LIMIT);
+		            nResultMax		= ClampLimit(kSaved.nResultMax, RESULT_DEFAULT, RESULT_LIMIT);
+		            nSearchLimitSec	= ClampLimit(kSaved.nSearchLimitSec, LIMIT_SEC_DEFAULT, LIMIT_SEC_MAX);
+		            nQueryLimitSec	= ClampLimit(kSaved.nQueryLimitSec, LIMIT_SEC_DEFAULT, LIMIT_SEC_MAX);
+		            sSort			= GetSort(kSaved.sSort);	// 저장 전 항목: 기본값
 		        }
 		    }
 		    catch (kError)	// 저장소 사용 불가·형식 오류
@@ -1327,15 +1339,21 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		}
 
-		function OpenSetting()	// 설정 창 열기 (지금 값 표시, 검색 중 제외)
+		function OpenSetting()	// 설정 창 열기 (지금 탭 항목만: 서치 최대 건수·제한 시간·정렬, 쿼리 제한 시간, 서치 중: 안 엶)
 		{
-		    if (Search.bSearching)
+		    const bQuery = IsQueryMode();
+
+		    if (!bQuery && Search.bSearching)
 		    {
 		        return;
 		    }
 
+		    kSettingDialog.classList.toggle("query", bQuery);
+
 		    kMachineMaxInput.value	= nMachineMax;
 		    kResultMaxInput.value	= nResultMax;
+		    kSearchLimitInput.value	= nSearchLimitSec;
+		    kQueryLimitInput.value	= nQueryLimitSec;
 		    kSortSelect.value		= sSort;
 
 		    kSettingDialog.style.width	= "";								// 크기 다시 계산
@@ -1348,17 +1366,19 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    ShowSortHint();
 		}
 
-		function SaveSetting()	// 설정 저장 (저장 실패: 이 창만 적용, 정렬 바뀜: 지금 결과 다시 정렬)
+		function SaveSetting()	// 설정 저장 (서치·쿼리 항목 모두 한 키, 저장 실패: 이 창만 적용, 정렬 바뀜: 지금 결과 다시 정렬)
 		{
 		    const sSortBefore = sSort;
 
-		    nMachineMax	= ClampLimit(kMachineMaxInput.value, MACHINE_DEFAULT, MACHINE_LIMIT);
-		    nResultMax	= ClampLimit(kResultMaxInput.value, RESULT_DEFAULT, RESULT_LIMIT);
-		    sSort		= GetSort(kSortSelect.value);
+		    nMachineMax		= ClampLimit(kMachineMaxInput.value, MACHINE_DEFAULT, MACHINE_LIMIT);
+		    nResultMax		= ClampLimit(kResultMaxInput.value, RESULT_DEFAULT, RESULT_LIMIT);
+		    nSearchLimitSec	= ClampLimit(kSearchLimitInput.value, LIMIT_SEC_DEFAULT, LIMIT_SEC_MAX);
+		    nQueryLimitSec	= ClampLimit(kQueryLimitInput.value, LIMIT_SEC_DEFAULT, LIMIT_SEC_MAX);
+		    sSort			= GetSort(kSortSelect.value);
 
 		    try
 		    {
-		        localStorage.setItem(LIMIT_KEY, JSON.stringify({ nMachineMax: nMachineMax, nResultMax: nResultMax, sSort: sSort }));
+		        localStorage.setItem(LIMIT_KEY, JSON.stringify({ nMachineMax, nResultMax, nSearchLimitSec, nQueryLimitSec, sSort }));
 		    }
 		    catch (kError)	// 저장소 사용 불가
 		    {
@@ -3222,7 +3242,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        document.activeElement.blur();
 		    }
 
-		    ShowStatus();	// 설정 버튼 툴팁 (서치 모드 검색 설정)
+		    ShowStatus();	// 설정 버튼 툴팁 (지금 탭 설정)
 		    Search.FitResultHeight();	// 서치 1번 창 높이 (쿼리 모드: 기준 높이)
 		    Dump.FitDumpHeight();	// 덤프 1번 창 높이: 브라우저 창에 맞춤
 		}
@@ -3851,7 +3871,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		document.getElementById("AlarmSMSAdd").addEventListener("click", Query.AddAlarmSMS);		// 알람 SMS 추가
 		kQueryKey.addEventListener("input", Query.OnQueryInput);				// 쿼리칸 고침: 선택한 저장 쿼리와 달라지면 선택 해제
 		kStopButton.addEventListener("click", Search.StopSearch);
-		kSearchSettingButton.addEventListener("click", OpenSetting);	// 설정 버튼 (서치): 검색 설정
+		kSettingButton.addEventListener("click", OpenSetting);	// 설정 버튼 (서치·쿼리): 지금 탭 설정
+		kSearchSavedButton.addEventListener("click", () => Query.OpenSetting(false, false, true));	// 저장 버튼 (서치): 저장 서치 목록 (쿼리 설정 창 공용)
+		kKey.addEventListener("input", Search.OnKeyInput);	// 검색어칸 고침: 선택한 저장 서치와 달라지면 선택 해제
 		kQuerySavedButton.addEventListener("click", () => Query.OpenSetting(false));	// 저장 버튼 (쿼리): 쿼리 설정 저장 탭
 		kQueryAlarmButton.addEventListener("click", () => Query.OpenSetting(true));	// 알람 버튼 (쿼리): 쿼리 설정 알람 탭
 		kQueryHistoryButton.addEventListener("click", Query.OpenAlarmHistory);		// 기록 버튼 (쿼리): 알람 기록 창 (전체, 최신 순)
@@ -3861,13 +3883,19 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		document.getElementById("QuerySettingCancel").addEventListener("click", () => kQuerySettingDialog.close());
 		document.getElementById("MachineMaxHint").textContent	= `개 (1 ~ ${MACHINE_LIMIT.toLocaleString()}, 기본 ${MACHINE_DEFAULT.toLocaleString()})`;
 		document.getElementById("ResultMaxHint").textContent	= `개 (1 ~ ${RESULT_LIMIT.toLocaleString()}, 기본 ${RESULT_DEFAULT.toLocaleString()})`;
+		document.getElementById("SearchLimitHint").textContent	= `초 (1 ~ ${LIMIT_SEC_MAX.toLocaleString()}, 기본 ${LIMIT_SEC_DEFAULT}, 넘으면 그때까지 결과만)`;
+		document.getElementById("QueryLimitHint").textContent	= `초 (1 ~ ${LIMIT_SEC_MAX.toLocaleString()}, 기본 ${LIMIT_SEC_DEFAULT}, 넘으면 오류)`;
 		kMachineMaxInput.max	= MACHINE_LIMIT;
 		kResultMaxInput.max		= RESULT_LIMIT;
+		kSearchLimitInput.max	= LIMIT_SEC_MAX;
+		kQueryLimitInput.max	= LIMIT_SEC_MAX;
 
 		document.getElementById("SettingDefault").addEventListener("click", () =>	// 기본값 표시 (저장 눌러야 적용)
 		{
 		    kMachineMaxInput.value	= MACHINE_DEFAULT;
 		    kResultMaxInput.value	= RESULT_DEFAULT;
+		    kSearchLimitInput.value	= LIMIT_SEC_DEFAULT;
+		    kQueryLimitInput.value	= LIMIT_SEC_DEFAULT;
 		    kSortSelect.value		= SORT_DEFAULT;
 
 		    ShowSortHint();

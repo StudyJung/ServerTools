@@ -1,17 +1,17 @@
 <Solution>
   <Folder Name="/AI/">
-    <File Path="AI/.claude" />
-    <File Path="AI/.claudeignore" />
-    <File Path="AI/.codex" />
-    <File Path="AI/.gitignore" />
-    <File Path="AI/.mcp.json" />
-    <File Path="AI/AGENTS.md" />
-    <File Path="AI/Base.md" />
-    <File Path="AI/CLAUDE.md" />
-    <File Path="AI/LICENSE" />
-    <File Path="AI/MD.txt" />
-    <File Path="AI/mysql_config.json" />
-    <File Path="AI/README.md" />
+    <File Path="../AI/.claude" />
+    <File Path="../AI/.claudeignore" />
+    <File Path="../AI/.codex" />
+    <File Path="../AI/.gitignore" />
+    <File Path="../AI/.mcp.json" />
+    <File Path="../AI/AGENTS.md" />
+    <File Path="../AI/Base.md" />
+    <File Path="../AI/CLAUDE.md" />
+    <File Path="../AI/LICENSE" />
+    <File Path="../AI/MD.txt" />
+    <File Path="../AI/mysql_config.json" />
+    <File Path="../AI/README.md" />
   </Folder>
   <Folder Name="/HMX/">
     <File Path="HMX/.gitignore" />

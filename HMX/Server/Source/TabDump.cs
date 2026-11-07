@@ -1,6 +1,9 @@
 class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Server Dump 폴더 zip)·zip 받기·삭제 API (페이지 쪽: DumpHTML)
 {
 	private const int	m_nDumpResultMs		= 60000;			// 끝난 다운 결과 보관 (ms, 지남: 버리고 zip 유무로 판단, 조회 안 한 것도 정리)
+	private const int	m_nDownConcurrent	= 2;				// 동시 덤프 다운 (전체, 세션마다 1건)
+
+	private static readonly Gate	m_kGate	= new Gate(m_nDownConcurrent);	// 덤프 다운 자리 (저장 작업 안에서 잡음)
 
 	private readonly TCPServer		m_kListener;		// Client TCP 수신 (Main 이 넘김)
 
@@ -144,7 +147,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 		if (m_hmapDumpSave.TryAdd(sZip, kSave))	// 다운 시작 (같은 파일 동시 요청: 먼저 등록한 쪽만 저장, 나머지는 다음 조회에서 그 진행)
 		{
-			_ = SaveDump(sMachine, sPath, sZip, Web.GetAddr(kRequest.HttpContext), kSave);	// 페이지와 무관하게 끝까지 저장 (예외는 SaveDump 안에서 처리)
+			_ = SaveDump(sMachine, sPath, sZip, Web.GetAddr(kRequest.HttpContext), Gate.GetSession(kRequest.HttpContext), kSave);	// 페이지와 무관하게 끝까지 저장 (예외는 SaveDump 안에서 처리)
 
 			if (kSave.m_bEnd)	// 바로 끝남 (미접속 등): 결과는 이번에 알림
 			{
@@ -155,7 +158,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		return MakeDumpSave(sMachine, "", sZip, kSave);
 	}
 
-	private async Task SaveDump(string sMachine, string sPath, string sZip, string sAddr, DumpSave kSave)	// 덤프 조각 차례로 받아 .tmp zip 에 압축 → 다 받으면 sZip 으로 이름 변경 (실패: 임시 파일 삭제), 진행·결과: kSave
+	private async Task SaveDump(string sMachine, string sPath, string sZip, string sAddr, string sSession, DumpSave kSave)	// 덤프 조각 차례로 받아 .tmp zip 에 압축 → 다 받으면 sZip 으로 이름 변경 (실패: 임시 파일 삭제), 진행·결과: kSave, 세션 1건 → 전체 X건 (기다림: 진행 0)
 	{
 		string	sTemp	= sZip + ".tmp";				// 받는 중인 zip (완료 전에는 sZip 없음 → 이미 받음 판정 안 됨)
 		long	nSize	= 0;							// 원본 크기 (첫 조각 때)
@@ -165,6 +168,8 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 		try
 		{
+			using IDisposable kGate = await m_kGate.EnterAsync(sSession, CancellationToken.None);
+
 			(byte[]? arrData, long nSize, string sError) kChunk = await API.RequestRead(m_kListener, "DumpRead", sMachine, sPath, 0, Define.m_nDumpChunk);	// 첫 조각 (파일 크기 확인)
 
 			if (kChunk.arrData == null)	// 미접속·허용 안 된 경로·읽기 실패
@@ -186,6 +191,8 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 				while (true)
 				{
+					Gate.Yield(CancellationToken.None);	// 압축 CPU 양보
+
 					await kEntry.WriteAsync(kChunk.arrData);
 
 					nOffset			+= kChunk.arrData.Length;
