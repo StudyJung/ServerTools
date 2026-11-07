@@ -15,10 +15,11 @@
 | Source/Source.md | 명세 (마크다운: 실행·설정·TCP·탭 동작, Client.cs 머리에서 옮김) |
 | Source/{클래스}.cs | 클래스별 소스 (코드 구성 참고) |
 | ../Common/*.cs | 서버와 같이 쓰는 공통 클래스 → [Common.md](../Common/Common.md) |
-| Client.csproj | Worker SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시 (런타임 포함 self-contained, .NET 설치 불필요), Json\Client.json 출력 복사 안 함·Json 폴더 보존 |
+| Client.csproj | Worker SDK, `..\Common\*.cs` 링크 포함, 빌드 후 단일 exe 게시, Json\Client.json 출력 복사 안 함·Json 폴더 보존 |
 | Json/Client.json | 설정 (예전 위치 Client 폴더에만 있음: 그 파일 + 경고) |
 | On.bat / Off.bat | 콘솔 실행·종료 |
 | .gitignore | .vs·.user·bin·obj·log·Properties 제외 |
+| dotnet-runtime-10.0.13-win-x64.exe | .NET 런타임 설치 파일 (분석 제외) |
 | bin/, obj/ | 게시 출력 (bin\Release\net10.0\Client.exe)·빌드 중간 출력 |
 | (실행 시) Log/, Data\Count/ | 시간별 로그, 전송 진행 상태 |
 
@@ -103,7 +104,7 @@
 - 빌드: Build 후 PublishExe → bin\Release\net10.0\Client.exe (Json\Client.json 직접 복사)
 - 서비스: 관리자 cmd `Client.exe -install` (서비스 HMXClient 등록·자동 시작, 이미 등록: -uninstall 후 다시) / `Client.exe -uninstall` (정지·제거) / `Client.exe -start`·`-stop` (시작·정지, 최대 60초 대기), SCM 연동 (기준 폴더 = exe 폴더)
 - 디버깅: 상위 HMX.slnx F5 
-- 필요: 없음 (Client.exe 에 .NET 런타임 포함, 더블 클릭·서비스 실행), On.bat 개발 실행 (dotnet run): .NET 10 SDK
+- 필요: .NET 10 런타임 (동봉 설치 파일)
 
 ## 연관
 - 상위: [HMX.md](../HMX.md)
