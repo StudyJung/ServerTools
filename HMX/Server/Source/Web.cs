@@ -352,7 +352,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		body[data-mode="view"] #FilterPanel,body[data-mode="view"] #FilterSplitter,body[data-mode="view"] #ResultPanel,body[data-mode="view"] #Splitter{display:none}body[data-mode="view"] #ViewPanel{margin-top:0}body[data-mode="view"] #ViewScroll{height:calc(100vh - 161px)}
 		table{border-collapse:collapse;width:100%;font-size:0.75rem}.scroll>table{border-style:hidden hidden none hidden}.scroll>table th{border-bottom-style:hidden}th,td{border:1px solid var(--borderColor-default);padding:4px 8px;text-align:left;vertical-align:top}th{position:sticky;top:0;z-index:1;background:var(--bgColor-muted);box-shadow:inset 0 -1px 0 var(--borderColor-default);color:var(--fgColor-muted);font-weight:600}
 		td.num{text-align:right;white-space:nowrap}td.nowrap{white-space:nowrap}td.log{font-family:var(--fontStack-monospace);white-space:nowrap}
-		.colgrip{position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;touch-action:none}.colgrip::after{content:"";position:absolute;top:0;right:0;bottom:0;width:2px}.colgrip:hover::after,.colgrip.drag::after{background:var(--split)}.colguide{position:fixed;z-index:10;width:2px;margin-left:-1px;background:var(--split);pointer-events:none}
+		.colgrip{position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;touch-action:none}th.foldhead{cursor:pointer}.colgrip::after{content:"";position:absolute;top:0;right:0;bottom:0;width:2px}.colgrip:hover::after,.colgrip.drag::after{background:var(--split)}.colguide{position:fixed;z-index:10;width:2px;margin-left:-1px;background:var(--split);pointer-events:none}
 		table.fixed{table-layout:fixed}table.fixed th,table.fixed td{overflow:hidden;white-space:nowrap}table.fixed td.log{text-overflow:ellipsis}
 		html{overflow-y:scroll}#TabBar button.cur,#TabBar button.cur:hover:not(:disabled),#ProcessPanel button.chip.cur,#ProcessPanel button.chip.cur:hover:not(:disabled),#ProcessSummaryButton.cur,#ProcessSummaryButton.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#AccountButton,#AccountButton:hover:not(:disabled),#HelpButton,#HelpButton:hover:not(:disabled){color:var(--zone,var(--fgColor-default))}#DumpScroll{height:calc(100vh - 286px);min-height:200px}
 		#ViewBody,#FileViewBody,#ViewBody .lno,#FileViewBody .lno{color:#000}#ViewScroll{overflow-anchor:none}
@@ -2032,6 +2032,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    for (const kCol of kTable.querySelectorAll("col"))
 		    {
 		        kCol.style.width = "";
+
+		        delete kCol.dataset.unfold;	// 접기 전 너비 (자동: CSS 로 접힘 유지)
 		    }
 
 		    SetFixed(kTable, false);
@@ -4397,10 +4399,142 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    });
 		}
 
+		const FOLD_KEY		= "HMX.Fold";	// 칸 접기 localStorage 키 ({ 표 id: [칸 번호] }, 표마다)
+		const kFoldText		= document.createElement("canvas").getContext("2d");	// 접은 칸 너비 재기 (숨은 창도 됨)
+		const hmapFold		= LoadFold();	// 접은 칸 (표 id → 칸 번호 목록)
+
+		function LoadFold()	// 저장된 접은 칸 (없음·오류: 빈)
+		{
+		    try
+		    {
+		        const kSaved = JSON.parse(localStorage.getItem(FOLD_KEY) ?? "null");
+
+		        if (kSaved != null && typeof kSaved === "object" && !Array.isArray(kSaved))
+		        {
+		            return kSaved;
+		        }
+		    }
+		    catch (kError)	// 저장소 사용 불가·깨짐
+		    {
+		        console.error(kError);
+		    }
+
+		    return {};
+		}
+
+		function IsFoldColumn(kTable, nIndex)	// 접을 수 있는 칸: 나머지 너비 칸·마지막 칸 제외 (손잡이와 같음)
+		{
+		    return nIndex !== GetRestColumn(kTable) && nIndex < kTable.tHead.rows[0].cells.length - 1;
+		}
+
+		function GetFoldWidth(kHead)	// 접은 칸 글자 너비: 제목 첫 글자 (예: File → F)
+		{
+		    const kStyle = getComputedStyle(kHead);
+
+		    kFoldText.font = `${kStyle.fontStyle} ${kStyle.fontWeight} ${kStyle.fontSize} ${kStyle.fontFamily}`;
+
+		    return Math.ceil(kFoldText.measureText((kHead.firstChild?.textContent ?? "").trim().charAt(0)).width);
+		}
+
+		function ApplyFold(kTable)	// 접은 칸 그림: 칸 글자 제목 첫 글자 너비만 (CSS, colspan 칸 제외), 고정 너비 표: col 너비도
+		{
+		    const arrHead	= [...kTable.tHead.rows[0].cells];
+		    const arrCol	= kTable.querySelectorAll("col");
+		    const arrFold	= (Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : []).filter(nIndex => Number.isInteger(nIndex) && nIndex >= 0 && IsFoldColumn(kTable, nIndex));
+		    const bFixed	= kTable.classList.contains("fixed");
+
+		    document.getElementById(kTable.id + "Fold").textContent = arrFold.map(nIndex => `#${kTable.id} tr>:nth-child(${nIndex + 1}):not([colspan]){max-width:${GetFoldWidth(arrHead[nIndex])}px;padding-right:0;overflow:hidden;text-overflow:clip;white-space:nowrap}`).join("");
+
+		    arrHead.forEach((kHead, nIndex) =>
+		    {
+		        const kCol = arrCol[nIndex];
+
+		        if (!bFixed || kCol == null)	// 자동 너비: CSS 만
+		        {
+		            return;
+		        }
+
+		        if (arrFold.includes(nIndex))	// 접음: 지금 너비 보관 → 제목 첫 글자 너비
+		        {
+		            kCol.dataset.unfold	??= kCol.style.width;
+		            kCol.style.width	= GetColumnMin(kHead) + "px";
+		        }
+		        else if (kCol.dataset.unfold != null)	// 펼침: 접기 전 너비
+		        {
+		            kCol.style.width = kCol.dataset.unfold;
+
+		            delete kCol.dataset.unfold;
+		        }
+		    });
+		}
+
+		function ToggleFold(kTable, nIndex)	// 칸 접기 ↔ 기본 크기 (표마다 저장)
+		{
+		    const arrFold	= Array.isArray(hmapFold[kTable.id]) ? hmapFold[kTable.id] : [];
+		    const bFold		= !arrFold.includes(nIndex);
+		    const kCol		= kTable.querySelectorAll("col")[nIndex];
+
+		    hmapFold[kTable.id] = bFold ? [...arrFold, nIndex] : arrFold.filter(nItem => nItem !== nIndex);
+
+		    if (hmapFold[kTable.id].length === 0)
+		    {
+		        delete hmapFold[kTable.id];
+		    }
+
+		    try
+		    {
+		        localStorage.setItem(FOLD_KEY, JSON.stringify(hmapFold));
+		    }
+		    catch (kError)	// 저장소 사용 불가: 이번 창만
+		    {
+		        console.error(kError);
+		    }
+
+		    if (!bFold && kTable.classList.contains("fixed") && kCol != null && kCol.dataset.unfold == null)	// 고정 너비 뒤 접힌 칸 펼침: 기본 너비 모름 → 표 자동 너비
+		    {
+		        ResetColumn(kTable);
+		    }
+
+		    ApplyFold(kTable);
+		}
+
+		function InitColumnFold(kTable)	// 표 칸 접기 (모든 표 공통): 칸 이름 클릭 → 제목 첫 글자 너비 ↔ 다시 클릭: 기본 크기, 표마다 저장
+		{
+		    const kStyle = document.createElement("style");	// 이 표 접은 칸 CSS
+
+		    kStyle.id = kTable.id + "Fold";
+		    document.head.append(kStyle);
+
+		    for (const kHead of kTable.tHead.rows[0].cells)
+		    {
+		        kHead.classList.toggle("foldhead", IsFoldColumn(kTable, kHead.cellIndex));
+		    }
+
+		    kTable.tHead.addEventListener("click", (kEvent) =>	// 칸 이름 클릭 (경계 손잡이 제외)
+		    {
+		        const kHead = kEvent.target.closest("th");
+
+		        if (kHead?.classList.contains("foldhead") && kEvent.target.closest(".colgrip") == null)
+		        {
+		            ToggleFold(kTable, kHead.cellIndex);
+		        }
+		    });
+
+		    ApplyFold(kTable);
+		}
+
 		InitColumnGrip(kResultTable);	// 서치 1번 창 (마지막 Log 칸이 나머지)
 		InitColumnGrip(kDumpTable);		// 덤프 1번 창 (Folder 칸이 나머지, Ac. 맨 오른쪽 고정)
 		InitColumnGrip(kQueryBody.closest("table"));		// 쿼리 2번 창 (마지막 Log 칸이 나머지)
 		InitColumnGrip(kQueryFieldBody.closest("table"));	// 필드 값 목록 (마지막 Count 칸이 나머지)
+		InitColumnFold(kResultTable);	// 칸 접기: 서치 1번 창
+		InitColumnFold(kDumpTable);		// 덤프 1번 창
+		InitColumnFold(kQueryBody.closest("table"));	// 쿼리 2번 창 (필드 값 목록: 칸 이름 클릭 = 정렬 → 제외)
+
+		for (const sTable of ["ManagerServerTable", "ManagerDownTable", "ManagerMaxTable", "ManagerCcuTable"])	// 운영 표
+		{
+		    InitColumnFold(document.getElementById(sTable));
+		}
 
 		if (document.body.dataset.mode === "view")	// 새 창 (보기 모드): 쿼리의 파일·페이지만 보기
 		{
