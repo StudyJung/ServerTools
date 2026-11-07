@@ -4074,6 +4074,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static arrRule		= [];		// 필드 정의 { sKey, sRegex, sValue } (sValue 있음: 고정값)
 		    static sEditRule	= "";		// 필드 추가·수정 창에서 수정할 필드 이름 ("": 추가)
 		    static RULE_KEY_MAX		= 32;	// 필드 이름 최대 글자 (서버와 같음)
+		    static EDIT_KEY_SHOW	= 40;	// 설정 창 줄 제목 표시 글자 (넘음: 앞 X자 + ..., 전체: 툴팁)
 		    static RULE_VALUE_MAX	= 260;	// 필드 고정값 최대 글자 (서버와 같음)
 		    static RULE_REGEX_MAX	= 500;	// 필드 정규식 최대 글자 (서버와 같음)
 		    static RULE_BASE		= ["machine", "folder", "type"];	// 쓸 수 없는 이름 (기본 필드, 소문자)
@@ -5210,8 +5211,8 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            kRow.dataset.index	= String(nIndex);	// 목록 위치
 		            kRow.draggable		= true;
 		            kRow.className		= Query.bRule ? "" : (Query.bAlarm ? (kItem.bEnable ? "" : "off") : (kItem.sKey === (Query.bSearch ? Search.sSavedKey : Query.sSavedKey) ? "sel" : ""));
-		            kKey.textContent	= kItem.sKey;
-		            kKey.title			= Query.bRule ? Query.GetRuleText(kItem) : kItem.sQuery;	// 쿼리 (필드: 정규식·고정값)
+		            kKey.textContent	= kItem.sKey.length > Query.EDIT_KEY_SHOW ? kItem.sKey.slice(0, Query.EDIT_KEY_SHOW) + "..." : kItem.sKey;	// 긴 제목: 앞 X자 + ...
+		            kKey.title			= (kItem.sKey.length > Query.EDIT_KEY_SHOW ? kItem.sKey + "\n" : "") + (Query.bRule ? Query.GetRuleText(kItem) : kItem.sQuery);	// 쿼리 (필드: 정규식·고정값, 긴 제목: 전체 제목 먼저)
 		            kAct.className		= "act";
 
 		            for (const [sAction, sText] of [["edit", "수정"], ["delete", "삭제"]])
