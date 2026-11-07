@@ -3306,6 +3306,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    ShowStatus();	// 설정 버튼 툴팁 (지금 탭 설정)
 		    PlaceToolButtons();	// 기능 버튼 자리 (모드마다 보이는 버튼 다름)
+		    FitFileName();		// File 칸 파일명 절반 ↔ 전체 (지금 탭 결과 창 폭)
 		    Search.FitResultHeight();	// 서치 1번 창 높이 (쿼리 모드: 기준 높이)
 		    Dump.FitDumpHeight();	// 덤프 1번 창 높이: 브라우저 창에 맞춤
 		}
@@ -3406,11 +3407,35 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    document.getElementById("DownYes").focus();	// Enter: 예
 		}
 
-		function AddFileNameCell(kRow, sMachine, sPath, nLine = 0, sKey = "")	// 결과 줄 File 칸 (서치·쿼리 공통, Shift+클릭: 다운, Ctrl·Alt+클릭: 파일 보기, nLine 0: 마지막 줄부터, sKey: 강조 검색어)
+		const FILE_NARROW_PX	    = 800;		// 결과 창 폭 (px) 이하: File 칸 파일명 앞 절반만 (서치·쿼리 공통)
+
+		function IsFileNarrow()	// 지금 탭 결과 창 폭이 FILE_NARROW_PX 이하
 		{
-		    const kCell = AddCell(kRow, sPath.slice(sPath.lastIndexOf("\\") + 1), "nowrap filename");
+		    return (IsQueryMode() ? kQueryScroll : kResultScroll).clientWidth <= FILE_NARROW_PX;
+		}
+
+		function GetFileText(sName, bNarrow)	// File 칸 글자: 파일명 (확장자 없음), 좁음: 앞 절반
+		{
+		    return bNarrow ? sName.slice(0, Math.ceil(sName.length / 2)) : sName;
+		}
+
+		function FitFileName()	// 창 크기·탭 바뀔 때: 지금 탭 File 칸 파일명 다시 (절반 ↔ 전체, 전체 경로: 툴팁)
+		{
+		    const bNarrow = IsFileNarrow();
+
+		    for (const kCell of (IsQueryMode() ? kQueryBody : kResultBody).querySelectorAll("td.filename"))
+		    {
+		        kCell.textContent = GetFileText(kCell.dataset.name, bNarrow);
+		    }
+		}
+
+		function AddFileNameCell(kRow, sMachine, sPath, nLine = 0, sKey = "")	// 결과 줄 File 칸 (서치·쿼리 공통, 파일명만 (확장자 없음, 창 좁음: 앞 절반), Shift+클릭: 다운, Ctrl·Alt+클릭: 파일 보기, nLine 0: 마지막 줄부터, sKey: 강조 검색어)
+		{
+		    const sName	= sPath.slice(sPath.lastIndexOf("\\") + 1).replace(/\.[^.]*$/, "");	// 파일명 (확장자 뗌)
+		    const kCell	= AddCell(kRow, GetFileText(sName, IsFileNarrow()), "nowrap filename");
 
 		    kCell.title				= sPath;
+		    kCell.dataset.name		= sName;
 		    kCell.dataset.machine	= sMachine;
 		    kCell.dataset.path		= sPath;
 		    kCell.dataset.line		= String(nLine);
@@ -3831,6 +3856,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		window.addEventListener("resize", Search.FitViewHeight);	// 브라우저 창 크기: 서치 2번 창 높이 다시
 		window.addEventListener("resize", Dump.FitDumpHeight);	// 브라우저 창 크기: 덤프 1번 창 높이 다시
 		window.addEventListener("resize", PlaceToolButtons);	// 브라우저 창 크기: 기능 버튼 1줄 ↔ 2줄 실행·중단 오른쪽
+		window.addEventListener("resize", FitFileName);		// 브라우저 창 크기: File 칸 파일명 절반 ↔ 전체
 		kQueryScroll.addEventListener("scroll", () =>	// 읽은 줄 끝 가까이: 다음 줄 이어서
 		{
 		    if (Query.IsNearRowEnd())
