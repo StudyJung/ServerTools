@@ -284,7 +284,8 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 		Log.Write(arrOff.Length == 0 ? INFO_ : NOTI_, $"탭: {string.Join("·", GetMenu())}{(arrOff.Length == 0 ? "" : $" (꺼짐: {string.Join("·", arrOff)} → 서버 동작 안 함, 설정 aMenu)")}");
 
-		MoveDataDir();	// 예전 File 폴더 → Data (색인·원문·알람 읽기 전)
+		MoveDataDir();	// 예전 File 폴더 → data (색인·원문·알람 읽기 전)
+		FixDirCase("log", "dump", "data/alarm", "data/index", "data/origin", "data/count");	// 프로그램 폴더 소문자 (예전 대문자: 이름만 바꿈, 색인·원문·알람 읽기 전)
 
 		Web?	kWeb	= null;	// 웹 서버 (설정 bWeb 가 false·키 없음: null)
 
@@ -551,10 +552,10 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 		}
 	}
 
-	static void MoveDataDir()	// 예전 데이터 폴더 (기준 폴더 하위 File) → Data 이름 변경 (Data 있음: 그대로 + 경고, 실패: 경고 후 새 Data 로 시작)
+	static void MoveDataDir()	// 예전 데이터 폴더 (기준 폴더 하위 File) → data 이름 변경 (data 있음: 그대로 + 경고, 실패: 경고 후 새 data 로 시작)
 	{
 		string	sOld	= Path.Combine(GetBaseDir(), "File");	// 예전 이름
-		string	sNew	= Path.Combine(GetBaseDir(), "Data");
+		string	sNew	= Path.Combine(GetBaseDir(), "data");
 
 		if (!Directory.Exists(sOld))
 		{
@@ -563,7 +564,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 
 		if (Directory.Exists(sNew))
 		{
-			Log.Write(WARN_, $"예전 데이터 폴더 남음: {sOld} (Data 있음 → 그대로, 직접 확인)");
+			Log.Write(WARN_, $"예전 데이터 폴더 남음: {sOld} (data 있음 → 그대로, 직접 확인)");
 
 			return;
 		}
@@ -576,7 +577,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 		}
 		catch (Exception kException)	// 사용 중·권한 없음
 		{
-			Log.Write(WARN_, $"데이터 폴더 이름 변경 실패: {sOld} ({kException.Message}, 새 Data 로 시작)");
+			Log.Write(WARN_, $"데이터 폴더 이름 변경 실패: {sOld} ({kException.Message}, 새 data 로 시작)");
 		}
 	}
 

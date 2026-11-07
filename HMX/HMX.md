@@ -11,7 +11,7 @@
 ```
 [게임 서버 머신 N대]                          [Server 머신]
  Client ── TCP 801 (JSON 한 줄) ────────▶ Server ── HTTP 800 ──▶ 브라우저
-  aLogFolder 로그·덤프 감시   Hello·Count·Log·File·Ping    Data\Origin·Index·Alarm·Count   (직접·IIS·ToolManager 경유)
+  aLogFolder 로그·덤프 감시   Hello·Count·Log·File·Ping    data\origin·index·alarm·count   (직접·IIS·ToolManager 경유)
   원격 요청 처리   ◀── Search·View·Dump·Files·Pause/Resume   알람 → 메일(SMTP)·훅
 ```
 
@@ -47,7 +47,7 @@
 - 빌드 후 PublishExe 타깃 → bin\Release\net10.0 에 단일 exe (win-x64, Json 폴더 보존, 런타임 포함 self-contained → .NET 설치 불필요, Server: 서버 GC·ASP.NET Core 포함, Client: 워크스테이션 GC)
 - 설정 Json\{프로젝트명}.json (모든 설정 json: 기준 폴더 하위 Json 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고, bLog 등 최상위, Base 묶음 없음), `sCode` 키 → MySQL 호환 AES 복호화 → 같은 위치 `sPass` 로 메모리 보관, 경로 값 (`X:\…`·`\\…` 시작) 은 `\` 하나로 써도 됨 (Config.FixPathEscape, 서버·클라 공통)
 - 웹에서 고치는 설정은 키별 json 따로 관리 (서버: aQuery → Query.json·aSearch → Search.json·aAlarm → Alarm.json·aField → Field.json, Main.m_arrConfigSplit)
-- 로그 Log\yyyyMMdd\{프로젝트명}_yyyyMMdd_HH.log (레벨 DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, bLog)
+- 로그 log\yyyyMMdd\{프로젝트명}_yyyyMMdd_HH.log (레벨 DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, bLog)
 - 공통 클래스 (Common, 같이 씀): Global·Config·Log·AES·Count·Define (프로젝트별 값: 각 Main 상수), 프로젝트별: Timer·TCP (서버 TCPServer·클라 TCPClient)·SearchNode·LineWriter·LineReader (같은 규칙, 코드 다름)
 - 검색어 규칙: 대문자 AND·OR·NOT·괄호, 왼쪽부터 (클라 SearchNode = 서버 SearchNode = 페이지 Key)
 - 선언 줄 정렬 (C#·페이지 JS 모두): 빈 줄 없이 이어진 비슷한 선언 묶음 (클래스 필드: 접근자·const 다르면 빈 줄로 나눔) 마다 선언 탭 변수 탭 = 값 탭 주석 시작점 맞춤 (탭 4칸, 튀게 긴 줄: 탭 하나), 한 줄 선언도 탭 구분

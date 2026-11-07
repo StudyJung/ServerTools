@@ -4,6 +4,7 @@
 ## 인자: -install (서비스 HMXClient 등록·시작, 관리자 권한, 게시된 Client.exe 로 실행) | -start·-stop (서비스 시작·정지, X초 대기, 관리자 권한) | -uninstall (서비스 정지·제거, 관리자 권한) | 그 외·없음 (클라 실행: 콘솔 Ctrl+C 종료, 서비스로 실행되면 SCM 연동)
 ## 디버깅: HMX.slnx (Visual Studio 2026) F5
 ## 구성: Client.cs (Main: 진입점·서비스 등록·공통·기능 연결) + #:include → 공통 ../../Common (Global 전역 함수·Config 설정·Log 로그·AES 복호화·Count 받은 진행·Define 상수·데이터 정의, Server 와 같이 씀, 프로젝트별 값: Main) → Timer(타이머) → TCPClient(Server TCP 접속) → Tab(탭 공통: 경로·블록 읽기) → TabQuery(쿼리 탭: 로그 감시)·TabSearch(서치 탭·SearchNode)·TabDump(덤프 탭)·TabFile(파일 탭) → Redis(Redis 연결) → Process(실행 API: 실행·확인·종료, ProcessValue 값 파트·ProcessLog 실행 로그·ProcessGit Git 동기화) → TabProcess(반영 탭: 주기 처리) → Clean(날짜 폴더 자동 삭제: aDeleteFolder)
+## 폴더 이름: 소문자 (기준 폴더 하위 log·data\count, 예전 대문자 Log·Data·Count: 시작 때 소문자로 이름만 바꿈, 공통 Global.FixDirCase, 서버 Source.md 공통 가이드 폴더)
 ## 설정 파일: 기준 폴더 하위 Json\Client.json (서비스: exe 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고), Config.GetString("sIP")·GetInt("nPort") 등 (키 없음: 기본값)
    ### bLog : 로그 파일 기록 (false·없음: 콘솔만)
    ### sIP   : Server 아이피 (호스트명 가능)
@@ -17,7 +18,7 @@
       #### 전체 경로: 그 경로 자신·하위 (예: C:\\NHNServices\\Agent → 앞부분만 같은 C:\\NHNServices\\AgentX: 안 막음)
       #### 폴더 이름·중간 경로: 경로 안 어디든 같은 이름 폴더 자신·하위 (이름 단위 정확히 일치, 예: test → C:\A\test\B 막음, C:\A\test1·MyTest: 안 막음, Test\\S·TEST1/5/5 → 이어진 폴더 이름 일치, 구분자 \·/)
       #### 대소문자 무시, 형식 오류 (빈 값·.·..·C:Log·와일드카드 *?): 경고 후 뺌
-      #### aBlockQuery 로 빠진 폴더: 시작 때 로그 감시 상태 (Data\Count) 도 지움
+      #### aBlockQuery 로 빠진 폴더: 시작 때 로그 감시 상태 (data\count) 도 지움
       #### aBlockQuery: 쿼리 감시·전송, aBlockSearch: 서치 대상, aBlockFile: 파일 탭 폴더 보기·다운 (보기: 그대로), aBlockDump: 덤프 감시·목록·다운·삭제
    ### aDeleteFolder : 날짜 폴더 자동 삭제 배열 [{sPath, nDay, nHour}] (aLogFolder 와 무관, 없음·빈 sPath: 꺼짐, 바꿈: 재시작)
       #### sPath : 전체 경로 → 자신·하위 X단계 날짜 폴더(yyyyMMdd, 있는 날짜) 찾음 (날짜 폴더 안·숨김·시스템·정션·심볼릭 링크: 안 들어감·안 지움, 안에 링크 폴더 있는 날짜 폴더: 경고 후 안 지움), 상대 경로·드라이브 루트·형식 오류: 경고 후 뺌, 같은 경로: 첫 항목만·경고
@@ -46,7 +47,7 @@
    ### Git: .git 없음 → sparse 클론 (blob 필터·depth 1), 있음 → shallow 갱신 (fetch depth 1 + reset --hard, 명령·클론 시간 제한, 남은 lock 제거)
    ### PID 오류값: -1 Git 동기화 실패, -3 프로세스 확인 실패, -10 크래시 (실행 중 종료 → 다음 주기 재실행), -11 실행 실패, -12 종료 실패
    ### 로그: 공통 로그 (레벨 앞 sTitle 태그), ERROR·FATAL: Redis 에러 리스트 (sError + 존 + ":") 에도 [머신] 붙여 추가 (X일 유지, 서버 반영 탭 조회), FATAL: X초 대기 (Redis 장애: 대기 후 다음 주기 재시도, 대략 X초마다 Tick Alive)
-## 로그 감시 상태 (Count, 서버와 같은 코드): 대상 폴더마다 기준 폴더 하위 Data\Count\머신\대상 폴더 (드라이브 ':' 제거)\Count.data, 줄 "날짜 폴더\파일\t줄 번호" (예: Data\Count\GAME01\C\NHNServices\CenterServer\Count.data → 20261022\xrpc20261022_10.log	617)
+## 로그 감시 상태 (Count, 서버와 같은 코드): 대상 폴더마다 기준 폴더 하위 data\count\머신\대상 폴더 (드라이브 ':' 제거)\Count.data, 줄 "날짜 폴더\파일\t줄 번호" (예: data\count\GAME01\C\NHNServices\CenterServer\Count.data → 20261022\xrpc20261022_10.log	617)
    ### 저장: 전송 후·변경 시만 (주기마다 대상당 최대 1번, 파일 열어 둠), 최대 2줄 (윗줄: 이전, 아랫줄: 최신): 1·2번째 줄 이어 씀, 셋째 줄부터: 윗줄 지우고 아랫줄 맨 위로 + 새 줄 둘째 줄 (쓰기 1번 → 남은 뒤 자름)
       예) 10.log 1 / 11.log 2 → 11.log 617 들어옴 → 11.log 2 / 11.log 617
    ### 읽기: 아랫줄 기준, 줄바꿈 없는 마지막 줄 (쓰다 끊김) 버림, 바른 줄 중 맨 밑 줄이 윗줄보다 진행 (파일 날짜·시간, 줄 번호) 작음: 쓰다 끊김 → 윗줄 (예: 10.log 617 / 10.log 6 → 617, 10.log 617 / 11.log 617: 정상 → 아랫줄)

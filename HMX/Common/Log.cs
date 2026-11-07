@@ -11,9 +11,9 @@ static class Log	// 로그: Log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 	private static readonly bool	m_bConsole		= !WindowsServiceHelpers.IsWindowsService();	// 콘솔 모드 (서비스 아님)
 	private static readonly object	m_lockConsole	= new object();	// 콘솔 색 변경·출력·복원 묶음 (색 번짐 방지)
 
-	public static string GetDir()	// 로그 폴더 (기준 폴더 하위 Log)
+	public static string GetDir()	// 로그 폴더 (기준 폴더 하위 log)
 	{
-		return Path.Combine(GetBaseDir(), "Log");
+		return Path.Combine(GetBaseDir(), "log");
 	}
 
 	public static string GetFile(string sStamp)	// 시간별 로그 파일 (sStamp: yyyyMMdd_HH)

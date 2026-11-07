@@ -35,7 +35,7 @@
 - XXX.json에 sCode가 있는 경우 자동 sPass로 복호화
 
 ## Base( XXX.json 기본 설정 )
-- bLog : true면 Log/YYYYMMDD/XXX_YYYYMMDD_HH.log 파일 로그 기록
+- bLog : true면 log/YYYYMMDD/XXX_YYYYMMDD_HH.log 파일 로그 기록
 - bWeb : true면 웹 서버 실행( false면 웹 없이 호스트만 실행해 대기, 서비스 중지·Ctrl+C 시 종료 )
 - bAuth : true면 웹 로그인 사용( false·키 없음이면 로그인 없이 모든 접속 허용 )
 - sID, sCode : 웹 로그인 계정( sCode는 AES Code로 암호화한 값, 실행 시 sPass로 복호화 )

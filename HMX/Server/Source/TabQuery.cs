@@ -73,7 +73,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	private static readonly Regex			m_kFieldKey			= new Regex("^[A-Za-z][A-Za-z0-9_]*$", RegexOptions.CultureInvariant);	// 추가 필드 키 형식 (영문 시작, 영문·숫자·_)
 	private static readonly string[]	m_arrRangeFormat	= { "yyyyMMddHHmm", "yyyyMMddHHmmss" };	// 쿼리·통계 기간 형식 (분, 초별 막대 클릭: 초)
 	private static readonly Regex			m_kExactTerm		= new Regex(@"^(\d{1,3}(\.\d{1,3}){3}(:\d{1,5})?|(\d{4}/)?\d{1,2}/\d{1,2}|\d{1,2}:\d{2}(:\d{2}(\.\d{1,7})?)?)$", RegexOptions.CultureInvariant);	// 원문 그대로 확인할 검색어: IP·IP:포트·날짜·시간 (페이지 WordAt 와 같은 형식)
-	private static volatile string[]	m_arrFieldName	= Array.Empty<string>();	// 추가 필드 이름 (설정 aField 키, 설정 순서·처음 받은 표기, Data\Index\field.txt, 바꿀 때 배열 통째로)
+	private static volatile string[]	m_arrFieldName	= Array.Empty<string>();	// 추가 필드 이름 (설정 aField 키, 설정 순서·처음 받은 표기, data\index\field.txt, 바꿀 때 배열 통째로)
 	private static readonly ConcurrentDictionary<string, string>	m_hmapFieldName	= new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);	// 추가 필드 이름 (대소문자 무시) → 처음 표기 (읽기: 워커 잠금 없이, 쓰기: m_kIndexLock)
 	private static volatile bool		m_bFieldLoaded;	// field.txt 읽음
 
@@ -111,7 +111,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 	private static long												m_nIngestPauseTick;									// 마지막 Pause 보낸 시각 (TickCount64, m_nIngestPauseStepMs 지나야 다음 X%, m_nIngestPauseMinMs 지나야 Resume)
 	private static readonly Dictionary<long, long>					m_hmapMerge			= new Dictionary<long, long>();	// 합칠 원문 시간 → 마지막 세그먼트 쓴 시각 (TickCount64, 0: 시작 때 발견, m_kMergeLock)
 	private static readonly Dictionary<string, QueryResult>			m_hmapCache			= new Dictionary<string, QueryResult>(StringComparer.Ordinal);	// 쿼리 결과 보관 (기간·쿼리 → 결과, m_kCacheLock)
-	private static readonly List<long>								m_listFileOffset	= new List<long>();				// 원문 파일 번호 → Data\Index\file.txt 줄 시작 바이트 (번호 = 위치 + 1, -1: 없음, 번호마다 8바이트만 → 정보: 최근 것만 메모리, m_kIndexLock)
+	private static readonly List<long>								m_listFileOffset	= new List<long>();				// 원문 파일 번호 → data\index\file.txt 줄 시작 바이트 (번호 = 위치 + 1, -1: 없음, 번호마다 8바이트만 → 정보: 최근 것만 메모리, m_kIndexLock)
 	private static volatile ConcurrentDictionary<string, int>		m_hmapFileId		= new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase);	// 최근 원문 파일 머신\t클라 경로\t존 → 번호 (이번 세대, 존 바뀜: 새 번호, 읽기: 워커 잠금 없이, 새 번호·세대 바꿈: m_kIndexLock)
 	private static volatile ConcurrentDictionary<string, int>		m_hmapFileIdOld		= new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase);	// 앞 세대 (찾음: 이번 세대로 옮김, m_nFileIdKeepHour 시간마다 세대 바꿈)
 	private static long												m_nFileIdTick		= Environment.TickCount64;		// 원문 파일 번호 세대 바꾼 시각 (TickCount64, m_kIndexLock)
@@ -2793,7 +2793,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		}
 	}
 
-	private static void LoadFieldName()	// Data\Index\field.txt → 추가 필드 이름 (잠금 안에서, 처음 한 번, 한 줄에 1개, 다 읽은 뒤 m_bFieldLoaded → 잠금 없는 찾기는 그 뒤만)
+	private static void LoadFieldName()	// data\index\field.txt → 추가 필드 이름 (잠금 안에서, 처음 한 번, 한 줄에 1개, 다 읽은 뒤 m_bFieldLoaded → 잠금 없는 찾기는 그 뒤만)
 	{
 		string	sFile	= Path.Combine(GetIndexDir(), "field.txt");	// 추가 필드 이름 목록
 
@@ -2821,7 +2821,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		m_bFieldLoaded	= true;
 	}
 
-	private static string AddFieldName(string sKey)	// 받은 추가 필드 이름 → 처음 받은 표기 (잠금 안에서, 처음 받음: 목록·Data\Index\field.txt 에 추가)
+	private static string AddFieldName(string sKey)	// 받은 추가 필드 이름 → 처음 받은 표기 (잠금 안에서, 처음 받음: 목록·data\index\field.txt 에 추가)
 	{
 		if (m_hmapFieldName.TryGetValue(sKey, out string? sName))
 		{
@@ -3562,9 +3562,9 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return DateTime.ParseExact(nHour.ToString(CultureInfo.InvariantCulture), "yyyyMMddHH", CultureInfo.InvariantCulture);
 	}
 
-	private static string GetIndexDir()	// 색인 폴더 (기준 폴더 하위 Data\Index)
+	private static string GetIndexDir()	// 색인 폴더 (기준 폴더 하위 data\index)
 	{
-		return Path.Combine(GetBaseDir(), "Data", "Index");
+		return Path.Combine(GetBaseDir(), "data", "index");
 	}
 
 	private static string GetHourDir(long nHour)	// 시간 폴더 (색인 폴더 하위 yyyyMMddHH)
@@ -3622,7 +3622,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		}
 	}
 
-	private static void LoadFileList()	// Data\Index\file.txt → 원문 파일 번호마다 줄 위치·머신 목록 + 끝에서부터 m_nFileIdPreload 개 최근 목록 (처음 한 번, 잠금 안에서, 줄 정보는 안 둠, 다 읽은 뒤 m_bFileLoaded → 잠금 없는 찾기는 그 뒤만)
+	private static void LoadFileList()	// data\index\file.txt → 원문 파일 번호마다 줄 위치·머신 목록 + 끝에서부터 m_nFileIdPreload 개 최근 목록 (처음 한 번, 잠금 안에서, 줄 정보는 안 둠, 다 읽은 뒤 m_bFileLoaded → 잠금 없는 찾기는 그 뒤만)
 	{
 		if (m_bFileLoaded)
 		{
@@ -4026,14 +4026,14 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		}
 	}
 
-	private static string GetOriginPath(string sMachine, string sPath)	// 원문 저장 파일: 기준 폴더 하위 Data\Origin\머신\클라 전체 경로 (드라이브 ':' 제거, 머신·경로 오류: "")
+	private static string GetOriginPath(string sMachine, string sPath)	// 원문 저장 파일: 기준 폴더 하위 data\origin\머신\클라 전체 경로 (드라이브 ':' 제거, 머신·경로 오류: "")
 	{
 		if (sMachine == "" || sMachine.Length > 255 || sMachine.Trim('.') == "" || sMachine.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || sPath.Length > 1000 || !Path.IsPathFullyQualified(sPath) || !sPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))	// 머신명이 폴더명으로 안 됨·전체 경로 아님·로그 아님
 		{
 			return "";
 		}
 
-		string	sRoot	= Path.GetFullPath(Path.Combine(GetBaseDir(), "Data", "Origin", sMachine)) + Path.DirectorySeparatorChar;	// 머신 폴더 (끝 구분자 포함)
+		string	sRoot	= Path.GetFullPath(Path.Combine(GetBaseDir(), "data", "origin", sMachine)) + Path.DirectorySeparatorChar;	// 머신 폴더 (끝 구분자 포함)
 		string	sFile	= Path.GetFullPath(Path.Combine(sRoot, sPath.Replace(":", "").TrimStart('\\', '/')));						// 저장 파일 (D:\Logs → D\Logs, \\서버\공유 → 서버\공유)
 
 		return sFile.StartsWith(sRoot, StringComparison.OrdinalIgnoreCase) ? sFile : "";	// 머신 폴더 밖 (..\ 등): 거부

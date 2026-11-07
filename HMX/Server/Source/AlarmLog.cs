@@ -1,4 +1,4 @@
-static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyyMMdd.jsonl 추가 전용 (1줄 = 발송 작업 결과 1건, 받는 곳 안 씀) + 조회 API, 알람 기록 (날짜·제목·내용·결과): Data\Alarm\history.jsonl 최신 X건 + 조회 API (전체, 최신 순)
+static class AlarmLog	// 알람 로그: 기준 폴더 하위 data\alarm\log\yyyyMMdd.jsonl 추가 전용 (1줄 = 발송 작업 결과 1건, 받는 곳 안 씀) + 조회 API, 알람 기록 (날짜·제목·내용·결과): data\alarm\history.jsonl 최신 X건 + 조회 API (전체, 최신 순)
 {
 	private const int	m_nPageSize		= 100;	// 조회 한 페이지 줄 수
 	private const int	m_nDayMax		= 31;	// 조회 최대 기간 (일, 메모리 보호)
@@ -34,7 +34,7 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 			["nTry"]		= kJob.nTry,
 			["sDone"]		= GetNow().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
 		}.ToJsonString(new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });	// 줄 (JSON)
-		string	sFile	= Path.Combine(GetBaseDir(), "Data", "Alarm", "log", GetNow().ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
+		string	sFile	= Path.Combine(GetBaseDir(), "data", "alarm", "log", GetNow().ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
 
 		lock (m_kLock)
 		{
@@ -145,9 +145,9 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 		return m_listHistory;
 	}
 
-	private static string GetHistoryFile()	// 알람 기록 파일 (기준 폴더 하위 Data\Alarm\history.jsonl, 1줄 = 발송 시도 1건, 최신 X건)
+	private static string GetHistoryFile()	// 알람 기록 파일 (기준 폴더 하위 data\alarm\history.jsonl, 1줄 = 발송 시도 1건, 최신 X건)
 	{
-		return Path.Combine(GetBaseDir(), "Data", "Alarm", "history.jsonl");
+		return Path.Combine(GetBaseDir(), "data", "alarm", "history.jsonl");
 	}
 
 	public static IResult OnLog(long? nStart, long? nEnd, int? nID, string? sResult, int? nPage)	// 알람 로그 조회: 기간 (yyyyMMddHHmm, 기록 날짜 파일, 최대 X일)·알람 ID·결과 → 최신 순 페이지 {sError, nTotal, nPage, nPageSize, arrLog}
@@ -168,7 +168,7 @@ static class AlarmLog	// 알람 로그: 기준 폴더 하위 Data\Alarm\log\yyyy
 
 		for (DateTime kDay = kStart.Date; kDay <= kEnd.Date; kDay = kDay.AddDays(1))
 		{
-			string	sFile	= Path.Combine(GetBaseDir(), "Data", "Alarm", "log", kDay.ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
+			string	sFile	= Path.Combine(GetBaseDir(), "data", "alarm", "log", kDay.ToString("yyyyMMdd", CultureInfo.InvariantCulture) + ".jsonl");
 
 			if (!File.Exists(sFile))
 			{

@@ -1,4 +1,4 @@
-class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은 코드, 한 스레드 전용): 기준 폴더 하위 Data\Count\머신\대상 폴더 (드라이브 ':' 제거)\Count.data, 메모리 상태 + 파일 열어 둠
+class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은 코드, 한 스레드 전용): 기준 폴더 하위 data\count\머신\대상 폴더 (드라이브 ':' 제거)\Count.data, 메모리 상태 + 파일 열어 둠
 //   줄: "날짜 폴더\파일\t줄 번호" (예: 20261022\xrpc20261022_10.log	617), 최대 2줄 (윗줄: 이전, 아랫줄: 최신)
 //   저장: 바뀜만, 1·2번째 줄 이어 씀, 셋째 줄부터: 윗줄 지우고 아랫줄 맨 위로 + 새 줄 둘째 줄 (쓰기 1번 → 남은 뒤 자름), 실패: 닫고 다음 저장 때 처음부터 정리
 //     예) 10.log 1 / 11.log 2 → 11.log 617 들어옴 → 11.log 2 / 11.log 617
@@ -22,12 +22,12 @@ class Count	// 로그 감시 상태 (대상 폴더 하나, Server·Client 같은
 		m_sFile = GetFile(sMachine, sFolder);
 	}
 
-	public static string GetRoot(string sMachine)	// 머신 상태 폴더: 기준 폴더 하위 Data\Count\머신
+	public static string GetRoot(string sMachine)	// 머신 상태 폴더: 기준 폴더 하위 data\count\머신
 	{
-		return Path.Combine(GetBaseDir(), "Data", "Count", sMachine);
+		return Path.Combine(GetBaseDir(), "data", "count", sMachine);
 	}
 
-	private static string GetFile(string sMachine, string sFolder)	// 상태 파일: Data\Count\머신\대상 폴더 (드라이브 ':' 제거, \\서버\공유 → 서버\공유)\Count.data (머신·폴더 오류·머신 폴더 밖: "")
+	private static string GetFile(string sMachine, string sFolder)	// 상태 파일: data\count\머신\대상 폴더 (드라이브 ':' 제거, \\서버\공유 → 서버\공유)\Count.data (머신·폴더 오류·머신 폴더 밖: "")
 	{
 		try
 		{

@@ -8,7 +8,8 @@
    ### 구성: Server.cs (Main: 진입점·공통·기능 연결) + #:include → 공통 ../../Common (Global 전역 함수·Config 설정·Log 로그·AES 복호화·Count 받은 진행·Define 상수·데이터 정의, Client 와 같이 씀, 프로젝트별 값: Main) → Timer(타이머) → Auth(로그인) → Web(웹 서버·기본 페이지) → API(공통 API·클라 요청 응답) → TCPServer(Client TCP 수신) → TabSearch(서치 탭·SearchNode 검색어 규칙)·TabDump(덤프 탭)·TabFile(파일 탭)·TabOperation(운영 탭: 게임 서버 점검·패치·동접, Redis)·TabProcess(반영 탭: 게임 서버 프로세스 시작·정지·다운, API Process, Redis)·TabQuery(쿼리 탭: 적재·색인·쿼리) (탭 API + 페이지 스크립트 SearchHTML·DumpHTML·FileHTML·ManagerHTML·ProcessHTML·QueryHTML) → Alarm·Stat·Send·AlarmLog(알람)
    ### 기본 페이지: Web.IndexHtml() (공통 앞 + 탭 스크립트 SearchHTML·DumpHTML·FileHTML·ManagerHTML·ProcessHTML·QueryHTML + 공통 뒤)
    ### 정적 파일: 기준 폴더 wwwroot (있으면 자동 서비스, index.html 기본 문서)
-   ### 데이터 폴더: 기준 폴더 하위 Data (Index·Origin·Alarm·Count·프로젝트명.txt 실행 설정 버전, 예전 File: 시작 때 Data 로 이름 변경, 둘 다 있음: 그대로 + 경고)
+   ### 데이터 폴더: 기준 폴더 하위 data (index·origin·alarm·count·프로젝트명.txt 실행 설정 버전, 예전 File: 시작 때 data 로 이름 변경, 둘 다 있음: 그대로 + 경고)
+   ### 폴더 이름: 프로그램이 만드는 폴더: 이름 모두 소문자 (기준 폴더 하위 log·dump·data, data 하위 alarm·index·origin·count, 새 폴더도 소문자, 머신·대상 경로·시간 등 값 이름: 그대로), 대문자 폴더 있음 (예전 Log·Data·Dump 등): 시작 때 소문자로 이름만 바꿈 (공통 Global.FixDirCase, 설정 로딩 뒤·폴더 열기 전, 상위 먼저, 내용 그대로, 실패 (사용 중·권한): 경고 → 그대로 씀 (Windows 대소문자 무시)), 배포·소스 폴더 (Json·Source·Tool 등): 그대로
 
 ## 설정 파일: 기준 폴더 (exe 폴더·dotnet run: 실행 폴더) 하위 Json 폴더 프로젝트명.json (모든 설정 json: Json 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고) → Config.GetString("DB:Dev:sHost")·GetInt("DB:Dev:nPort") (키 없음: 기본값)
    ### 시작 검사: 서버 시작 맨 앞 (ConfigCheck): Json 폴더 모든 *.json 미리 읽기·검사 → 1단계 형식 (설정 로딩 전, 주석·끝 쉼표·경로 \ 하나 허용), 2단계 값 (설정 로딩 뒤, 파일 안 키마다: bLog·bWeb·bAuth·bHttps·bTest true·false, nPort·Redis.nPort·Mail.nPort 1 ~ 65535, sUrl http·https, aMenu 탭 이름, aQuery·aSearch 제목·내용·형식·간격·겹침, aField 이름·정규식, aAlarm 값 (CheckAlarm), aAccount 아이디·겹침·sCode·메뉴·외부 권한·메일·전화, Manager.ServerList sIP·nPort·겹침, IP.json aWhiteTCP·aBlackWeb 만·IP 패턴·IP.json 없음: 오류) → 오류 하나라도: 파일·필드·이유 ERROR 로그 (전부) + FATAL → 서버 종료 (고친 뒤 다시 시작), 실행 중 다시 읽기 (설정 팝업·IP.json 바뀜): 기능마다 그대로 (경고·앞 값 유지)
@@ -36,7 +37,7 @@
    ### Manager (Manager.json): sZone (운영 존: ServerList 선택, 없음: 최상위 sZone)·nTimeout (XLO 모니터 요청 제한 ms, 기본 30000)·sCode (XLO 모니터 비밀번호, AES 키 솔루션명 → sPass, 목록 응답에 안 넣음)·ServerList:{존} [{sName, sIP, nPort}] (운영 탭 점검 대상: Manager:sZone 존만, XLO 모니터 요청 제한: nTimeout)
 
 ## TCP 수신: 프로젝트명.json 의 nPort (모든 인터페이스, 없음: 미사용, aMenu 쿼리·서치·파일·덤프 모두 빠짐: 안 엶) ← Client (한 줄 = JSON 1건: Hello·Count·Alive·File·Log·Ping)
-   ### 받은 진행 (Count, 클라와 같은 코드): 머신 → 대상 폴더마다 기준 폴더 하위 Data\Count\머신\대상 폴더 (드라이브 ':' 제거)\Count.data (최대 2줄, 아랫줄 최신, 줄: "날짜 폴더\파일\t줄 번호")
+   ### 받은 진행 (Count, 클라와 같은 코드): 머신 → 대상 폴더마다 기준 폴더 하위 data\count\머신\대상 폴더 (드라이브 ':' 제거)\Count.data (최대 2줄, 아랫줄 최신, 줄: "날짜 폴더\파일\t줄 번호")
       #### 클라 Count (접속 때 Hello 뒤 1번, 한 패킷 {"sType":"Count","arrFolder":[""]}: 클라 관리 목록) → 목록 밖 이 머신 Count 지움 (메모리·파일) → 목록 폴더마다 받은 진행 한 패킷 {"sType":"Count","arrCount":[{"sFolder":"","sRel":"","nLine":0}],"aField":[{"sKey":"","sRegex":"","sValue":""}]} (없는 폴더: 뺌, aField: 설정 aField)
          클라: aField → 보낼 줄 필드 (이 접속 동안), 답 폴더 → 그 위치부터 보정 (서버 앞섬: 건너뜀, 뒤짐: 다시 보냄), 답 없는 폴더 → 클라 로직대로 (클라 Count 줄 다음·없음: 최신 파일 끝) → 그 뒤 Log 전송
       #### 클라 CountDel (감시 폴더 사라짐, 한 패킷 {"sType":"CountDel","arrFolder":[""]}) → 관리 목록에서 뺌 → 그 폴더 Count 지움 (메모리·파일, 답 없음)
@@ -45,14 +46,14 @@
       #### Log: 받은 진행 (파일 날짜·시간, 줄 번호) 이하 줄 (클라 재전송): 뺌 (로그) → 원문 쓴 뒤 진행 저장 (없음: 처음 받은 값)
    ### HTTP 수신 (외부 API, 목록: API.m_arrExternal): GET·POST /api/external/log/키/토큰/?sMachine=&sPath=&sFolder=&aLine=&aNo=&추가 필드=값 (쿼리 문자열 있음: 쿼리 (aLine·aNo: 반복, 그 밖 키: 모든 줄 추가 필드), 없음: 본문 JSON {sMachine, sPath, sFolder, aLine, aNo, aField}, 추가 필드: 설정 aField 키·고정값만 (그 밖: 400 필드 오류)) (TCP Log 의 arrLine·arrNo·arrField → aLine·aNo·aField + sMachine, 로그인 대신 토큰 = 설정 sCode (끝 '/' 허용, 불일치: X초 지연 후 401, bAuth false: 확인 안 함), 요청 로그: 토큰 ****) → TCP 와 같은 처리 (ReadLog → 적재 큐, 받은 진행 관리 안 함, 원문 시간: 요청 받은 시각 (KST, 요청 1건 같은 시각, 원문은 그대로 → 쿼리 시간·기간·막대만 받은 시각)) → {sError, nLine} (형식 오류·머신 없음·경로 오류 (전체 경로·.log 아님)·빈 줄: 400, 적재 밀림 (클라 Pause 중): 503 → TCP 우선)
    ### 외부 API 쿼리 (TabQuery.OnExternalQuery): GET·POST /api/external/query/키/토큰/?sKey=&nStart=&nEnd=&nMinute=&nPage=  (쿼리 권한 계정, 브라우저 GET (text/html): 키 계정 로그인 → 쿼리 탭 그 쿼리·기간 바로 실행 (접근 탭 없음: 403), 그 외: JSON, 쿼리 문자열 없음: 본문 JSON 같은 키, sKey 없음: *, 끝 없음: 지금, 시작 없음: 끝 X분 전) → /api/query 와 같은 응답, 알람 메일 본문 끝 링크 (Web.GetApiQueryLink: 받는 계정 토큰, 훅: 링크 없음, 기간 yyyyMMddHHmmss), 토큰: 그 계정 sCode 를 sRand 키로 암호화 (Auth.GetToken = TO_BASE64(AES_ENCRYPT(sCode, sRand)), 저장 안 함)
-   ### 로그 감시 원문 (TabQuery): 클라 Log (aLogFolder 최신 로그의 aLogType 줄, sFolder: 대상 폴더 전체 경로) → 기준 폴더 하위 Data\Origin\머신\클라 경로 (드라이브 ':' 제거) 에 줄마다 레코드 1줄 (원문 저장 1번, 색인: 바이트 위치·길이로 참조)
-      #### 레코드: [원문 시간][Machine][Folder][Line]:[원문]:[Type]{추가 필드} (원문 시간: 원문 앞 첫 [시간]·없음: 받은 시간 KST·HTTP /api/external/log: 요청 받은 시각 (원문 앞 시간 무시), 원문: 받은 줄 그대로, Line: 클라 파일 줄 번호 (예전 레코드: 없음), Type: 시간 뒤 첫 [] 안, 추가 필드: 설정 aField [{sKey, sRegex}] (클라가 Count 답으로 받음) 첫 () 값 → JSON {키: 값} (이름: Data\Index\field.txt, 설정 aField 순), 단어 색인: 원문에서 앞 시간 뺀 내용)
+   ### 로그 감시 원문 (TabQuery): 클라 Log (aLogFolder 최신 로그의 aLogType 줄, sFolder: 대상 폴더 전체 경로) → 기준 폴더 하위 data\origin\머신\클라 경로 (드라이브 ':' 제거) 에 줄마다 레코드 1줄 (원문 저장 1번, 색인: 바이트 위치·길이로 참조)
+      #### 레코드: [원문 시간][Machine][Folder][Line]:[원문]:[Type]{추가 필드} (원문 시간: 원문 앞 첫 [시간]·없음: 받은 시간 KST·HTTP /api/external/log: 요청 받은 시각 (원문 앞 시간 무시), 원문: 받은 줄 그대로, Line: 클라 파일 줄 번호 (예전 레코드: 없음), Type: 시간 뒤 첫 [] 안, 추가 필드: 설정 aField [{sKey, sRegex}] (클라가 Count 답으로 받음) 첫 () 값 → JSON {키: 값} (이름: data\index\field.txt, 설정 aField 순), 단어 색인: 원문에서 앞 시간 뺀 내용)
          예) [2026/10/31 09:07:31.635][GAME01][D:\Logs\XLobby][1523]:[[2026/10/31 09:07:31.635] [ERROR] [TID:11700] 실패 sno(123)]:[ERROR][123]
    ### 로그 감시 적재 (TabQuery, 멀티스레드 + 스왑 큐): 수신 스레드 → 머신·대상 폴더 해시 워커의 라이트 큐 (잠금: Add 순간) → 워커 (코어 수 × 2.5) 가 신호마다 리드·라이트 큐 스왑 (잠금: 스왑 순간) 후 리드 큐 잠금 없이 처리 → 같은 폴더 (시간 파일 바뀜 포함): 한 워커 순서대로, 다른 폴더: 동시 (원문 파일 번호·추가 필드 이름: 있음 → 잠금 없이, 새 것만 잠금, 색인 폴더 지움 확인: 타이머)
       #### 라이트 큐 밀림 (X줄 이상)·색인 버퍼 밀림 (최대 줄 수 이상, 세그먼트 쓰기가 못 따라감): 부하 로그 (워커마다 X초에 1번) + 상한 넘칠 때마다 (앞 멈춤 뒤 X ms 지남) 전송 중 클라의 분당 Log 줄 (지난 1분 + 이번 분) 많은 순 상위 X% 더 {"sType":"Pause"} (전송 중 수 기준 올림 → 남은 1대도 멈춤, 이미 멈춤: 다시 안 보냄, 읽기·전송 멈춤, 위치 유지) → 모든 워커 X줄 미만·색인 버퍼 절반 미만: 모든 클라에 {"sType":"Resume"} (클라: 멈춘 상태만 재개·전송 중: 무시, 쌓인 줄: X초마다 최대 nLogSend), 새 클라: Pause 안 보냄
       #### 클라별 카운터 (ClientInfo, Interlocked): 받은 메시지·바이트·Log 줄 누적 + 이번 분 → 타이머가 1분마다 0 과 원자 교체 → 지난 1분 (분당, 상위 X% 고르기), 1분마다 로그 합계 1줄 (머신별: /api/client)
       #### 적재 메모리 상한 = 시작 때 남은 물리 메모리 절반 (시작 로그): 라이트 큐 최대 줄 수 (상한 1/4 ÷ 줄당 추정)·색인 버퍼 최대 줄 수 (상한 1/4 ÷ 줄당 추정, 세그먼트 쓰는 중 포함)·워커마다 라이트 큐 최대 줄 수 (밀림 기준 × X) 넘음: 수신 스레드 대기 (TCP 역압, Pause 무시 클라 포함, 워커별: 그 워커 담당 클라만), 합침 묶음 최대 바이트 (상한 1/2, 세그먼트 파일 크기 합), 워커 예외: 출력 후 계속
-   ### 로그 감시 색인 (TabQuery, 세그먼트 역색인): 원문 단어 + 필드 값 → 워커마다 원문 시간별 메모리 버퍼 (단어: 64비트 해시만 (문자열 안 만듦), 포스팅: int 블록 아레나 (단어·값마다 객체 없음)) → 타이머가 X초마다 버퍼 교체 (잠금: 교체 순간, 색인 버퍼 절반 넘음: 나이 상관없이 모두) 후 시간마다 1개로 (쓴 시간 버퍼: 바로 놓음) → 기준 폴더 하위 Data\Index\원문 시간(yyyyMMddHH)\
+   ### 로그 감시 색인 (TabQuery, 세그먼트 역색인): 원문 단어 + 필드 값 → 워커마다 원문 시간별 메모리 버퍼 (단어: 64비트 해시만 (문자열 안 만듦), 포스팅: int 블록 아레나 (단어·값마다 객체 없음)) → 타이머가 X초마다 버퍼 교체 (잠금: 교체 순간, 색인 버퍼 절반 넘음: 나이 상관없이 모두) 후 시간마다 1개로 (쓴 시간 버퍼: 바로 놓음) → 기준 폴더 하위 data\index\원문 시간(yyyyMMddHH)\
       #### 단어: 글자·숫자·'-'·'_' 연속 (그 외 기호·빈칸에서 나눔, 앞뒤 '-'·'_' 뗀 형태·가운데 '-'·'_' 조각도 색인, '-'·'_' 뿐: 제외, 소문자 → 대소문자 무시·딱 맞는 단어만, 예: [NOTI_] → noti_·noti, sk_hidden_b7 → sk_hidden_b7·sk·hidden·b7 (조각: 새로 받은 줄부터))
       #### 와일드카드: 검색어 앞뒤 * (ab*: 단어 시작, *ab: 단어 끝, *ab*: 어디든, 대소문자 무시, 경계: 글자·숫자 아님 ('-'·'_' 포함 = 조각과 같음)) → 색인 안 씀, 후보 줄 원문 확인 (후보: 같은 AND·NOT 왼쪽 결과), 1차 조건 필수 (와일드카드만·OR 쪽: 쿼리 오류 "와일드카드 1차 조건 필요", 알람: 줄마다 확인 → 없어도 됨), 필드:값 안 * : 안 됨, 알람·서치 탭 (클라) 도 같은 규칙
       #### 필드: Machine·Folder·Type·추가 필드 (존: 설정 aField 예: zone) 값 통째로 (대소문자 무시·딱 맞는 값, 값 없음: 색인 안 함)
@@ -70,19 +71,19 @@
       #### 필드별 통계 (TabQuery): /api/query/stat?sKey=&nStart=&nEnd=&sField=  → 쿼리·기간 줄 ∩ 필드 값 포스팅 → {sKey, nTotal, nElapsedMs, sError, arrField: [{sName, bBase, nValue, arrValue: [{sValue, nCount}] (건수 순 X개, sField: 그 필드 전체)}]}
       #### 필드 값 목록 새 창 (TabQuery): /query/field?sKey=&nStart=&nEnd=&sField=  → 필드 모드 페이지 (값 X개씩 페이지, 창 너비: 전체 값 중 가장 긴 줄에 맞춰 넓힘, Count: 숫자만, 값 클릭: 연 창에서 필드:값 쿼리 후 이 창 닫음, 제목 클릭: 그 칸 기준 보이는 페이지만 내림차순 ▼ → 오름차순 ▲ → 원래 순서 (페이지 넘김: 같은 정렬))
       #### 필드 목록 (TabQuery): /api/query/field → {arrField: [{sName, bBase}]} (기본 필드 + 설정 aField 추가 필드)
-      #### 머신 목록 (TabQuery): /api/query/machine → {arrMachine} (Data\Index\file.txt 의 머신, 접속 안 된 머신 포함 → 쿼리 M 목록: 접속 머신과 합침)
+      #### 머신 목록 (TabQuery): /api/query/machine → {arrMachine} (data\index\file.txt 의 머신, 접속 안 된 머신 포함 → 쿼리 M 목록: 접속 머신과 합침)
       #### 저장 쿼리 (SavedList): /api/query/saved → {sError, arrQuery: [{sKey, sQuery, nMinute}]}, POST /api/query/saved {sKey, sQuery, nMinute, sOldKey} (같은 이름: 교체, sOldKey: 그 자리 수정)·/api/query/saved/delete {sKey}·/api/query/saved/move {sKey, nTo} → Query.json 의 aQuery (요청자 IP 로그), 저장 서치: /api/search/saved (같은 형식, arrSearch, Search.json 의 aSearch)
       #### 알람 목록 (TabQuery): /api/alarm → {arrAlarm}, POST /api/alarm {nID (0: 추가), 값}·/api/alarm/delete {nID}·/api/alarm/move {nID, nTo}·/api/alarm/test {값} (메일·훅 바로, 저장 안 함) → 프로젝트명.json 의 aAlarm (요청자 IP 로그)
       #### 필드 정의 (TabQuery): /api/field → {arrField: [{sKey, sRegex, sValue}]}, POST /api/field {sKey, sRegex, sValue, sOldKey} (sOldKey: 그 자리 수정, 없음: 끝에 추가, 이름 겹침: 오류)·/api/field/delete {sKey}·/api/field/move {sKey, nTo} → 프로젝트명.json 의 aField → 바로 적용·접속 클라 알림 (요청자 IP 로그)
       #### 알람 (Alarm): 적재 때 매칭 (앵커 단어·필드로 후보만 조건 평가, 쿼리와 같은 규칙, 워커 카운터) → Stat 매분 합산 (수신 시각)·nMinute 분 구간 끝 (KST 자정부터 X분마다, 하루 안 넘김, 최대 1440) 판정·nDelay 분 억제 (발송 뒤 X분: 그 시간과 겹친 구간 판정 안 함 → 그 뒤 구간부터)·분당 X건 한도
-         → Send X개 스레드 메일·훅 POST {botName, text: 제목, attachments: [{text: 내용}]} (제목·내용: 메일과 같음, 본문 끝 쿼리 링크: 메일만 (훅: 링크 없음 → 채널 누구나 눌러 키 계정 로그인 막음), SMS: 나중에) → Data\Alarm\log\yyyyMMdd.jsonl (Sent·Failed·Deferred·Resent·Expired) + 알람 기록 Data\Alarm\history.jsonl (날짜·제목·내용·결과, 발송 시도마다·테스트 포함, 최신 X건), 한도 넘음·실패: Data\Alarm\pending.json → 다음 분 재전송 (X번·X분 넘음: 포기)
+         → Send X개 스레드 메일·훅 POST {botName, text: 제목, attachments: [{text: 내용}]} (제목·내용: 메일과 같음, 본문 끝 쿼리 링크: 메일만 (훅: 링크 없음 → 채널 누구나 눌러 키 계정 로그인 막음), SMS: 나중에) → data\alarm\log\yyyyMMdd.jsonl (Sent·Failed·Deferred·Resent·Expired) + 알람 기록 data\alarm\history.jsonl (날짜·제목·내용·결과, 발송 시도마다·테스트 포함, 최신 X건), 한도 넘음·실패: data\alarm\pending.json → 다음 분 재전송 (X번·X분 넘음: 포기)
       #### 알람 로그 (AlarmLog): /api/alarm/log?nStart=&nEnd=&nID=&sResult=&nPage=  (기간 yyyyMMddHHmm, 최대 X일) → {sError, nTotal, nPage, nPageSize, arrLog} (최신 순)
       #### 알람 기록 (AlarmLog): /api/alarm/history → {sError, arrHistory: [{sDone, nID, sKey, sChannel, sResult, sError, nTry, sTitle, sText}]} (전체 최신 순) → 쿼리 기록 버튼 (알람 버튼 오른쪽) 창: 날짜·제목·채널·결과 (스크롤), 제목 클릭: 내용 창 (링크 안 보임, 내용 클릭: 그 알람 기간·쿼리 실행)
    ### 운영 (TabOperation, ServerManager 이식): /api/manager/server (전체 점검 → 목록·패치 시각)·/version (POST 버전 임시)·/monitor (XLO 모니터 이동)·/cds (1대 CDS)·/patch (POST 패치 시각, Redis)·/ccu (최고 동접·최근 X일 기록, Redis)·/redis (PING)
       #### 동접 기록: X분 정각마다 전체 점검 → 운영 로비 접속자 게임별 합 → Redis daily_날짜 해시·max_conn (서버 목록·Redis 있을 때만)
    ### 실행 (TabProcess·Process, HMXServer 이식, 요청·응답 형식 같음): /api/process (목록: 공통 Redis 서버 목록 키 (Redis:sProcess + 존) 이름순 "필드|값" 줄, Redis 설정 없음: 오류)·?action=check (TestOn 표시)·version (설정 버전)·set (값 저장: 등록·수정 version 검증·+1, On·Off·Down: 값 앞 상태,False)·rename (이름 일괄 변경)·del (삭제, 삭제 전 값 로그)·errlog (Redis 에러 리스트 (Redis:sError + 존) X개씩)·log (서버 로그 [HMX_]·로그인 줄 커서 조회)·actlog (시작·정지·다운 클릭 기록)
       #### 서버 목록 키: Redis:sProcess + 존 + ":" + 대분류,중분류,이름 (예: HMX:Process:Dev:111_DEV,1_Center,Common) · 값: 상태,적용,PID,커밋,머신,다운폴더,깃헙폴더,Sync,Mode,실행파일+인자들 (상태 On·Off·Down, 적용 False: 머신별 HMXClient 처리 대기 → 처리 뒤 True, PID 음수: 실패)
-      #### 설정 버전: 기준 폴더 하위 Data\프로젝트명.txt (예: Data\Server.txt, 등록·수정·삭제·이름 변경 성공: +1, 요청 버전 다름: stale 응답 → 화면 새로 고침 안내, 버전 검증~증가: 직렬화)
+      #### 설정 버전: 기준 폴더 하위 data\프로젝트명.txt (예: data\Server.txt, 등록·수정·삭제·이름 변경 성공: +1, 요청 버전 다름: stale 응답 → 화면 새로 고침 안내, 버전 검증~증가: 직렬화)
       #### 반영 로그: 공통 Log 파일에 레벨 뒤 [v.버전] 표시 (예: [시각] [HMX_][INFO_] [v.4] 수정: …, 등록·수정·이름·삭제·액션·클릭·버전 불일치·오류, 끝: 아이디@IP), 로그 조회: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만, Redis 오류: X초 지연 후 오류 응답
    ### 클라 요청 (TabSearch·TabDump·TabFile: 머신마다 Client 에 요청)
       #### 부하 자리 (Gate, 기능마다 따로: 세션마다 1건씩 동시, 전체 제한 없음 (Gate nAll 0, 클라 안전 상한: 서치·보기 16), 같은 세션 둘째: 대기, 덤프 다운: 저장 작업 안에서 잡음 → 기다리는 동안 진행 0) + 조각마다 Gate.Yield (압축·변환 CPU 양보), 클라: 검색 동시 2건·Throttle 0.5초 → 0.1초
@@ -90,14 +91,14 @@
       #### 로그 검색 (TabSearch, 여러 머신): POST /api/search {arrMachine, nStart, nEnd, sKey, nMax, nLimit, sToken}  (sKey: AND·OR·NOT·괄호·앞뒤 * 와일드카드, 클라 SearchNode 처리, 예: A AND (B NOT C) OR D, nLimit: 서치 제한 시간 초 (기본 30·최대 100, 클라 검색 마감, 서버 대기 = + 여유 X초))  → 머신마다 클라에 Search, 끝난 순서로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON)
       #### 파일 보기 (TabSearch, 머신 1대): /api/view?sMachine=&sPath=&nStart=&nCount=  → 클라에 View (nStart 0: 마지막)
       #### 검색 진행·중지 (TabSearch): /api/progress?sToken= (진행 머신들의 진행 합), /api/stop?sToken= (머신마다 Stop)
-      #### 덤프 목록 (TabDump, 여러 머신): POST /api/dump {arrMachine}  → 머신마다 클라에 Dump, 끝난 순서로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON, kResult.arrFile[].bZip: Server Dump 폴더 zip 있음)
-      #### 덤프 다운 (TabDump, 머신 1대): POST /api/dump/download {sMachine, sPath}  → 클라에 DumpRead 조각마다 요청 → 기준 폴더 하위 Dump\머신\덤프 파일명.zip 압축 저장 (바로 응답, 페이지가 X초마다 재호출: {bDone, nOffset, nSize})
-      #### 덤프 zip 받기 (TabDump): /api/dump/zip?sMachine=&sPath=  → Dump\머신\덤프 파일명.zip 첨부 전송 (없음: 404)
-      #### 덤프 삭제 (TabDump, 머신 1대): POST /api/dump/delete {sMachine, sPath}  → 클라에 DumpDelete, 성공: 다운 zip 도 삭제 (빈 Dump\머신 폴더 삭제, 요청자 IP 로그)
+      #### 덤프 목록 (TabDump, 여러 머신): POST /api/dump {arrMachine}  → 머신마다 클라에 Dump, 끝난 순서로 한 줄씩 {nIndex, sMachine, sError, kResult} (NDJSON, kResult.arrFile[].bZip: Server dump 폴더 zip 있음)
+      #### 덤프 다운 (TabDump, 머신 1대): POST /api/dump/download {sMachine, sPath}  → 클라에 DumpRead 조각마다 요청 → 기준 폴더 하위 dump\머신\덤프 파일명.zip 압축 저장 (바로 응답, 페이지가 X초마다 재호출: {bDone, nOffset, nSize})
+      #### 덤프 zip 받기 (TabDump): /api/dump/zip?sMachine=&sPath=  → dump\머신\덤프 파일명.zip 첨부 전송 (없음: 404)
+      #### 덤프 삭제 (TabDump, 머신 1대): POST /api/dump/delete {sMachine, sPath}  → 클라에 DumpDelete, 성공: 다운 zip 도 삭제 (빈 dump\머신 폴더 삭제, 요청자 IP 로그)
       #### 폴더 보기 (TabFile, 머신 1대): /api/files?sMachine=&sPath=  → 클라에 Files (sPath "": 클라 aLogFolder 목록, 결과: 바로 아래 폴더·파일)
       #### 파일 다운 (TabFile, 머신 1대): /api/files/download?sMachine=&sPath=  → 클라에 FileRead 조각마다 요청 → UTF-8 BOM + 줄마다 UTF-8·CP949 판별 → CP949 줄만 UTF-8 → 브라우저로 (첨부, 압축 안 함, UTF-16 BOM: 그대로)
 
-## 로그: bLog true 일 때만 기준 폴더 하위 Log/YYYYMMDD/Server_YYYYMMDD_HH.log 시간별 → Log.Write(INFO_, "메시지") (레벨: DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, 줄: [시각] [sTitle_][레벨] 메시지, sTitle 없음: 태그 없음)
+## 로그: bLog true 일 때만 기준 폴더 하위 log/YYYYMMDD/Server_YYYYMMDD_HH.log 시간별 → Log.Write(INFO_, "메시지") (레벨: DEBUG·INFO_·NOTI_·WARN_·ERROR·FATAL, 줄: [시각] [sTitle_][레벨] 메시지, sTitle 없음: 태그 없음)
 ## 타이머: Timer.Start → 별도 스레드 X초마다 Timer.Batch (X분마다 Alive 로그, TabQuery.Tick: 색인 버퍼 → 세그먼트, 색인 폴더 지움 확인, 합침 스레드 깨움), 합치기: 합침 스레드 따로 (세그먼트 쓰기 안 밀림), 클라 분당 교체: 1분 타이머 따로 (스레드 풀, 색인 Flush 로 안 밀림)
 ## 종료 (서비스 중지·Ctrl+C, 호스트 ShutdownTimeout X초 동안 중지 대기): Web.StopAsync → 웹 중지 (클라 접속·수신 중지, 연결 끊음) → 모든 클라 수신 끝 대기 (끊긴 클라 정리 표시까지) → Main.Shutdown (1번만)
    ### Main.Shutdown: Timer.Stop → TabQuery.Close (워커 라이트 큐 처리: 원문·받은 진행 저장·닫음, 멈춤 요청 뒤 X초 상한 → 넘는 Log 버림 (받은 진행 관리 폴더: 클라 재전송, HTTP·관리 밖: 그대로 처리)·X초마다 로그 → 남은 색인 버퍼 세그먼트 (타이머 중지 대기 넘음: 타이머 Flush 가 뗀 버퍼 다 쓸 때까지 플러시 잠금 대기 → 색인 안 빠짐) → 합침 스레드 끝 대기) → Alarm.Stop (펜딩 저장), 웹 없음·시작 실패: Main 끝에서
@@ -328,6 +329,9 @@
    ### sessionStorage: HMXVisitTime (세션 최초 방문 시각: S·E 기본, 새로 고침·새 창 같음)
    ### 브라우저 메모리만 (새로 고침: 사라짐): 단계 ← →·보관 결과·모래시계 기억
    ### 읽기·쓰기 실패 (사용 불가·깨짐): 기본값으로, 오류는 콘솔만 (화면 동작 그대로)
+
+## 폴더 (모든 툴 공통, 서버·클라)
+   ### 이름: 프로그램이 만드는 폴더: 이름 모두 소문자 (기준 폴더 하위 log·dump·data, data 하위 alarm·index·origin·count, 새 폴더도 소문자, 머신·대상 경로·시간 등 값 이름: 그대로), 대문자 폴더 있음 (예전 Log·Data·Dump 등): 시작 때 소문자로 이름만 바꿈 (공통 Global.FixDirCase, 설정 로딩 뒤·폴더 열기 전, 상위 먼저, 내용 그대로, 실패 (사용 중·권한): 경고 → 그대로 씀 (Windows 대소문자 무시)), 배포·소스 폴더 (Json·Source·Tool 등): 그대로
 
 ## 차트 (기준: 프로젝트 쿼리 막대)
    ### 쿼리 막대 클릭: 날짜별 → 시간별 → 분별 → 초별 → 1초 (1초: 끝, 그 초 막대 1개 + 그 초 결과, S·E: 그 분), 월별: 그 달 (일봉)

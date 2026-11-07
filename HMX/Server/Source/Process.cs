@@ -503,13 +503,13 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 
 record ProcessLogLine(string sStamp, long nOffset, string sLine);	// 조회한 로그 줄 (커서 = 파일 스탬프 + 줄 시작 오프셋)
 
-static class ProcessVersion	// 설정 버전: 기준 폴더 하위 Data\프로젝트명.txt (등록·수정·삭제·이름 변경 성공: +1, 다른 곳 변경 감지)
+static class ProcessVersion	// 설정 버전: 기준 폴더 하위 data\프로젝트명.txt (등록·수정·삭제·이름 변경 성공: +1, 다른 곳 변경 감지)
 {
 	private static readonly object	m_lockFile	= new object();	// 버전 파일 읽기·쓰기 직렬화
 
 	public static string GetPath()	// 버전 파일 경로 (예: Data\Server.txt)
 	{
-		return Path.Combine(GetBaseDir(), "Data", GetProjectName() + ".txt");
+		return Path.Combine(GetBaseDir(), "data", GetProjectName() + ".txt");
 	}
 
 	public static int Get()	// 지금 버전 (파일 없음: 1 로 만듦, 읽기 실패·숫자 아님: 0)

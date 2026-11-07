@@ -49,6 +49,38 @@ static class Global	// 전역 함수 (Server·Client 공통, 프로젝트별 값
 		return WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : Directory.GetCurrentDirectory();
 	}
 
+	public static void FixDirCase(params string[] arrDir)	// 프로그램 폴더 이름 소문자 맞춤 (기준 폴더 하위 상대 경로 '/' 구분, 단계마다: 대소문자만 다른 폴더 → 이름만 바꿈·내용 그대로, 실패: 경고 → 그대로 씀)
+	{
+		foreach (string sDir in arrDir)
+		{
+			string	sParent	= GetBaseDir();	// 지금 단계 상위 폴더
+
+			foreach (string sName in sDir.Split('/'))
+			{
+				string	sPath	= Path.Combine(sParent, sName);	// 바랄 이름 (소문자)
+				string?	sOld	= Directory.Exists(sParent) ? Directory.EnumerateDirectories(sParent).FirstOrDefault(sItem => string.Equals(Path.GetFileName(sItem), sName, StringComparison.OrdinalIgnoreCase)) : null;	// 디스크 실제 이름 (없음: null)
+
+				sParent = sPath;
+
+				if (sOld == null || Path.GetFileName(sOld) == sName)	// 없음·이미 소문자
+				{
+					continue;
+				}
+
+				try
+				{
+					Directory.Move(sOld, sPath);
+
+					Log.Write(INFO_, $"폴더 이름 소문자: {sOld} → {sPath}");
+				}
+				catch (Exception kException)	// 사용 중·권한 없음 (Windows 대소문자 무시 → 그대로 동작)
+				{
+					Log.Write(WARN_, $"폴더 이름 소문자 실패: {sOld} ({kException.Message}, 그대로 씀)");
+				}
+			}
+		}
+	}
+
 	public static long GetAvailableMemory()	// 남은 물리 메모리 (바이트, 실패: 런타임 전체 메모리 절반)
 	{
 		MEMORYSTATUSEX	kStatus	= new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };

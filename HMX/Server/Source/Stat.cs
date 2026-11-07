@@ -350,9 +350,9 @@ static class Stat	// 알람 통계 스레드 1개: 매분 (분 경계) 워커 �
 		return listChannel.ToArray();
 	}
 
-	private static string GetPendingFile()	// 펜딩 파일 (기준 폴더 하위 Data\Alarm\pending.json)
+	private static string GetPendingFile()	// 펜딩 파일 (기준 폴더 하위 data\alarm\pending.json)
 	{
-		return Path.Combine(GetBaseDir(), "Data", "Alarm", "pending.json");
+		return Path.Combine(GetBaseDir(), "data", "alarm", "pending.json");
 	}
 
 	private static List<AlarmJob> LoadPending()	// 펜딩 읽기 (없음·오류: 빈 목록, 오류: 출력)

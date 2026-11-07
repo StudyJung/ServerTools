@@ -27,7 +27,7 @@
 | Properties/launchSettings.json | VS 디버그 프로필 (localhost 62170·62171, Development) |
 | Tool/ | 설치 파일: httpPlatformHandler_amd64.msi (IIS 실행만, .NET·ASP.NET Core 런타임: Server.exe 에 포함 → 설치 불필요) (분석 제외) |
 | bin/, obj/ | 게시 출력 (bin\Release\net10.0\Server.exe)·빌드 중간 출력 |
-| (실행 시) Data/, Dump/, Log/ | Origin·Index·Alarm·Count·Server.txt (반영 탭 설정 버전) / 덤프 zip / 시간별 로그 (줄 레벨 앞: [sTitle_] 태그, 반영 로그: 레벨 뒤 [v.버전] 표시) |
+| (실행 시) data/, dump/, log/ | origin·index·alarm·count·Server.txt (반영 탭 설정 버전) / 덤프 zip / 시간별 로그 (줄 레벨 앞: [sTitle_] 태그, 반영 로그: 레벨 뒤 [v.버전] 표시) |
 
 ## 코드 구성
 | 파일 | 클래스 | 역할 |
@@ -51,22 +51,22 @@
 | TabOperation.cs | TabOperation·OperationServer·OperationCCU·OperationMonitor·OperationRedis | 운영 탭 (ServerManager 이식): XLO 모니터 점검·서버 버전·패치 시각·X분 정각 동접 기록 API + ManagerHTML (페이지 JS Operation) |
 | Redis.cs | Redis | Redis 연결 (서버 전용, StackExchange.Redis, 최초 사용 시 1회 연결·자동 재연결) |
 | TabProcess.cs | TabProcess | 반영 탭 (HMXServer 이식): 라우트 + ProcessHTML (페이지 JS Process) |
-| Process.cs | Process·ProcessVersion·ProcessLog | 반영 API /api/process (목록·등록·수정·삭제·이름 변경·시작·정지·다운 지시·작업 로그·에러), 설정 버전 Data\Server.txt, 반영 로그 ([v.버전] 표시) 기록·조회 |
+| Process.cs | Process·ProcessVersion·ProcessLog | 반영 API /api/process (목록·등록·수정·삭제·이름 변경·시작·정지·다운 지시·작업 로그·에러), 설정 버전 data\Server.txt, 반영 로그 ([v.버전] 표시) 기록·조회 |
 | TabQuery.cs | TabQuery·QueryResult·IngestWorker·IndexBuffer·PostingPool 등 | 쿼리 탭: 적재·역색인·쿼리·통계 (Gate·제한 시간 nLimit·Yield)·저장 쿼리 (SavedList)·알람·필드 설정 API + QueryHTML (페이지 JS Query) |
 | Alarm.cs | Alarm·AlarmMatcher·AlarmNode·AlarmCount·AlarmHit·AlarmJob | 알람 매칭 스냅샷·조건 트리 |
 | Stat.cs / Send.cs / AlarmLog.cs | Stat / Send / AlarmLog | 매분 판정 / 발송 (메일·훅) / 알람 로그 |
 
 ## 주요 기능
 - 적재: 머신·폴더 해시 워커 (코어 × 2.5) 스왑 큐, 같은 폴더 순서 보장, 메모리 상한 = 시작 시 남은 물리 메모리 1/2, 워커별 큐 상한 (2만 줄 → 담당 클라만 TCP 역압), 밀림 시 전 클라 Pause·Resume, 서버 GC (DATAS), 원문 파일 번호·추가 필드 이름은 잠금 없이 찾음 (새 것만 잠금, 원문 파일 번호: 번호마다 file.txt 줄 위치 8바이트만 + 최근 것만 메모리 (키 → 번호 24시간 두 세대·번호 → 정보 2만 개 두 세대, 밖: file.txt 그 줄만 읽음)), 워커 원문 버퍼: 큰 건 뒤 평소 크기로, 줄마다 문자열·JSON 객체 안 만듦 (Utf8JsonWriter·Type 재사용)
-- 원문: Data\Origin\머신\경로 에 `[시간][Machine][Folder][Line]:[원문]:[Type]{필드}` 레코드
-- 색인: Data\Index\yyyyMMddHH\ (doc.bin + 세그먼트 *.idx: 단어 해시 256 버킷·필드 사전·varint 포스팅), 워커 버퍼는 단어 해시만 (문자열 없음) + 포스팅 int 블록 아레나 (ArrayPool), 1초마다 쓰기 (버퍼마다 해시 순 → k-way 합침 → 포스팅 이어 쓰기), 8개 초과·10분 유휴 시 병합: 합침 스레드 따로 (쓰기 안 밀림) + 스트리밍 (포스팅 바이트 이어 붙임, 조각 첫 varint 만 재인코딩, 메모리 = 파일 크기 합)
+- 원문: data\origin\머신\경로 에 `[시간][Machine][Folder][Line]:[원문]:[Type]{필드}` 레코드
+- 색인: data\index\yyyyMMddHH\ (doc.bin + 세그먼트 *.idx: 단어 해시 256 버킷·필드 사전·varint 포스팅), 워커 버퍼는 단어 해시만 (문자열 없음) + 포스팅 int 블록 아레나 (ArrayPool), 1초마다 쓰기 (버퍼마다 해시 순 → k-way 합침 → 포스팅 이어 쓰기), 8개 초과·10분 유휴 시 병합: 합침 스레드 따로 (쓰기 안 밀림) + 스트리밍 (포스팅 바이트 이어 붙임, 조각 첫 varint 만 재인코딩, 메모리 = 파일 크기 합)
 - 쿼리: AND·OR·NOT·괄호·`필드:값`·`*`, 시간 폴더 병렬 (코어 절반), 시간·분·초별 건수 + 최신 순 1,000건 페이지, 60초 결과 보관, 최대 1,096일 (3년, 쿼리 S 달력: E 기준 그 안만 고름)
 - 부하 분산 (Gate, 쿼리·통계·렌즈 / 서치 / 파일 보기 / 덤프 다운 / 파일 다운 따로): 세션 (로그인 계정, 없음: IP) 마다 1건씩 동시 (전체 제한 없음, 클라 안전 상한: 서치·보기 16), 넘침: 대기 → 한 사용자가 오래 써도 다른 사용자 사용, 제한 시간 (페이지 설정 버튼, localStorage): 쿼리 nLimit (기본 30초·최대 100초, 넘음: sError "제한 시간 초과")·서치 nLimit (기본 30초·최대 100초, 클라 마감 → 그때까지 결과, 서버 대기 = + 30초), 양보 Yield: 스레드 연속 0.5초 → 0.1초 쉼 + 취소 확인 (세그먼트·줄·조각 단위, 클라 Throttle 과 같은 값), 스레드 풀 최소 = 코어 × 2
 - 막대 렌즈 (Lens 버튼, 막대 왼쪽 ↑·스텝·↓): 스텝 0 = 기간 기본 단위 (1분 이하 초·1시간 이하 분·24시간 이하 시·90일 미만 일·넘음 월봉), ↓ 월 → 일 → 시 → 분 → 초 (마지막, 막대 86,400개 넘는 단위: 꺼짐, 24시간 이하: 초봉까지), ↑ 한 단위 크게 (렌즈 숫자 ↑ +1·↓ -1, 스텝 0: 기준 시각 포함 지난 분봉 60분·시봉 24시간·일봉 그 달·월봉 12개월로 기간 넓혀 쿼리, 넓힌 단계 ↓·넓혀 둔 단계 ↑: 보관 결과 스냅샷 그대로·다시 쿼리 안 함), 기본 단위보다 작은 초·분봉: /api/query/lens
 - 통계: 필드별 상위 20개 값 건수 (기본 필드 Machine·Folder·Type + 설정 aField, 존: aField zone)
-- 알람: 적재 시 앵커 매칭 → 매분 합산, nMinute 분 nCount 건 이상 발생·nDelay 분 억제 (발송 뒤 그 시간과 겹친 구간: 판정 안 함) → 발송 스레드 5개 메일 (SMTP)·훅 (botName·text·attachments), 실패: pending.json 재시도, 로그 Data\Alarm\log\yyyyMMdd.jsonl, 기록 Data\Alarm\history.jsonl (날짜·제목·내용·결과, 최신 1,000건 → 쿼리 기록 버튼), SMS: 미구현
+- 알람: 적재 시 앵커 매칭 → 매분 합산, nMinute 분 nCount 건 이상 발생·nDelay 분 억제 (발송 뒤 그 시간과 겹친 구간: 판정 안 함) → 발송 스레드 5개 메일 (SMTP)·훅 (botName·text·attachments), 실패: pending.json 재시도, 로그 data\alarm\log\yyyyMMdd.jsonl, 기록 data\alarm\history.jsonl (날짜·제목·내용·결과, 최신 1,000건 → 쿼리 기록 버튼), SMS: 미구현
 - 서치: 여러 머신 Client 에 Search 중계 → NDJSON 스트림, sToken 진행·중지
-- 덤프: 목록·Client 4MB 조각 수집 → `Dump\머신\*.zip`, zip 받기·삭제
+- 덤프: 목록·Client 4MB 조각 수집 → `dump\머신\*.zip`, zip 받기·삭제
 - 파일: 클라 폴더 트리·파일 다운 (CP949 줄 → UTF-8 변환, BOM 추가)
 - 관리 (ServerManager 이식): 존 (Manager:sZone, 없음: sZone) 게임 서버 XLO 모니터 동시 점검 (요청 제한 nTimeout·비밀번호 sCode: Manager.json) → 운영·로비/룸·AuthKey (패치 전 빨강·후 초록)·접속자·CDS, 미운영 접힘, 패치 시작 시각 (Redis), 오른쪽 동접 (최고 동접·최근 X일)·차트 (Chart.js CDN, 처음 볼 때 불러옴)·모니터 (서버 URL → iframe), X분 정각 동접 기록 타이머 (서버 목록·Redis 있을 때만)
 - 실행 (HMXServer 이식): Redis 서버 목록 (대분류·중분류·서버) 시작·정지·다운 지시 (값 앞 상태,False → 머신별 HMXClient 처리 후 True)·등록·편집·복제·삭제·이름 변경 (버전 검증)·작업 로그·에러 (상세: 반영 탭)
@@ -81,7 +81,7 @@
 - 기능: 서버 목록 트리 (대분류 = 중분류 첫 숫자 100 단위·중분류·서버)·요약 카드·상태 칩·머신·검색 필터·펼침 보관, 시작·정지·다운 (개별·그룹·대분류 순차: 시작 위 그룹부터·정지 아래 그룹부터, 그룹 모두 Running·Stopped → 다음, 실패: 중단), 커밋 불일치, 줄 메뉴·상세 패널, 등록·편집·복제·삭제·이름 변경, 버전 불일치 배너, 작업 로그·에러 팝업, TestOn·TestOff, 토스트·확인 팝업
 - 화면: HMX 공통 구조 (TabProcess.ProcessHTML class Process + Web.cs #ProcessPanel 마크업·CSS + IndexTail 연결·ShowPanel("process")), 폴링 1초 (반영 탭 보일 때만, 첫 로딩·순차 작업 중: 계속), 저장·삭제 뒤 반영 탭 데이터만 다시 읽기 (페이지 새로 고침 안 함), 연결 끊김: HMX 제목 줄 + 작업 버튼 잠금, 인증: HMX 공통 (401 → 로그인 페이지)
 - API: GET /api/process (목록 "필드\|값" 줄, 키 이름순)·?action=check (TestOn 표시)·version·set (등록·수정: version 검증·+1, 시작·정지·다운: 상태,False)·rename (일괄)·del·errlog (X개씩)·log (반영 로그 커서 조회)·actlog (클릭 기록), HMXServer /api/hmx 와 같은 응답, 페이지: 상대 주소 (ToolManager 경유)
-- 설정: 공통 Redis 연결 (Redis:sHost 등) + 키 앞 Redis:sProcess (서버 목록, 기본 HMX:Process:)·Redis:sError (에러 리스트, 기본 HMX:Error:), 실제 키 = 값 + sZone + ":" (예: HMX:Process:Dev:111_DEV,1_Center,Common·HMX:Error:Dev:, HMXClient 와 같게), bTest (TestOn·TestOff 표시), 설정 버전 Data\Server.txt (등록·수정·삭제·이름 변경 성공: +1, 화면 버전 다름: 버전 불일치 → 배너 후 다시 읽기)
+- 설정: 공통 Redis 연결 (Redis:sHost 등) + 키 앞 Redis:sProcess (서버 목록, 기본 HMX:Process:)·Redis:sError (에러 리스트, 기본 HMX:Error:), 실제 키 = 값 + sZone + ":" (예: HMX:Process:Dev:111_DEV,1_Center,Common·HMX:Error:Dev:, HMXClient 와 같게), bTest (TestOn·TestOff 표시), 설정 버전 data\Server.txt (등록·수정·삭제·이름 변경 성공: +1, 화면 버전 다름: 버전 불일치 → 배너 후 다시 읽기)
 - 로그: 공통 시간별 로그에 레벨 뒤 [v.버전] 표시 (예: [시각] [HMX_][INFO_] [v.4] 수정: …, 등록·수정·이름·삭제·액션·클릭·버전 불일치·오류, 끝: 아이디@IP), 로그 팝업: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만
 
 ## 설정 (Json 폴더: Server.json + 따로 관리 Query.json·Search.json·Alarm.json·Field.json·Manager.json)
@@ -154,7 +154,7 @@
 - IIS: web.config → HttpPlatformHandler v1.2 로 `Server.exe %HTTP_PLATFORM_PORT%`, 앱 풀 관리 코드 없음, stdout log\iis, 재빌드 전 앱 풀 중지
 - IIS 권한: IIS_IUSRS 에 Json 폴더 수정 권한 (하위 파일 포함, 상위 ReadMe.txt)
 - 서비스: AddWindowsService (기준 폴더 = exe 폴더), 빌드: PublishExe → bin\Release\net10.0 (web.config 포함, Json 폴더 보존)
-- 시작 시 예전 File 폴더 → Data 이름 변경, 종료 시 라이트 큐 처리 (멈춤 뒤 3초 상한, 넘는 Log 는 버림 → 받은 진행 관리 폴더는 클라 재전송으로 복구)·남은 색인 버퍼 (타이머가 쓰던 Flush: 끝까지 대기 → 색인 안 빠짐)·알람 펜딩 저장
+- 시작 시 예전 File 폴더 → data 이름 변경·대문자 폴더 (예전 Log·Data·Dump 등) → 소문자 (공통 FixDirCase), 종료 시 라이트 큐 처리 (멈춤 뒤 3초 상한, 넘는 Log 는 버림 → 받은 진행 관리 폴더는 클라 재전송으로 복구)·남은 색인 버퍼 (타이머가 쓰던 Flush: 끝까지 대기 → 색인 안 빠짐)·알람 펜딩 저장
 
 ## 연관
 - 상위: [HMX.md](../HMX.md) / 클라: [Client.md](../Client/Client.md) (TCP 프로토콜 상세) / 공통: [Common.md](../Common/Common.md)

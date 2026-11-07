@@ -153,6 +153,8 @@ class Main : BackgroundService	// 진입점 + 서비스: 공통·기능 연결 (
 			Log.Write(WARN_, $"설정 aField: 안 씀 (서버 Field.json aField → 접속 때 받음, {GetConfigFile()} 에서 지워도 됨)");
 		}
 
+		FixDirCase("log", "data/count");	// 프로그램 폴더 소문자 (예전 대문자: 이름만 바꿈, 받은 진행 읽기 전)
+
 		Create(sIP, nPort, arrLogFolder, Config.GetArray("aBlockQuery"), Config.GetArray("aBlockSearch"), Config.GetArray("aBlockFile"), Config.GetArray("aBlockDump"), arrLogType, nLogSend, nLogRead);	// 탭별 막는 경로 (없음: 막지 않음)
 
 		Service(args, new Main());	// 기능 (타이머·Execute 포함): 마스터 키 받은 뒤 (ExecuteAsync)

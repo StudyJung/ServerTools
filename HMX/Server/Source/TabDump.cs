@@ -1,4 +1,4 @@
-class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Server Dump 폴더 zip)·zip 받기·삭제 API (페이지 쪽: DumpHTML)
+class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Server dump 폴더 zip)·zip 받기·삭제 API (페이지 쪽: DumpHTML)
 {
 	private const int	m_nDumpResultMs		= 60000;	// 끝난 다운 결과 보관 (ms, 지남: 버리고 zip 유무로 판단, 조회 안 한 것도 정리)
 	private const int	m_nDownConcurrent	= 0;		// 동시 덤프 다운 전체 제한 (0: 없음 → 세션마다 1건씩 동시)
@@ -15,7 +15,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 		try	// 앞 실행에서 남은 받는 중 zip (서비스 중지·종료로 끝나지 못함) 정리
 		{
-			string	sDumpDir	= Path.Combine(GetBaseDir(), "Dump");
+			string	sDumpDir	= Path.Combine(GetBaseDir(), "dump");
 
 			if (Directory.Exists(sDumpDir))
 			{
@@ -34,7 +34,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 	public void MapRoute(WebApplication WebApp)	// 라우트 등록 (덤프 탭)
 	{
 		WebApp.MapPost("/api/dump", OnDump);					// 덤프 목록 (여러 머신 동시, 본문 JSON)
-		WebApp.MapPost("/api/dump/download", OnDumpDownload);	// 덤프 다운 (머신 1대 → Server Dump 폴더 zip, 본문 JSON)
+		WebApp.MapPost("/api/dump/download", OnDumpDownload);	// 덤프 다운 (머신 1대 → Server dump 폴더 zip, 본문 JSON)
 		WebApp.MapGet("/api/dump/zip", OnDumpZip);				// 다운한 덤프 zip 받기 (브라우저 로컬 저장)
 		WebApp.MapPost("/api/dump/delete", OnDumpDelete);		// 덤프 삭제 (머신 1대, 본문 JSON)
 	}
@@ -180,7 +180,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 			nSize			= kChunk.nSize;
 			kSave.m_nSize	= nSize;
 
-			Directory.CreateDirectory(Path.GetDirectoryName(sZip)!);	// Dump\머신 (없으면 생성)
+			Directory.CreateDirectory(Path.GetDirectoryName(sZip)!);	// dump\머신 (없으면 생성)
 
 			Log.Write(INFO_, $"덤프 다운 시작: {sMachine} {sPath} ({nSize:N0} bytes, {sAddr})");
 
@@ -226,7 +226,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 			{
 			}
 
-			DeleteEmptyDumpDir(sZip);	// 이번에 만든 Dump\머신 폴더가 비면 삭제
+			DeleteEmptyDumpDir(sZip);	// 이번에 만든 dump\머신 폴더가 비면 삭제
 		}
 
 		Log.Write(sError == "" ? INFO_ : WARN_, $"덤프 다운 {(sError == "" ? "완료" : "실패")}: {sMachine} {sPath} → {sZip} ({nOffset:N0}/{nSize:N0} bytes, {(long)Stopwatch.GetElapsedTime(nBegin).TotalMilliseconds}ms, {sAddr}){(sError == "" ? "" : $" ({sError})")}");
@@ -236,7 +236,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		kSave.m_bEnd		= true;	// 마지막에 (조회 쪽은 m_bEnd 를 본 뒤 오류·시각을 읽음), 해제는 다음 조회
 	}
 
-	private static IResult OnDumpZip(string? sMachine, string? sPath, HttpRequest kRequest)	// 다운한 덤프 zip 을 브라우저로 전송 (첨부 파일, Dump\머신\덤프 파일명.zip 만, 없음·다운 중: 404)
+	private static IResult OnDumpZip(string? sMachine, string? sPath, HttpRequest kRequest)	// 다운한 덤프 zip 을 브라우저로 전송 (첨부 파일, dump\머신\덤프 파일명.zip 만, 없음·다운 중: 404)
 	{
 		string	sZip	= GetDumpZip(sMachine ?? "", sPath ?? "");	// 다운한 zip (조건 오류: "")
 
@@ -250,7 +250,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		return Results.File(sZip, "application/zip", Path.GetFileName(sZip));
 	}
 
-	private static string GetDumpZip(string sMachine, string sPath)	// 덤프 저장 zip: 기준 폴더 하위 Dump\머신\덤프 파일명.zip (머신·경로 오류: "")
+	private static string GetDumpZip(string sMachine, string sPath)	// 덤프 저장 zip: 기준 폴더 하위 dump\머신\덤프 파일명.zip (머신·경로 오류: "")
 	{
 		string	sName	= Path.GetFileName(sPath);	// 덤프 파일명 (폴더 제외 → 기준 폴더 밖 경로 불가)
 
@@ -259,10 +259,10 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 			return "";
 		}
 
-		string	sDumpDir	= Path.GetFullPath(Path.Combine(GetBaseDir(), "Dump"));	// 덤프 저장 폴더
+		string	sDumpDir	= Path.GetFullPath(Path.Combine(GetBaseDir(), "dump"));	// 덤프 저장 폴더
 		string	sZip		= Path.GetFullPath(Path.Combine(sDumpDir, sMachine, Path.ChangeExtension(sName, ".zip")));	// 저장할 zip
 
-		return string.Equals(Path.GetDirectoryName(Path.GetDirectoryName(sZip)), sDumpDir, StringComparison.OrdinalIgnoreCase) ? sZip : "";	// Dump\머신\ 바로 아래만 (".. " 처럼 정리되면 밖이 되는 이름: 제외)
+		return string.Equals(Path.GetDirectoryName(Path.GetDirectoryName(sZip)), sDumpDir, StringComparison.OrdinalIgnoreCase) ? sZip : "";	// dump\머신\ 바로 아래만 (".. " 처럼 정리되면 밖이 되는 이름: 제외)
 	}
 
 	private static IResult MakeDumpSave(string sMachine, string sError, string sZip, DumpSave? kSave)	// 덤프 다운 응답 {sMachine, sError, sZip (전체 경로), bDone, bExist (이미 있음), nSize·nOffset (원본·받은 바이트), nZipSize} (kSave null: 다운 안 함)
@@ -278,7 +278,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		return Results.Json(new { sMachine, sError, sZip, bDone, bExist = bDone && kSave == null, nSize = kSave?.m_nSize ?? 0, nOffset = kSave?.m_nOffset ?? 0, nZipSize });
 	}
 
-	private async Task<IResult> OnDumpDelete(DumpParam kParam, HttpRequest kRequest)	// 덤프 삭제 (머신 1대): 클라에 DumpDelete → 성공: 다운 zip·빈 Dump\머신 폴더도 삭제 → {sMachine, sError, sZipError, kResult} (요청자 IP 로그)
+	private async Task<IResult> OnDumpDelete(DumpParam kParam, HttpRequest kRequest)	// 덤프 삭제 (머신 1대): 클라에 DumpDelete → 성공: 다운 zip·빈 dump\머신 폴더도 삭제 → {sMachine, sError, sZipError, kResult} (요청자 IP 로그)
 	{
 		string	sMachine	= kParam.sMachine ?? "";
 		string	sPath		= kParam.sPath ?? "";
@@ -293,7 +293,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		string	sZip		= GetDumpZip(sMachine, sPath);	// 다운 zip (조건 오류: "")
 		string	sZipError	= "";							// zip 삭제 오류 (없음·zip 없음: "")
 		bool	bZipDeleted	= false;						// zip 삭제함
-		bool	bDirDeleted	= false;						// 빈 Dump\머신 폴더 삭제함
+		bool	bDirDeleted	= false;						// 빈 dump\머신 폴더 삭제함
 
 		if (sError == "" && GetResultError(arrResult) == "" && sZip != "")	// 덤프 삭제 성공: 다운 zip·빈 폴더 삭제
 		{
@@ -319,9 +319,9 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		return Results.Stream((Stream kBody) => API.WriteResult(kBody, new { sMachine, sError, sZipError }, arrResult), "application/json; charset=utf-8");
 	}
 
-	private static bool DeleteEmptyDumpDir(string sZip)	// zip 이 있던 Dump\머신 폴더 안에 파일·폴더가 없으면 삭제 (반환: 삭제함, 남은 파일 있음·실패: false)
+	private static bool DeleteEmptyDumpDir(string sZip)	// zip 이 있던 dump\머신 폴더 안에 파일·폴더가 없으면 삭제 (반환: 삭제함, 남은 파일 있음·실패: false)
 	{
-		string?	sDir	= Path.GetDirectoryName(sZip);	// Dump\머신
+		string?	sDir	= Path.GetDirectoryName(sZip);	// dump\머신
 
 		try
 		{
@@ -639,7 +639,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		        Dump.SetDumpBusy(kDump, null);
 		    }
 
-		    static async CompressDump(kDump)	// 덤프 압축: Server 가 클라에서 받아 Dump\머신\덤프 파일명.zip 저장 (DUMP_POLL_MS 마다 진행 조회, 끝: 다운 버튼, 자동 받기 안 함)
+		    static async CompressDump(kDump)	// 덤프 압축: Server 가 클라에서 받아 dump\머신\덤프 파일명.zip 저장 (DUMP_POLL_MS 마다 진행 조회, 끝: 다운 버튼, 자동 받기 안 함)
 		    {
 		        const	nBegin	= performance.now();	// 압축 시작 (진행 초)
 
@@ -813,7 +813,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		        {
 		            const	sName	= kDump.sPath.slice(kDump.sPath.lastIndexOf("\\") + 1);	// 덤프 파일명
 
-		            AskDownload(sName.replace(/\.[^.]*$/, "") + ".zip", `Server Dump 폴더 zip · 원본 ${kDump.sMachine} : ${kDump.sPath} (${kDump.sTime} · ${Math.ceil(kDump.nSize / 1024).toLocaleString()} KB)`, () => Dump.DownloadDump(kDump));
+		            AskDownload(sName.replace(/\.[^.]*$/, "") + ".zip", `Server dump 폴더 zip · 원본 ${kDump.sMachine} : ${kDump.sPath} (${kDump.sTime} · ${Math.ceil(kDump.nSize / 1024).toLocaleString()} KB)`, () => Dump.DownloadDump(kDump));
 		        }
 		        else	// zip 없음: Server 에 압축만
 		        {

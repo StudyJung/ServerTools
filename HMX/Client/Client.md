@@ -20,13 +20,13 @@
 | On.bat / Off.bat | 콘솔 실행·종료 |
 | .gitignore | .vs·.user·bin·obj·log·Properties 제외 |
 | bin/, obj/ | 게시 출력 (bin\Release\net10.0\Client.exe)·빌드 중간 출력 |
-| (실행 시) Log/, Data\Count/ | 시간별 로그, 전송 진행 상태 |
+| (실행 시) log/, data\count/ | 시간별 로그, 전송 진행 상태 (예전 대문자 폴더: 시작 때 소문자로) |
 
 ## 코드 구성
 | 파일 | 클래스 | 역할 |
 |---|---|---|
 | Client.cs | Main (BackgroundService) | 진입점·서비스: 인자 (-install·-uninstall: 서비스 HMXClient 등록·제거, sc.exe, -start·-stop: 시작·정지), 설정 검증 (aLogFolder·sIP·nPort·nLogSend·nLogRead·sMachine), Create (설정 → 탭 공통·TCP·탭 Init·반영 탭 Init·날짜 폴더 삭제 Init), 반영 탭·날짜 폴더 삭제 시작 (따로) + 탭 순서 준비 (쿼리 → 서치 → 덤프 → 파일) 뒤 접속, 공통·기능 연결 (OnRequest: 서버 요청 → 탭, OnConnect·OnDisconnect·GetAliveLine·OnPause: TCP ↔ 쿼리, Post: 덤프 이벤트 → 전송 큐) |
-| ../Common | Global·Config·Log·AES·Count·Define | 공통 (전역 함수·설정·시간별 로그·AES 복호화·받은 진행 Data\Count\머신\폴더\Count.data, 상수·데이터 정의: SEARCH_STOP·SEARCH_OP·SearchLine·LogField·DumpFile·FileItem·ChunkResult·RelayException 등) |
+| ../Common | Global·Config·Log·AES·Count·Define | 공통 (전역 함수·설정·시간별 로그·AES 복호화·받은 진행 data\count\머신\폴더\Count.data, 상수·데이터 정의: SEARCH_STOP·SEARCH_OP·SearchLine·LogField·DumpFile·FileItem·ChunkResult·RelayException 등) |
 | Client.cs (Main 상수) | m_nDefaultPort·m_sPeerOff·m_sSelfError | 프로젝트별 값 (기본 Server TCP 포트 9091·오류 문구 Server Off·Client Error → 공통 Global) |
 | Timer.cs | Timer | 타이머·Alive 로그 |
 | TCPClient.cs | TCPClient·LineWriter·LineReader | Server TCP: 마스터 키 받기 (KeyLoop: 첫 접속부터 X초마다, 받을 때까지), 접속·재접속 (ConnectLoop), Hello 뒤 묶음 전송·얼라이브 (SendLoop), 수신 (ReadLoop), 줄 단위 송수신 (요청 줄 최대 1MB) |
