@@ -387,7 +387,7 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 	private static string[]?	m_arrMenu;			// 켜진 탭 (설정 aMenu 순서, 처음 GetMenu 때 정함)
 
 	private static TCPServer?		m_kListener;	// Client TCP 수신 (웹 사용 때만)
-	private static API?		m_kAPI;			// 공통 API
+	private static API?				m_kAPI;			// 공통 API
 	private static TabSearch?	m_kSearch;		// 서치 탭
 	private static TabDump?	m_kDump;		// 덤프 탭
 	private static TabFile?	m_kFile;		// 파일 탭
