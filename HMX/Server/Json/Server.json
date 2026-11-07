@@ -1,0 +1,34 @@
+{
+  "sTitle": "HMX",
+  "sZone": "Dev",
+  "aMenu": [ "쿼리", "서치", "파일", "덤프", "운영", "반영" ],
+
+  "bLog": true,
+  "bWeb": true,
+  "bAuth": true,
+  "bTest": false,
+
+  "sID": "nhn",
+  "sCode": "",
+
+  "nPort": 801,
+
+  "Redis": {
+    "sHost": "더미",
+    "nPort": 0,
+    "nDB": 0,
+    "sUser": "default",
+    "sManager": "HMX:Manager:",
+    "sProcess": "HMX:Process:",
+    "sError": "HMX:Error:"
+  },
+
+  "Mail": {
+    "sHost": "smtp.dooray.com",
+    "nPort": 587,
+    "bSsl": true,
+    "sFrom": "spteam_bot@nhn.com",
+    "sID": "spteam_bot@nhn.com",
+    "sCode": ""
+  }
+}
