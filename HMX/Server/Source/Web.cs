@@ -347,7 +347,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		.scroll::-webkit-scrollbar-button:single-button,.hscroll::-webkit-scrollbar-button:single-button{display:block;background:no-repeat}.scroll::-webkit-scrollbar-button:single-button:vertical{width:15px;height:13px;background-size:7px 5px}.scroll::-webkit-scrollbar-button:single-button:horizontal,.hscroll::-webkit-scrollbar-button:single-button:horizontal{width:13px;height:15px;background-size:5px 7px}
 		.scroll::-webkit-scrollbar-button:single-button:vertical:decrement{background-position:4px 4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 5'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M3.5 .5l3 4h-6z'/%3E%3C/svg%3E")}.scroll::-webkit-scrollbar-button:single-button:vertical:increment{background-position:4px 4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 5'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M.5 .5h6l-3 4z'/%3E%3C/svg%3E")}.scroll:has(>table)::-webkit-scrollbar-button:single-button:vertical:decrement{height:39px;border-top-right-radius:5px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 5'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M3.5 .5l3 4h-6z'/%3E%3C/svg%3E") 4px 30px/7px 5px no-repeat,linear-gradient(var(--bgColor-muted) 25px,var(--borderColor-default) 25px 26px,transparent 26px)}
 		.scroll::-webkit-scrollbar-button:single-button:horizontal:decrement,.hscroll::-webkit-scrollbar-button:single-button:horizontal:decrement{background-position:4px 4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 7'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M.5 3.5l4-3v6z'/%3E%3C/svg%3E")}.scroll::-webkit-scrollbar-button:single-button:horizontal:increment,.hscroll::-webkit-scrollbar-button:single-button:horizontal:increment{background-position:4px 4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 7'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M.5 .5l4 3-4 3z'/%3E%3C/svg%3E")}
-		.panel>.resulthead:first-child,#ViewPanel>.filter:first-child{margin:-16px -16px 8px;padding:8px 16px;border-bottom:1px solid var(--borderColor-default);border-radius:calc(var(--borderRadius-medium) - 1px) calc(var(--borderRadius-medium) - 1px) 0 0;background:var(--bgColor-muted)}.resulthead .toolright button,#ViewPanel>.filter .toolright button{height:28px;padding:0 8px;gap:4px;font-size:0.75rem}.filter .toolright.row{flex:0 0 100%;justify-content:flex-end}
+		.panel>.resulthead:first-child,#ViewPanel>.filter:first-child{margin:-16px -16px 8px;padding:8px 16px;border-bottom:1px solid var(--borderColor-default);border-radius:calc(var(--borderRadius-medium) - 1px) calc(var(--borderRadius-medium) - 1px) 0 0;background:var(--bgColor-muted)}.resulthead .toolright button,#ViewPanel>.filter .toolright button{height:28px;padding:0 8px;gap:4px;font-size:0.75rem}.filter .toolright.row{flex:0 0 100%;justify-content:flex-end}.filter{position:relative}.filter .toolright.fix{position:absolute;top:0;right:0;margin:0}
 		.splitter{display:flex;align-items:center;height:14px;cursor:ns-resize;touch-action:none}.splitter::before{content:"";flex:1;height:4px;border-radius:2px;background:var(--borderColor-default)}.splitter:hover::before,.splitter.drag::before{background:var(--split)}.splitter+.panel{margin-top:0}
 		body[data-mode="view"] #FilterPanel,body[data-mode="view"] #FilterSplitter,body[data-mode="view"] #ResultPanel,body[data-mode="view"] #Splitter{display:none}body[data-mode="view"] #ViewPanel{margin-top:0}body[data-mode="view"] #ViewScroll{height:calc(100vh - 161px)}
 		table{border-collapse:collapse;width:100%;font-size:0.75rem}.scroll>table{border-style:hidden hidden none hidden}.scroll>table th{border-bottom-style:hidden}th,td{border:1px solid var(--borderColor-default);padding:4px 8px;text-align:left;vertical-align:top}th{position:sticky;top:0;z-index:1;background:var(--bgColor-muted);box-shadow:inset 0 -1px 0 var(--borderColor-default);color:var(--fgColor-muted);font-weight:600}
@@ -1131,6 +1131,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const kStopButton	        = document.getElementById("StopButton");	// 검색 중지 버튼
 		const kFilterTool	        = document.getElementById("FilterTool");	// 기능 버튼 묶음 (타이머 ~ 설정: 1줄 오른쪽 끝, 창 좁음: 2줄 실행·중단 오른쪽, PlaceToolButtons)
 		const kSearchBox	        = document.getElementById("SearchBox");		// 2줄: 입력칸·실행·중단 (기능 버튼 내려오는 곳)
+		const TOOL_GAP		        = 6;		// 기능 버튼이 1줄에 남는 최소 간격 (px, E "미만" 과 타이머 사이, 이보다 좁아지면 내려감)
 		const kProgress		        = document.getElementById("SearchProgress");	// 검색 진행 표시
 		const kResultPanel	        = document.getElementById("ResultPanel");	// 서치 1번 창: 검색 결과
 		const kResultTitle	        = document.getElementById("ResultTitle");
@@ -1293,22 +1294,28 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    return await kResponse.json();
 		}
 
-		function PlaceToolButtons()	// 기능 버튼 자리 (창 크기·탭 바뀔 때): 1줄 오른쪽 끝 → 못 들어가면 입력칸 줄 실행·중단 오른쪽 → 그래서 입력칸이 E 줄 (종료일 미만) 보다 좁아지면 기능 버튼만 한 줄 (입력칸 위, 오른쪽 끝)
+		function PlaceToolButtons()	// 기능 버튼 자리 (창 크기·탭 바뀔 때): 1줄 오른쪽 끝 (E "미만" 과 TOOL_GAP px 만 남아도 둠, 흐름 밖 고정) → 못 들어가면 입력칸 줄 실행·중단 오른쪽 → 그래서 입력칸이 E 줄 (종료일 미만) 보다 좁아지면 기능 버튼만 한 줄 (입력칸 위, 오른쪽 끝)
 		{
 		    if (kFilterPanel.hidden)
 		    {
 		        return;
 		    }
 
-		    kFilterTool.classList.remove("row");
+		    const kEndLabel = kEnd.parentElement;	// E 줄 (날짜·시·분·초·미만)
 
-		    if (kFilterTool.parentElement === kSearchBox)	// 입력칸 줄에 있음: 1줄로 되돌려 잼
+		    kFilterTool.classList.remove("row", "fix");
+		    kFilterTool.style.height = "";
+
+		    if (kFilterTool.parentElement === kSearchBox)	// 입력칸 줄에 있음: 1줄 흐름 자리로 되돌려 잼
 		    {
 		        kSearchBox.before(kFilterTool);
 		    }
 
-		    if (kFilterTool.offsetTop <= kQueryRange.offsetTop)	// 1줄에 들어감
+		    if (kEndLabel.offsetTop <= kQueryRange.offsetTop + 1 && kEndLabel.getBoundingClientRect().right + TOOL_GAP + kFilterTool.offsetWidth <= kSearchBox.parentElement.getBoundingClientRect().right)	// E 가 1줄에 있고 그 오른쪽에 기능 버튼 들어감
 		    {
+		        kFilterTool.classList.add("fix");	// 1줄 오른쪽 끝 고정 (flex 줄바꿈 간격보다 가깝게 허용)
+		        kFilterTool.style.height = `${kEndLabel.offsetHeight}px`;	// 1줄 높이 → 버튼 세로 가운데
+
 		        return;
 		    }
 
