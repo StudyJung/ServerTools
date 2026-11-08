@@ -7,7 +7,7 @@
 ## 폴더 이름: 소문자 (기준 폴더 하위 log·data\count, 예전 대문자 Log·Data·Count: 시작 때 소문자로 이름만 바꿈, 공통 Global.FixDirCase, 서버 Source.md 공통 가이드 폴더)
 ## 설정 파일: 기준 폴더 하위 Json\Client.json (서비스: exe 폴더, 예전 위치 기준 폴더에만 있음: 그 파일 + 경고), Config.GetString("sIP")·GetInt("nPort") 등 (키 없음: 기본값)
    ### bLog : 로그 파일 기록 (false·없음: 콘솔만)
-   ### sLog : 남길 로그 레벨 (공통 Log, 서버와 같음: Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: WARN_ 이상 (DEBUG·INFO_·NOTI_ 안 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 틀린 값: Debug)
+   ### sLog : 남길 로그 레벨 (공통 Log, 서버와 같음: Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: NOTI_ 이상 (DEBUG·INFO_ 안 남김, NOTI_ 알림은 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 틀린 값: Debug)
    ### sIP   : Server 아이피 (호스트명 가능)
    ### nPort : Server TCP 포트 (Server.json 의 nPort)
    ### sMachine : 서버에 보낼 머신 이름 (없음: 컴퓨터 이름, 한 PC 여러 클라: 클라마다 다르게 → 서버 머신별 관리 목록·받은 진행 안 겹침)

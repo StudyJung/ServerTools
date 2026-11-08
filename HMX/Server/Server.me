@@ -88,7 +88,7 @@
 | 키 | 설명 |
 |---|---|
 | bLog / bWeb / bAuth | 파일 로그 / 웹 서버 사용 / 웹 로그인 사용 |
-| sLog | 남길 로그 레벨 (Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: WARN_ 이상 (DEBUG·INFO_·NOTI_ 안 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 틀린 값: 시작 오류) |
+| sLog | 남길 로그 레벨 (Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: NOTI_ 이상 (DEBUG·INFO_ 안 남김, NOTI_ 알림은 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 틀린 값: 시작 오류) |
 | bHttps | IIS HTTPS 운영 (IIS 실행만, https 바인딩만): 로그인 쿠키 Secure·HSTS 헤더 (1년)·알람 링크 https (기본 포트 443 생략) |
 | bTest | 반영 탭 TestOn·TestOff 표시 (모든 서버 바로 On,True·Off,True,0, HMXClient 안 거침, 테스트용) |
 | sID / sCode | 관리 계정 `****` / 암호화 비밀번호 `****` (복호화 → sPass, 모든 메뉴·계정 수정 비밀번호) |

@@ -67,12 +67,12 @@ static class Log	// 로그: log/YYYYMMDD/프로젝트명_YYYYMMDD_HH.log 시간�
 		}
 	}
 
-	private static bool IsLevel(string sLevel)	// 남길 레벨 (설정 sLog: Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: WARN_ 이상 (DEBUG·INFO_·NOTI_ 안 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 설정 로딩 전: 모두)
+	private static bool IsLevel(string sLevel)	// 남길 레벨 (설정 sLog: Debug: 모두, Info: INFO_ 이상 (DEBUG 안 남김), Warn: NOTI_ 이상 (DEBUG·INFO_ 안 남김, NOTI_ 알림은 남김), ERROR·FATAL: 늘 남김, 콘솔·파일 같이, 대소문자 무시, 없음: Debug, 설정 다시 읽기: 바로 반영, 설정 로딩 전: 모두)
 	{
 		int	nMin	= Config.GetString("sLog").Trim().ToLowerInvariant() switch	// 남길 최소 레벨 순서
 		{
 			"info"	=> Array.IndexOf(m_arrLevel, INFO_),
-			"warn"	=> Array.IndexOf(m_arrLevel, WARN_),
+			"warn"	=> Array.IndexOf(m_arrLevel, NOTI_),	// 알림 (NOTI_) 은 남김
 			_		=> 0,
 		};
 		int	nLevel	= Array.IndexOf(m_arrLevel, sLevel);	// 이 줄 레벨 순서 (모름: -1 → 남김)
