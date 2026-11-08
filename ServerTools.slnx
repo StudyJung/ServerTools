@@ -13,6 +13,9 @@
     <File Path="../AI/mysql_config.json" />
     <File Path="../AI/README.md" />
   </Folder>
+  <Folder Name="/HDC/">
+    <Project Path="HDC/HDC.csproj" />
+  </Folder>
   <Folder Name="/HMX/">
     <File Path="HMX/.gitignore" />
     <File Path="HMX/HMX.md" />
