@@ -51,6 +51,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	setSortError	= new Set();	// 소트 결과 JSON 틀린 줄 (연한 빨강)
 		    static	mapSortMark		= new Map();	// 소트 결과 틀린 곳 (줄 → [[시작, 끝]] 글자 자리, 노랑: 디프 줄 안 다른 부분과 같은 색)
 		    static	kSortFile	= null;	// 소트 좌 창 연 파일 { kHandle (덮어쓰기, 없음: null), sName, bBom, sEol } (없음·다 지움: null)
+		    static	nSortObjMax		= 0;	// 소트 결과 가장 깊은 { 뎁스 (우 뎁스 끝)
+		    static	nSortDepth		= 0;	// 소트 우 뎁스 (0: 기본 형식, X: 최하위 뎁스부터 X 단계 { } 한 줄, F5 리셋: 0)
 		    static	kSortRightFile	= null;	// 소트 우 창 저장한 파일 { kHandle, sName } (다음 저장: 덮어씀, 좌 새 입력·파일 열기·네비게이션·비움: null)
 		    static	sSortName	= "";	// 소트 좌 창 파일 이름 (제목, 없음·다 지움: "")
 		    static	DAY_NAME	= ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];	// 타임 결과 요일 (영어 세 글자)
@@ -2327,7 +2329,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        return setError;
 		    }
 
-		    static FormatJson(sText)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]) } (2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만, 쉼표 없이 붙은 값: 한 칸 띄움)
+		    static FormatJson(sText, nInline = 0)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]), nObjMax (가장 깊은 { 뎁스) } (nInline: 우 뎁스 X → 최하위 뎁스부터 X 단계 { } 한 줄 { "키": 값, … } (뎁스: 위에서 { 수, 최상위 1, 배열: 안 셈, 가장 깊은 뎁스 D → D - X + 1 이상 { 한 줄, 주석 듦: 안 함), 2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만, 쉼표 없이 붙은 값: 한 칸 띄움)
 		    {
 		        const	arrToken	= Util.JsonTokens(sText);
 		        const	arrClose	= new Array(arrToken.length).fill(-1);	// 여는 괄호 → 짝 닫는 괄호 토큰 위치
@@ -2339,9 +2341,18 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        let		nDepth		= 0;
 		        const		arrAt		= new Array(arrToken.length).fill(0);	// 토큰 → 결과 줄 (틀린 줄 표시)
 		        const		arrCol		= new Array(arrToken.length).fill(-1);	// 토큰 → 결과 줄 안 자리 (틀린 곳 노랑, -1: 없음)
+		        const		arrDepth	= new Array(arrToken.length).fill(0);	// 여는 { → 뎁스 (위에서 { 수, 최상위 1, 배열: 안 셈, 주석 듦: 0 → 뎁스 한 줄 안 함)
+		        let			nObjMax		= 0;	// 가장 깊은 { 뎁스 (뎁스 끝: 다 한 줄)
 
 		        arrToken.forEach((kToken, nIndex) =>
 		        {
+		            if (kToken.sType === "comment")	// 주석 든 { (바깥 모두): 뎁스 한 줄 안 함
+		            {
+		                arrOpen.forEach((nOpen) => { arrDepth[nOpen] = -1; });
+
+		                return;
+		            }
+
 		            if (kToken.sType !== "punct")
 		            {
 		                return;
@@ -2349,6 +2360,12 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		            if (kToken.sText === "{" || kToken.sText === "[")
 		            {
+		                if (kToken.sText === "{")
+		                {
+		                    arrDepth[nIndex]	= arrOpen.filter((nOpen) => arrToken[nOpen].sText === "{").length + 1;
+		                    nObjMax				= Math.max(nObjMax, arrDepth[nIndex]);
+		                }
+
 		                arrOpen.push(nIndex);
 		            }
 		            else if ((kToken.sText === "}" || kToken.sText === "]") && arrOpen.length > 0)
@@ -2423,6 +2440,36 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                    funcCol(nIndex);
 		                    arrCol[nClose] = sLine.length + 1;
 		                    sLine += sToken + arrToken[nClose].sText;
+		                    nIndex = nClose;
+
+		                    continue;
+		                }
+
+		                if (sToken === "{" && nClose > 0 && nInline > 0 && arrDepth[nIndex] > 0 && arrDepth[nIndex] >= nObjMax - nInline + 1)	// 뎁스 X: 최하위 뎁스부터 X 단계 { 한 줄 { "키": 값, … } (안쪽 { 같이)
+		                {
+		                    funcAt(nIndex, nClose);
+		                    funcGap();
+
+		                    for (let nItem = nIndex; nItem <= nClose; ++nItem)
+		                    {
+		                        const	sText	= arrToken[nItem].sText;
+		                        const	bOpen	= sText === "{" || sText === "[";
+		                        const	bClose	= sText === "}" || sText === "]";
+
+		                        if (bClose || sText === "," || sText === ":")	// 앞 글에 붙임 (닫는 괄호: 한 칸 뒤, 빈 {}·[]: 붙임)
+		                        {
+		                            sLine = sLine.trimEnd();
+		                            sLine += bClose && !/[\[{]$/.test(sLine) ? " " : "";
+		                        }
+		                        else if (!funcStart() && !/[\s\[{]$/.test(sLine))	// 쉼표 없이 붙음 (틀린 JSON): 한 칸
+		                        {
+		                            sLine += " ";
+		                        }
+
+		                        arrCol[nItem] = sLine.length;
+		                        sLine += sText + (sText === "," || sText === ":" || (bOpen && arrToken[nItem + 1]?.sText !== (sText === "{" ? "}" : "]")) ? " " : "");
+		                    }
+
 		                    nIndex = nClose;
 
 		                    continue;
@@ -2540,7 +2587,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            }
 		        }
 
-		        return { arrLine, mapFold, sCount: Util.JsonCount(arrToken, arrLine.length), setError: new Set([...setIndex].map((nIndex) => arrAt[nIndex])), mapMark };	// setError: 틀린 줄, mapMark: 틀린 곳
+		        return { arrLine, mapFold, sCount: Util.JsonCount(arrToken, arrLine.length), setError: new Set([...setIndex].map((nIndex) => arrAt[nIndex])), mapMark, nObjMax };	// setError: 틀린 줄, mapMark: 틀린 곳, nObjMax: 가장 깊은 뎁스 (뎁스 끝)
 		    }
 
 		    static RenderSortLines()	// 소트 좌 창: 줄 번호 (줄 수 바뀜만 다시) + 제목 (요소별 개수 요약)
@@ -2569,10 +2616,19 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilSortLeftLn").scrollTop = document.getElementById("UtilSortLeftText").scrollTop;
 		    }
 
-		    static RunSort(bRun = true)	// 소트 실행: 좌 창 JSON → 우 창 비주얼 스튜디오 기본 형식 (접기 다시: 모두 펼침, 빈 입력·bRun false (네비게이션 실행 전 글): 우 창 비움)
+		    static RunSort(bRun = true)	// 소트 실행: 좌 창 JSON → 우 창 비주얼 스튜디오 기본 형식 (우 뎁스 X: 최하위 뎁스부터 X 단계 { } 한 줄, 가장 깊은 뎁스보다 큼: 그 끝으로, 접기 다시: 모두 펼침, 빈 입력·bRun false (네비게이션 실행 전 글): 우 창 비움)
 		    {
 		        const	sText	= document.getElementById("UtilSortLeftText").value;
-		        const	kResult	= !bRun || sText.trim() === "" ? { arrLine: [], mapFold: new Map(), sCount: Util.JsonCount([], 0), setError: new Set() } : Util.FormatJson(sText);
+		        const	kResult	= !bRun || sText.trim() === "" ? { arrLine: [], mapFold: new Map(), sCount: Util.JsonCount([], 0), setError: new Set(), nObjMax: 0 } : Util.FormatJson(sText, Util.nSortDepth);
+
+		        Util.nSortObjMax = kResult.nObjMax ?? 0;
+
+		        if (kResult.arrLine.length > 0 && Util.nSortDepth > Util.nSortObjMax)	// 가장 깊은 뎁스보다 큼: 그 끝
+		        {
+		            Util.nSortDepth = Util.nSortObjMax;
+		        }
+
+		        Util.ShowSortDepth();
 
 		        Util.arrSortLine	= kResult.arrLine;
 		        Util.mapSortFold	= kResult.mapFold;
@@ -2659,6 +2715,34 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 
 		        kText.append(sLine.slice(nPos));
+		    }
+
+		    static GoSortDepth(nStep)	// 소트 우 뎁스 ← (-1: 한 단계 풂)·→ (+1: 최하위 뎁스부터 한 단계 더 한 줄)·가운데 숫자 (그 뎁스까지): 0 ~ 가장 깊은 뎁스 (끝: 무시) → 펼쳤음: 바로 다시 펼침 (접기: 모두 펼침)
+		    {
+		        const	nNext	= Math.min(Util.nSortObjMax, Math.max(0, Util.nSortDepth + nStep));
+
+		        if (nNext === Util.nSortDepth)
+		        {
+		            return;
+		        }
+
+		        Util.nSortDepth = nNext;
+
+		        if (Util.bSortRun)
+		        {
+		            Util.RunSort();
+		        }
+		        else
+		        {
+		            Util.ShowSortDepth();
+		        }
+		    }
+
+		    static ShowSortDepth()	// 소트 우 뎁스 ↶ N ↷: 가운데 지금 뎁스, ← 0 에서 꺼짐, → 가장 깊은 뎁스에서 꺼짐 (펼친 글 없음: 둘 다 꺼짐)
+		    {
+		        document.getElementById("UtilSortDepth").textContent	= String(Util.nSortDepth);
+		        document.getElementById("UtilSortDepthPrev").disabled		= Util.nSortDepth <= 0;
+		        document.getElementById("UtilSortDepthNext").disabled		= Util.nSortDepth >= Util.nSortObjMax;
 		    }
 
 		    static RenderSortTitle()	// 소트 우 창 제목: 대상 · 줄 수 + 요소별 개수 + 저장한 파일 이름, 우 저장: 펼친 글 있음
@@ -3031,9 +3115,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static ClearSort()	// 소트 좌·우 창 비움 (F5 리셋, 파일 연결 끊음, 우 스왑: 0)
+		    static ClearSort()	// 소트 좌·우 창 비움 (F5 리셋, 파일 연결 끊음, 우 뎁스: 0)
 		    {
-		        SetSwap(document.getElementById("UtilSortRightSwap"), 0);
+		        Util.nSortDepth = 0;
 
 		        Util.kSortFile	= null;
 		        Util.sSortName	= "";
@@ -3068,7 +3152,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            sLeft: Util.GetDiffText("Left"), sRight: Util.GetDiffText("Right"), sLeftName: Util.mapDiffName.Left, sRightName: Util.mapDiffName.Right,
 		            bDiff: Util.sDiffState !== "", nBlock: Util.nDiffBlock, nLeftTop: kLeft.scrollTop, nRightTop: kRight.scrollTop,
 		            arrDiffBack: Util.arrDiffBack.map(({ kLeftFile, kRightFile, ...kItem }) => kItem), nDiffPos: Util.nDiffPos, sWidth: Util.kDiffSplit.style.getPropertyValue("--splitWidth"),
-		            sSortText: document.getElementById("UtilSortLeftText").value, sSortName: Util.sSortName, bSort: Util.arrSortLine.length > 0, arrSortFold: [...Util.setSortFold], arrSortBack: Util.arrSortBack.map(({ kFile, ...kItem }) => kItem), nSortPos: Util.nSortPos,
+		            sSortText: document.getElementById("UtilSortLeftText").value, sSortName: Util.sSortName, nSortDepth: Util.nSortDepth, bSort: Util.arrSortLine.length > 0, arrSortFold: [...Util.setSortFold], arrSortBack: Util.arrSortBack.map(({ kFile, ...kItem }) => kItem), nSortPos: Util.nSortPos,
 		            sSortWidth: document.getElementById("UtilSortSplit").style.getPropertyValue("--splitWidth"), nSortLeftTop: document.getElementById("UtilSortLeftText").scrollTop, nSortRightTop: document.getElementById("UtilSortRightBody").scrollTop,
 		        };
 		    }
@@ -3131,6 +3215,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.RenderSortLines();
 		        Util.ShowSortBack();
 		        Util.FitSortHeight();
+
+		        Util.nSortDepth = kSnap.nSortDepth ?? 0;	// 우 뎁스 (접은 곳 줄 번호: 같은 뎁스)
 
 		        if (kSnap.bSort)
 		        {
@@ -3316,7 +3402,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilSortLeftOpen").addEventListener("click", Util.OpenSortFile);	// 좌 찾기: 파일 열기
 		        document.getElementById("UtilSortLeftSave").addEventListener("click", Util.SaveSortFile);	// 좌 저장: 입력 글
 		        document.getElementById("UtilSortRightSave").addEventListener("click", Util.SaveSortRight);	// 우 저장: 펼친 글
-		        InitSwap(document.getElementById("UtilSortRightSwap"));	// 우 스왑: 처음 0, 누를 때마다 +1 (공통 스왑 버튼)
+		        document.getElementById("UtilSortDepthPrev").addEventListener("click", () => Util.GoSortDepth(-1));	// 우 뎁스 ←: 한 단계 풂
+		        document.getElementById("UtilSortDepthNext").addEventListener("click", () => Util.GoSortDepth(1));	// 우 뎁스 →: 최하위 뎁스부터 한 단계 더 한 줄
+		        document.getElementById("UtilSortDepth").addEventListener("click", (kEvent) => EditDepth(kEvent.currentTarget, Util.nSortObjMax + 1, Util.nSortDepth, (nStep) => Util.GoSortDepth(nStep)));	// 가운데 숫자: 입력 → 그 뎁스
 		        document.getElementById("UtilSortLeftFile").addEventListener("change", (kEvent) =>	// 파일 칸 (http 주소)
 		        {
 		            if (kEvent.currentTarget.files?.[0] != null)
