@@ -6104,7 +6104,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        kLensUp.disabled		= Query.bLensLoading || (Query.nLens <= 0 && Query.GetLensBase() >= Query.LENS_WIDE.length - 1 && Query.GetLensStep(-1) < 0);	// 스텝 0: 넓힐 기간·넓혀 둔 단계 있음 (월봉: 끝)
 		        kLensDown.disabled		= Query.bLensLoading || (Query.nLens >= Query.GetLensMax() && Query.GetLensStep(1) < 0);		// 끝 단위: 넓히기 전 단계 있음
 		        kLensStep.textContent	= String((Query.arrHistory[Query.nHistory]?.nLensBase ?? 0) - Query.nLens);	// 렌즈 숫자 = 넓힌 깊이 (↑ 넓힘마다 +1) - 스텝 (↓ 마다 -1)
-		        kLensStep.title			= `${Query.LENS_NAME[Query.nBarUnit]}봉`;
+		        kLensStep.title			= "렌즈";
 		    }
 
 		    static async MoveLens(nDirection)	// 렌즈 ↑ (-1)·↓ (1): 막대 한 단위 크게·작게 (스텝 0 ~ 초봉, 스텝 0: 넓힌 단계 오감 (스냅샷) → 없으면 ↑ 기간 넓혀 쿼리, 기본 단위보다 작은 초·분봉: 건수 서버에서, 쿼리 중·가져오는 중: 안 함)

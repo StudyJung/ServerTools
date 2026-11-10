@@ -587,7 +587,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		<div id="QueryChart" hidden><div class="chartlens" id="QueryLens">
 		<button type="button" id="LensUp" title="큰 단위" aria-label="렌즈 위" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path transform="rotate(90 8 8)" d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button>
-		<span id="LensStep" title="일봉">0</span>
+		<span id="LensStep" title="렌즈">0</span>
 		<button type="button" id="LensDown" title="작은 단위" aria-label="렌즈 아래" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path transform="rotate(-90 8 8)" d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button>
 		</div></div>
 		<div class="progress" id="QueryProgress" hidden></div>
