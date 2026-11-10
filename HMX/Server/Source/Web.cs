@@ -902,7 +902,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<label for="AccountEditPhone" class="editrow">전화</label><input type="text" id="AccountEditPhone" class="editrow" maxlength="20" autocomplete="off" spellcheck="false" inputmode="tel">
 		<label class="editrow">메뉴</label><span class="editrow" id="AccountEditMenu"></span>
 		<label class="editrow">외부</label><span class="editrow" id="AccountEditApi"></span>
-		<label class="keyrow">키</label><span class="keyrow keybox"><span id="AccountEditKey"></span><button type="button" id="AccountEditKeyNew" title="키 생성">새 키</button></span>
+		<label class="keyrow">키</label><span class="keyrow keybox"><span id="AccountEditKey"></span><button type="button" id="AccountEditKeyNew" title="키 생성(적용 필수)">새 키</button></span>
 		<label class="keyrow">토큰</label><span class="keyrow" id="AccountEditToken"></span>
 		<label for="AccountEditAdmin">관리 비번</label><span class="adminbox"><input type="password" id="AccountEditAdmin" maxlength="100" autocomplete="new-password"><button type="button" id="AccountEditKeyApply" class="keyrow" title="키 적용" disabled>적용</button></span>
 		</div>
