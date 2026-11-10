@@ -23,8 +23,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	DIFF_HISTORY_MAX	= 100;	// 비교 중 고침 기억 (Ctrl+Z·Y 줄 색, 넘음: 가장 오래된 것 버림)
 		    static	DIFF_HISTORY_LINE	= 500000;	// 비교 중 고침 기억 줄 정보 합 최대 (큰 글: 기억 줄임, 메모리)
 		    static	DIFF_BACK_MAX	= 10;	// 디프 네비게이션 기억 (실행한 좌·우 입력, 넘음: 가장 오래된 것 버림)
-		    static	arrDiffBack		= [];	// 디프 실행 기억 [{ sLeft, sRight, sLeftName, sRightName }] (브라우저 메모리만)
+		    static	arrDiffBack		= [];	// 디프 네비게이션 기억 [{ sLeft, sRight, sLeftName, sRightName }] (새 입력마다 1개: 그 입력 마지막 실행 글, 브라우저 메모리만)
 		    static	nDiffPos		= -1;	// 디프 네비게이션 지금 위치 (없음: -1)
+		    static	bDiffNew		= false;	// 디프 새 입력 (좌·우 리셋 (다 지움·F5) 뒤 입력·파일 열기): 다음 실행에 네비게이션 새 기억 (그 외 실행: 지금 기억 글만 바꿈)
 		    static	arrDiffBlock	= [];	// 디프 차이 [[줄 맞춤 보기 줄 번호, …]] (줄 비교 이어진 바뀜 묶음, DataCompare 와 같음)
 		    static	nDiffBlock		= -1;	// 지금 차이 (없음: -1)
 		    static	bDiffView		= false;	// 비교 중 (편집 칸 그대로 + 빈 줄·색 덧입힘, 끔: 기본 편집 칸)
@@ -34,8 +35,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	nDragIndex	= -1;	// 2번 창 끄는 줄 (arrTime 번호, 없음: -1)
 		    static	sDateLast	= "";	// KST 날짜 마지막 맞는 값 (범위 밖: 되돌림)
 		    static	SORT_BACK_MAX	= 10;	// 소트 네비게이션 기억 (실행한 입력, 넘음: 가장 오래된 것 버림)
-		    static	arrSortBack	= [];	// 소트 실행 기억 [입력 글] (브라우저 메모리만)
+		    static	arrSortBack	= [];	// 소트 네비게이션 기억 [입력 글] (새 입력마다 1개: 그 입력 마지막 실행 글, 브라우저 메모리만)
 		    static	nSortPos	= -1;	// 소트 네비게이션 지금 위치 (없음: -1)
+		    static	bSortNew	= false;	// 소트 새 입력 (리셋 (다 지움·F5) 뒤 입력·파일 열기): 다음 실행에 네비게이션 새 기억 (그 외 실행: 지금 기억 글만 바꿈)
 		    static	arrSortLine	= [];	// 소트 결과 줄 (비주얼 스튜디오 기본 형식)
 		    static	mapSortFold	= new Map();	// 접을 수 있는 줄 (여는 줄 → 닫는 줄)
 		    static	setSortFold	= new Set();	// 접은 여는 줄
@@ -704,29 +706,51 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        return arrRow;
 		    }
 
-		    static OnDiffRun()	// 디프 실행 버튼 (저장 뒤도): 지금 좌·우 입력 기억 (지금 위치와 같음: 안 넣음, 과거에서 실행: 그 뒤 기억 버림, 넘음: 가장 오래된 것 버림) → 다시 비교 (고친 줄 초록 지움, 보기에서 고친 뒤: 보던 자리 차이로)
+		    static OnDiffRun()	// 디프 실행 버튼 (저장 뒤도): 네비게이션 기억 (새 입력 (좌·우 리셋 뒤 입력·파일 열기)·처음: 새 기억 (지금 기억과 같은 글: 안 넣음, 과거에서: 그 뒤 기억 버림, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 좌·우 다 비움: 기억 안 함) → 비교 (보던 자리)
 		    {
 		        const	kState	= { sLeft: Util.GetDiffText("Left"), sRight: Util.GetDiffText("Right"), sLeftName: Util.mapDiffName.Left, sRightName: Util.mapDiffName.Right };
 		        const	kNow	= Util.arrDiffBack[Util.nDiffPos];
-		        const	nTop	= Util.bDiffView ? document.getElementById("UtilDiffLeftText").scrollTop : -1;	// 보던 자리 (비교 안 함: -1)
 
-		        if (kNow == null || kNow.sLeft !== kState.sLeft || kNow.sRight !== kState.sRight)
+		        if (kState.sLeft !== "" || kState.sRight !== "")
 		        {
-		            Util.arrDiffBack.length = Util.nDiffPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
-		            Util.arrDiffBack.push(kState);
-
-		            if (Util.arrDiffBack.length > Util.DIFF_BACK_MAX)
+		            if (kNow == null || (Util.bDiffNew && (kNow.sLeft !== kState.sLeft || kNow.sRight !== kState.sRight)))	// 새 기억
 		            {
-		                Util.arrDiffBack.shift();
+		                Util.arrDiffBack.length = Util.nDiffPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
+		                Util.arrDiffBack.push(kState);
+
+		                if (Util.arrDiffBack.length > Util.DIFF_BACK_MAX)
+		                {
+		                    Util.arrDiffBack.shift();
+		                }
+
+		                Util.nDiffPos = Util.arrDiffBack.length - 1;
+		            }
+		            else	// 같은 입력 고침·실행: 지금 기억 글만
+		            {
+		                Util.arrDiffBack[Util.nDiffPos] = kState;
 		            }
 
-		            Util.nDiffPos = Util.arrDiffBack.length - 1;
+		            Util.bDiffNew = false;
 		        }
 
 		        Util.ShowDiffBack();
+		        Util.RunDiffKeep();
+		    }
+
+		    static RunDiffKeep()	// 다시 비교 + 보던 자리 차이로 (그 아래 첫 차이, 없음: 끝 차이, 차이 없음: 보던 자리) + 고치던 창 커서 그 줄 그대로 (실행·저장·Ctrl+Z·Y 색 기억 없음)
+		    {
+		        const	nTop	= Util.bDiffView ? document.getElementById("UtilDiffLeftText").scrollTop : -1;	// 보던 자리 (비교 안 함: -1)
+		        const	sFocus	= ["Left", "Right"].find((sSide) => document.activeElement === document.getElementById(`UtilDiff${sSide}Text`));	// 고치던 창 (없음: undefined)
+		        const	kCaret	= sFocus == null ? null : Util.GetCaret(sFocus);
+
 		        Util.RunDiff();
 
-		        if (nTop >= 0 && Util.bDiffView)	// 보던 자리 차이로 (그 아래 첫 차이, 없음: 끝 차이, 차이 없음: 보던 자리)
+		        if (kCaret != null)	// 회색 빈 줄 넣고 뺌 → 커서 끝으로 감: 그 줄로
+		        {
+		            Util.SetCaret(sFocus, kCaret);
+		        }
+
+		        if (nTop >= 0 && Util.bDiffView)
 		        {
 		            const	nHeight	= Util.LineHeight(document.getElementById("UtilDiffLeftText"));
 		            const	nBlock	= Util.arrDiffBlock.findIndex(arrBlock => 4 + arrBlock[0] * nHeight >= nTop);	// 그 차이 첫 줄 위치 (편집 칸 위 여백 X px)
@@ -740,6 +764,47 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                document.getElementById("UtilDiffLeftText").scrollTop = nTop;
 		            }
 		        }
+		    }
+
+		    static GetCaret(sSide)	// 편집 칸 커서 → { nReal: 실제 줄 순서 (회색 빈 줄 뺌), nCol: 줄 안 자리 }
+		    {
+		        const	kText		= document.getElementById(`UtilDiff${sSide}Text`);
+		        const	arrMeta		= Util.mapDiffMeta[sSide];
+		        const	arrLine		= kText.value.split("\n");
+		        const	arrBefore	= kText.value.slice(0, kText.selectionStart).split("\n");
+		        let		nReal		= 0;
+
+		        for (let nIndex = 0; nIndex < arrBefore.length - 1; ++nIndex)
+		        {
+		            nReal += Util.IsGapLine(arrMeta?.[nIndex], arrLine[nIndex]) ? 0 : 1;
+		        }
+
+		        return { nReal, nCol: arrBefore.at(-1).length };
+		    }
+
+		    static SetCaret(sSide, kCaret)	// { nReal, nCol } → 편집 칸 커서 (회색 빈 줄 건넘, 없음: 끝)
+		    {
+		        const	kText	= document.getElementById(`UtilDiff${sSide}Text`);
+		        const	arrMeta	= Util.mapDiffMeta[sSide];
+		        const	arrLine	= kText.value.split("\n");
+		        let		nPos	= 0;	// 그 줄 처음 자리
+		        let		nReal	= 0;
+
+		        for (let nIndex = 0; nIndex < arrLine.length; ++nIndex)
+		        {
+		            if (!Util.IsGapLine(arrMeta?.[nIndex], arrLine[nIndex]) && nReal++ === kCaret.nReal)
+		            {
+		                const	nAt	= nPos + Math.min(kCaret.nCol, arrLine[nIndex].length);
+
+		                kText.setSelectionRange(nAt, nAt);
+
+		                return;
+		            }
+
+		            nPos += arrLine[nIndex].length + 1;
+		        }
+
+		        kText.setSelectionRange(kText.value.length, kText.value.length);
 		    }
 
 		    static async SaveDiffFile(sSide)	// 저장 버튼 (그 창 글 있음): 연 파일 글 → 연 파일에 덮어씀 (같은 앞 BOM·줄 끝, 덮어쓸 곳 없음: 저장 창 같은 이름), 파일 없음 (붙여넣기·직접 입력): 저장 창 → 저장할 폴더·이름 고름 (기본 기준·대상.txt, UTF-8·CRLF, 저장 뒤: 그 파일 연 것과 같음), 저장 창 없음 (http 주소): 다운 → 실행 (다시 비교)
@@ -823,6 +888,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const	kState	= Util.arrDiffBack[nPos];
 
 		        Util.nDiffPos = nPos;
+		        Util.bDiffNew = false;	// 기억 글로 감: 새 입력 아님
 
 		        Util.ResetDiffInfo();	// 앞 비교 풂
 
@@ -959,6 +1025,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        {
 		            Util.mapDiffName[sSide]	= "";
 		            Util.mapDiffFile[sSide]	= null;
+		            Util.bDiffNew			= true;	// 리셋: 다음 실행 네비게이션 새 기억
 		        }
 		        else if (!Util.IsDiffFile(sSide))
 		        {
@@ -1298,12 +1365,13 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.mapDiffWhole[sSide] = Util.mapDiffMeta[sSide] != null && kText.value !== "" && kText.selectionStart === 0 && kText.selectionEnd === kText.value.length && (kEvent.inputType.startsWith("delete") || kEvent.inputType === "insertFromPaste");
 		    }
 
-		    static OnDiffInput(sSide, kEvent)	// 편집 칸 고침 (비교 중도 기본 편집 그대로: 끌어 고름·여러 줄 지움·붙여넣기·Ctrl+Z·Y): 비교 중 → 바뀐 곳만 줄 색 맞춤, 모두 고름 → 지움·붙여넣기·다 지움: 비교 모두 풂 (Ctrl+Z: 그 전 글·비교 돌아옴, Ctrl+Y: 다시 풂) + 줄 번호·제목 (이름 없이 입력: 복사, 다 지움: 파일 연결 끊음)
+		    static OnDiffInput(sSide, kEvent)	// 편집 칸 고침 (비교 중도 기본 편집 그대로: 끌어 고름·여러 줄 지움·붙여넣기·Ctrl+Z·Y): 비교 중 → 바뀐 곳만 줄 색 맞춤 (Ctrl+Z·Y 로 색 기억 없는 글: 다시 비교, 보던 자리·커서 그대로), 모두 고름 → 지움·붙여넣기·다 지움: 비교 모두 풂 (Ctrl+Z: 그 전 글·비교 돌아옴, Ctrl+Y: 다시 풂) + 줄 번호·제목 (이름 없이 입력: 복사, 다 지움: 파일 연결 끊음)
 		    {
 		        const	kText		= kEvent.currentTarget;
 		        const	kRelease	= Util.kDiffRelease;
 		        const	sOther		= sSide === "Left" ? "Right" : "Left";
-		        let		kRange		= null;	// 다시 그릴 줄 (null: 모두)
+		        let		kRange		= null;		// 다시 그릴 줄 (null: 모두)
+		        let		bRerun		= false;	// Ctrl+Z·Y 로 색 기억 없는 글 (실행·저장 전 등): 다시 비교
 
 		        if (Util.mapDiffMeta[sSide] != null)
 		        {
@@ -1314,6 +1382,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            else
 		            {
 		                kRange = Util.UpdateDiffMeta(sSide, kEvent.inputType);
+		                bRerun = kRange != null && kEvent.inputType?.startsWith("history") === true;	// 기억 찾음: null
 
 		                Util.kDiffRelease = null;	// 다른 고침: 되돌림 기억 버림
 		            }
@@ -1330,6 +1399,14 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.mapDiffWhole[sSide] = false;
 
 		        Util.KeepDiffName(sSide, Util.GetDiffText(sSide), Util.mapDiffName[sSide]);	// 연 파일: 그대로
+
+		        if (bRerun)
+		        {
+		            Util.RunDiffKeep();
+
+		            return;
+		        }
+
 		        Util.RenderLines(sSide, kRange);
 		    }
 
@@ -1578,6 +1655,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            Util.mapDiffName[sSide] = kFile.name;
 		            Util.mapDiffFile[sSide] = { kHandle, sName: kFile.name, bBom: sText.startsWith("\uFEFF"), sEol: sText.includes("\r\n") ? "\r\n" : "\n" };	// 저장: 같은 BOM·줄 끝
 
+		            Util.bDiffNew = true;	// 파일 열기: 다음 실행 네비게이션 새 기억
+
 		            Util.RenderLines(sSide);
 		        });
 		    }
@@ -1647,6 +1726,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		            Util.RenderLines(sSide);
 		        }
+
+		        Util.bDiffNew = true;	// F5 리셋: 다음 실행 네비게이션 새 기억
 
 		        Util.RunDiff();	// 비교 색 지움 (양쪽 비움)
 		    }
@@ -2276,21 +2357,31 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static OnSortRun()	// 소트 실행 버튼: 지금 입력 기억 (지금 위치와 같음: 안 넣음, 과거에서 실행: 그 뒤 기억 버림, 넘음: 가장 오래된 것 버림) → 펼침
+		    static OnSortRun()	// 소트 실행 버튼: 네비게이션 기억 (새 입력 (리셋 뒤 입력·파일 열기)·처음: 새 기억 (지금 기억과 같은 글: 안 넣음, 과거에서: 그 뒤 기억 버림, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 비움: 기억 안 함) → 펼침
 		    {
 		        const	sText	= document.getElementById("UtilSortLeftText").value;
+		        const	sNow	= Util.arrSortBack[Util.nSortPos];
 
-		        if (Util.arrSortBack[Util.nSortPos] !== sText)
+		        if (sText !== "")
 		        {
-		            Util.arrSortBack.length = Util.nSortPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
-		            Util.arrSortBack.push(sText);
-
-		            if (Util.arrSortBack.length > Util.SORT_BACK_MAX)
+		            if (sNow == null || (Util.bSortNew && sNow !== sText))	// 새 기억
 		            {
-		                Util.arrSortBack.shift();
+		                Util.arrSortBack.length = Util.nSortPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
+		                Util.arrSortBack.push(sText);
+
+		                if (Util.arrSortBack.length > Util.SORT_BACK_MAX)
+		                {
+		                    Util.arrSortBack.shift();
+		                }
+
+		                Util.nSortPos = Util.arrSortBack.length - 1;
+		            }
+		            else	// 같은 입력 고침·실행: 지금 기억 글만
+		            {
+		                Util.arrSortBack[Util.nSortPos] = sText;
 		            }
 
-		            Util.nSortPos = Util.arrSortBack.length - 1;
+		            Util.bSortNew = false;
 		        }
 
 		        Util.ShowSortBack();
@@ -2307,6 +2398,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 
 		        Util.nSortPos = nPos;
+		        Util.bSortNew = false;	// 기억 글로 감: 새 입력 아님
 
 		        document.getElementById("UtilSortLeftText").value = Util.arrSortBack[nPos];
 
@@ -2332,6 +2424,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		            Util.sSortName	= kFile.name;
 		            Util.kSortFile	= { kHandle, sName: kFile.name, bBom: sText.startsWith("\uFEFF"), sEol: sText.includes("\r\n") ? "\r\n" : "\n" };	// 저장: 같은 BOM·줄 끝
+		            Util.bSortNew	= true;	// 파일 열기: 다음 실행 네비게이션 새 기억
 
 		            Util.RenderSortLines();
 		        });
@@ -2458,6 +2551,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    {
 		        Util.kSortFile	= null;
 		        Util.sSortName	= "";
+		        Util.bSortNew	= true;	// F5 리셋: 다음 실행 네비게이션 새 기억
 
 		        document.getElementById("UtilSortLeftText").value = "";
 
@@ -2701,6 +2795,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            {
 		                Util.kSortFile	= null;
 		                Util.sSortName	= "";
+		                Util.bSortNew	= true;	// 리셋: 다음 실행 네비게이션 새 기억
 
 		                Util.RunSort();
 		            }
