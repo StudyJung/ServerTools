@@ -471,42 +471,42 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</style>
 		</head>
 		<body data-mode="__MODE__" data-ui="__UI__">
-		<h1 style="color:__ZONE_COLOR__"><button type="button" id="TabRefresh" class="iconbtn" title="새로 고침(지금 탭 리셋, F5)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button><span id="TitleText">__TITLE__</span><span id="OffText" hidden></span><span id="TabBar"><button type="button" id="UtilButton" class="cur">유틸</button><button type="button" id="QueryButton">쿼리</button><button type="button" id="LogButton">서치</button><button type="button" id="FileButton">파일</button><button type="button" id="DumpButton">덤프</button><button type="button" id="ManagerButton" data-zone="__MANAGER_ZONE__" data-zonecolor="__MANAGER_ZONE_COLOR__">운영</button><button type="button" id="ProcessButton">반영</button><button type="button" id="AccountButton" title="계정 (목록·로그아웃)">계정</button><button type="button" id="HelpButton" title="단축키">힌트</button></span></h1>
+		<h1 style="color:__ZONE_COLOR__"><button type="button" id="TabRefresh" class="iconbtn" title="새로 고침(F5)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button><span id="TitleText">__TITLE__</span><span id="OffText" hidden></span><span id="TabBar"><button type="button" id="UtilButton" class="cur">유틸</button><button type="button" id="QueryButton">쿼리</button><button type="button" id="LogButton">서치</button><button type="button" id="FileButton">파일</button><button type="button" id="DumpButton">덤프</button><button type="button" id="ManagerButton" data-zone="__MANAGER_ZONE__" data-zonecolor="__MANAGER_ZONE_COLOR__">운영</button><button type="button" id="ProcessButton">반영</button><button type="button" id="AccountButton" title="계정 관리">계정</button><button type="button" id="HelpButton" title="단축키">힌트</button></span></h1>
 		<section id="UtilPanel" hidden>
 		<section class="panel" id="UtilTabPanel">
 		<div class="pager" id="UtilTabs">
-		<button type="button" class="cur" data-util="time" title="시간">타임</button>
-		<button type="button" data-util="diff" title="비교">디프</button>
-		<button type="button" data-util="sort" title="정렬">소트</button>
+		<button type="button" class="cur" data-util="time" title="시간 변환">타임</button>
+		<button type="button" data-util="diff" title="파일 비교">디프</button>
+		<button type="button" data-util="sort" title="제이슨 정렬">소트</button>
 		</div>
 		<div class="utilbox" id="UtilTimeInput" data-util="time">
 		<div class="filter" id="UtilNowRow">
-		<label title="현재 시간(KST, 1초마다)"><span class="rangeop">Time</span><span id="UtilNow"></span></label>
+		<label title="현재 시간(KST)"><span class="rangeop">Time</span><span id="UtilNow"></span></label>
 		</div>
 		<div class="filter" id="UtilKstRow">
-		<button type="button" id="UtilNowFill" class="iconbtn" title="새로 고침(KST, Unix 현재 시간)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button>
-		<label title="KST 시간(날짜, 시, 분, 초, 처음: 현재 시간, Enter: 변환)"><span class="rangeop">KST</span><input type="date" id="UtilDate" min="1970-01-01" max="2286-11-20"><select id="UtilHour" class="hour"></select><select id="UtilMinute" class="hour"></select><select id="UtilSecond" class="hour"></select></label>
+		<button type="button" id="UtilNowFill" class="iconbtn" title="새로 고침" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button>
+		<label title="KST 시간"><span class="rangeop">KST</span><input type="date" id="UtilDate" min="1970-01-01" max="2286-11-20"><select id="UtilHour" class="hour"></select><select id="UtilMinute" class="hour"></select><select id="UtilSecond" class="hour"></select></label>
 		</div>
 		<div class="filter" id="UtilUnixRow">
-		<label title="UnixTime(초, 숫자 10자리, 처음: 현재 시간)"><span class="rangeop">Unix</span><input type="text" id="UtilUnix" inputmode="numeric" maxlength="10" autocomplete="off" spellcheck="false"></label>
-		<button type="button" id="UtilUnixRun" class="primary enterbtn" title="UnixTime 변환(Enter)" aria-label="실행"></button>
+		<label title="UnixTime(초)"><span class="rangeop">Unix</span><input type="text" id="UtilUnix" inputmode="numeric" maxlength="10" autocomplete="off" spellcheck="false"></label>
+		<button type="button" id="UtilUnixRun" class="primary enterbtn" title="실행(Enter)" aria-label="실행"></button>
 		</div>
 		</div>
 		<div class="utilbox" id="UtilDiffTool" data-util="diff" hidden>
 		<div class="title" id="UtilDiffInfo"></div>
 		<div class="toolright">
-		<span class="btngroup"><button type="button" id="UtilDiffRunPrev" title="네비게이션: 뒤로(이전 실행, 최대 10회)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="UtilDiffRunDepth" tabindex="-1" title="네비게이션: 실행 입력(0: 마지막, 과거: -1…)" aria-label="실행">0</button><button type="button" id="UtilDiffRunNext" title="네비게이션: 앞으로(다음 실행)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
+		<span class="btngroup"><button type="button" id="UtilDiffRunPrev" title="뒤로" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="UtilDiffRunDepth" tabindex="-1" title="네비게이션" aria-label="실행">0</button><button type="button" id="UtilDiffRunNext" title="앞으로" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
 		<button type="button" id="UtilDiffPrev" title="이전 차이(Alt+↑)" aria-label="이전 차이" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.22 10.53a.749.749 0 0 1 0-1.06l4.25-4.25a.749.749 0 0 1 1.06 0l4.25 4.25a.749.749 0 1 1-1.06 1.06L8 6.811 4.28 10.53a.749.749 0 0 1-1.06 0Z"/></svg></button>
 		<button type="button" id="UtilDiffNext" title="다음 차이(Alt+↓)" aria-label="다음 차이" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button>
-		<button type="button" id="UtilDiffRun" class="primary enterbtn" title="비교 실행(좌·우 문서)" aria-label="실행"></button>
+		<button type="button" id="UtilDiffRun" class="primary enterbtn" title="실행" aria-label="실행"></button>
 		</div>
 		</div>
 		<div class="utilbox" id="UtilSortTool" data-util="sort" hidden>
 		<div class="toolright">
-		<span class="btngroup"><button type="button" id="UtilSortRunPrev" title="네비게이션: 뒤로(이전 실행, 최대 10회)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="UtilSortRunDepth" tabindex="-1" title="네비게이션: 실행 입력(0: 마지막, 과거: -1…)" aria-label="실행">0</button><button type="button" id="UtilSortRunNext" title="네비게이션: 앞으로(다음 실행)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
-		<button type="button" id="UtilSortUnfold" title="펴기(모두 펼침)" aria-label="펴기" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.53 5.78L8.53 2.78A0.75 0.75 0 0 0 7.47 1.72L4.47 4.72A0.75 0.75 0 0 0 5.53 5.78Z"/><path d="M7.47 2.78L10.47 5.78A0.75 0.75 0 0 0 11.53 4.72L8.53 1.72A0.75 0.75 0 0 0 7.47 2.78Z"/><path d="M4.47 11.28L7.47 14.28A0.75 0.75 0 0 0 8.53 13.22L5.53 10.22A0.75 0.75 0 0 0 4.47 11.28Z"/><path d="M8.53 14.28L11.53 11.28A0.75 0.75 0 0 0 10.47 10.22L7.47 13.22A0.75 0.75 0 0 0 8.53 14.28Z"/><path d="M3.5 8.75L12.5 8.75A0.75 0.75 0 0 0 12.5 7.25L3.5 7.25A0.75 0.75 0 0 0 3.5 8.75Z"/></svg></button>
-		<button type="button" id="UtilSortFold" title="접기(최상위 빼고 모두 접음)" aria-label="접기" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.47 2.28L7.47 5.28A0.75 0.75 0 0 0 8.53 4.22L5.53 1.22A0.75 0.75 0 0 0 4.47 2.28Z"/><path d="M8.53 5.28L11.53 2.28A0.75 0.75 0 0 0 10.47 1.22L7.47 4.22A0.75 0.75 0 0 0 8.53 5.28Z"/><path d="M5.53 14.78L8.53 11.78A0.75 0.75 0 0 0 7.47 10.72L4.47 13.72A0.75 0.75 0 0 0 5.53 14.78Z"/><path d="M7.47 11.78L10.47 14.78A0.75 0.75 0 0 0 11.53 13.72L8.53 10.72A0.75 0.75 0 0 0 7.47 11.78Z"/><path d="M3.5 8.75L12.5 8.75A0.75 0.75 0 0 0 12.5 7.25L3.5 7.25A0.75 0.75 0 0 0 3.5 8.75Z"/></svg></button>
-		<button type="button" id="UtilSortRun" class="primary enterbtn" title="펼치기 실행(JSON → 비주얼 스튜디오 기본 형식)" aria-label="실행"></button>
+		<span class="btngroup"><button type="button" id="UtilSortRunPrev" title="뒤로" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="UtilSortRunDepth" tabindex="-1" title="네비게이션" aria-label="실행">0</button><button type="button" id="UtilSortRunNext" title="앞으로" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
+		<button type="button" id="UtilSortUnfold" title="모두 펴기" aria-label="펴기" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.53 5.78L8.53 2.78A0.75 0.75 0 0 0 7.47 1.72L4.47 4.72A0.75 0.75 0 0 0 5.53 5.78Z"/><path d="M7.47 2.78L10.47 5.78A0.75 0.75 0 0 0 11.53 4.72L8.53 1.72A0.75 0.75 0 0 0 7.47 2.78Z"/><path d="M4.47 11.28L7.47 14.28A0.75 0.75 0 0 0 8.53 13.22L5.53 10.22A0.75 0.75 0 0 0 4.47 11.28Z"/><path d="M8.53 14.28L11.53 11.28A0.75 0.75 0 0 0 10.47 10.22L7.47 13.22A0.75 0.75 0 0 0 8.53 14.28Z"/><path d="M3.5 8.75L12.5 8.75A0.75 0.75 0 0 0 12.5 7.25L3.5 7.25A0.75 0.75 0 0 0 3.5 8.75Z"/></svg></button>
+		<button type="button" id="UtilSortFold" title="모두 접기" aria-label="접기" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.47 2.28L7.47 5.28A0.75 0.75 0 0 0 8.53 4.22L5.53 1.22A0.75 0.75 0 0 0 4.47 2.28Z"/><path d="M8.53 5.28L11.53 2.28A0.75 0.75 0 0 0 10.47 1.22L7.47 4.22A0.75 0.75 0 0 0 8.53 5.28Z"/><path d="M5.53 14.78L8.53 11.78A0.75 0.75 0 0 0 7.47 10.72L4.47 13.72A0.75 0.75 0 0 0 5.53 14.78Z"/><path d="M7.47 11.78L10.47 14.78A0.75 0.75 0 0 0 11.53 13.72L8.53 10.72A0.75 0.75 0 0 0 7.47 11.78Z"/><path d="M3.5 8.75L12.5 8.75A0.75 0.75 0 0 0 12.5 7.25L3.5 7.25A0.75 0.75 0 0 0 3.5 8.75Z"/></svg></button>
+		<button type="button" id="UtilSortRun" class="primary enterbtn" title="실행" aria-label="실행"></button>
 		</div>
 		</div>
 		</section>
@@ -527,13 +527,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="utilbox" data-util="diff" hidden>
 		<div class="utilsplit" id="UtilDiffSplit">
 		<section class="panel" id="UtilDiffLeft">
-		<div class="resulthead"><div class="title" id="UtilDiffLeftTitle"></div><div class="toolright"><button type="button" id="UtilDiffLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffLeftSave" class="savebtn" title="저장" aria-label="저장" disabled></button></div></div>
+		<div class="resulthead"><div class="title" id="UtilDiffLeftTitle"></div><div class="toolright"><button type="button" id="UtilDiffLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffLeftSave" class="savebtn" title="파일 저장" aria-label="저장" disabled></button></div></div>
 		<input type="file" id="UtilDiffLeftFile" hidden>
 		<div class="scroll diffedit" id="UtilDiffLeftBody"><div class="diffln" id="UtilDiffLeftLn"></div><div class="diffback" id="UtilDiffLeftBack"></div><textarea id="UtilDiffLeftText" spellcheck="false" wrap="off" autocomplete="off" aria-label="좌 문서"></textarea></div>
 		</section>
-		<div class="vsplitter" id="UtilDiffSplitter" title="좌우 폭 조절"></div>
+		<div class="vsplitter" id="UtilDiffSplitter" title="폭 조절"></div>
 		<section class="panel" id="UtilDiffRight">
-		<div class="resulthead"><div class="title" id="UtilDiffRightTitle"></div><div class="toolright"><button type="button" id="UtilDiffRightOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffRightSave" class="savebtn" title="저장" aria-label="저장" disabled></button></div></div>
+		<div class="resulthead"><div class="title" id="UtilDiffRightTitle"></div><div class="toolright"><button type="button" id="UtilDiffRightOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffRightSave" class="savebtn" title="파일 저장" aria-label="저장" disabled></button></div></div>
 		<input type="file" id="UtilDiffRightFile" hidden>
 		<div class="scroll diffedit" id="UtilDiffRightBody"><div class="diffln" id="UtilDiffRightLn"></div><div class="diffback" id="UtilDiffRightBack"></div><textarea id="UtilDiffRightText" spellcheck="false" wrap="off" autocomplete="off" aria-label="우 문서"></textarea></div>
 		</section>
@@ -542,11 +542,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="utilbox" data-util="sort" hidden>
 		<div class="utilsplit" id="UtilSortSplit">
 		<section class="panel" id="UtilSortLeft">
-		<div class="resulthead"><div class="title" id="UtilSortLeftTitle"></div><div class="toolright"><button type="button" id="UtilSortLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilSortLeftSave" class="savebtn" title="저장" aria-label="저장" disabled></button></div></div>
+		<div class="resulthead"><div class="title" id="UtilSortLeftTitle"></div><div class="toolright"><button type="button" id="UtilSortLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilSortLeftSave" class="savebtn" title="파일 저장" aria-label="저장" disabled></button></div></div>
 		<input type="file" id="UtilSortLeftFile" hidden>
 		<div class="scroll diffedit" id="UtilSortLeftBody"><div class="diffln" id="UtilSortLeftLn"></div><div class="diffback" id="UtilSortLeftBack"></div><textarea id="UtilSortLeftText" spellcheck="false" wrap="off" autocomplete="off" aria-label="JSON 입력"></textarea></div>
 		</section>
-		<div class="vsplitter" id="UtilSortSplitter" title="좌우 폭 조절"></div>
+		<div class="vsplitter" id="UtilSortSplitter" title="폭 조절"></div>
 		<section class="panel" id="UtilSortRight">
 		<div class="resulthead"><div class="title" id="UtilSortRightTitle"></div></div>
 		<div class="scroll jsonview" id="UtilSortRightBody"></div>
@@ -556,32 +556,32 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</section>
 		<section class="panel" id="FilterPanel">
 		<div class="filter">
-		<span class="btngroup" id="RunNavi"><button type="button" id="RunPrev" title="네비게이션: 뒤로(이전 실행, 최대 10회)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="RunDepth" tabindex="-1" title="네비게이션: 실행 입력(0: 마지막, 과거: -1…)" aria-label="실행">0</button><button type="button" id="RunNext" title="네비게이션: 앞으로(다음 실행)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
-		<span class="pickwrap" title="Machine"><span id="MachinePick"><button type="button" id="MachineBox" title="대상 머신(전체, 체크)" aria-haspopup="true" aria-expanded="false">전체</button><div id="MachineMenu" hidden><label class="all"><input type="checkbox" id="MachineAll" checked><span>전체</span></label><div id="MachineList"></div></div></span></span>
-		<label title="Duration(최근 기간)"><select id="QueryRange"><option value="" hidden>기타</option><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="180">3시간</option><option value="360">6시간</option><option value="540">9시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="21600">15일</option><option value="43200">30일</option><option value="86400">60일</option></select></label>
-		<label title="Start(날짜, 시, 분, 초, 포함, 쿼리: E 기준 최대 3년)"><input type="date" id="StartDate" value="__YESTERDAY__"><select id="StartHour" class="hour"></select><select id="StartMinute" class="hour"></select><select id="StartSecond" class="hour"></select><span class="rangeop">이상</span></label>
-		<label title="End(날짜, 시, 분, 초, 미포함)"><input type="date" id="EndDate" value="__TODAY__"><select id="EndHour" class="hour"></select><select id="EndMinute" class="hour"></select><select id="EndSecond" class="hour"></select><span class="rangeop">미만</span></label>
-		<span class="toolright" id="FilterTool"><button type="button" id="TimerButton" title="타이머(입력 엔터 시작, 클릭 중지)">10</button><button type="button" id="SearchSavedButton" class="searchonly" title="저장 서치(추가, 수정, 실행)">저장</button><button type="button" id="QueryAlarmButton" class="queryonly" title="알람(추가, 수정, 켜기)">알람</button><button type="button" id="QueryHistoryButton" class="queryonly" title="알람 기록(발송, 실패, 최신 1,000건)">기록</button><button type="button" id="QueryRuleButton" class="queryonly" title="필드 정의(추가, 수정, 순서, 설정 aField)">필드</button><button type="button" id="QuerySavedButton" class="queryonly" title="저장 쿼리(추가, 수정, 실행)">저장</button><button type="button" id="SettingButton" title="설정">설정</button></span>
+		<span class="btngroup" id="RunNavi"><button type="button" id="RunPrev" title="뒤로" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="RunDepth" tabindex="-1" title="네비게이션" aria-label="실행">0</button><button type="button" id="RunNext" title="앞으로" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
+		<span class="pickwrap" title="Machine"><span id="MachinePick"><button type="button" id="MachineBox" title="머신(전체, 체크)" aria-haspopup="true" aria-expanded="false">전체</button><div id="MachineMenu" hidden><label class="all"><input type="checkbox" id="MachineAll" checked><span>전체</span></label><div id="MachineList"></div></div></span></span>
+		<label title="기간"><select id="QueryRange"><option value="" hidden>기타</option><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="180">3시간</option><option value="360">6시간</option><option value="540">9시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="21600">15일</option><option value="43200">30일</option><option value="86400">60일</option></select></label>
+		<label title="시작 시간(포함)"><input type="date" id="StartDate" value="__YESTERDAY__"><select id="StartHour" class="hour"></select><select id="StartMinute" class="hour"></select><select id="StartSecond" class="hour"></select><span class="rangeop">이상</span></label>
+		<label title="종료 시간(미포함)"><input type="date" id="EndDate" value="__TODAY__"><select id="EndHour" class="hour"></select><select id="EndMinute" class="hour"></select><select id="EndSecond" class="hour"></select><span class="rangeop">미만</span></label>
+		<span class="toolright" id="FilterTool"><button type="button" id="TimerButton" title="타이머">10</button><button type="button" id="SearchSavedButton" class="searchonly" title="서치 관리">저장</button><button type="button" id="QueryAlarmButton" class="queryonly" title="계정 알림">알람</button><button type="button" id="QueryHistoryButton" class="queryonly" title="알람 기록">기록</button><button type="button" id="QueryRuleButton" class="queryonly" title="필드 관리">필드</button><button type="button" id="QuerySavedButton" class="queryonly" title="쿼리 관리">저장</button><button type="button" id="SettingButton" title="설정 관리">설정</button></span>
 		<div class="searchbox" id="SearchBox">
-		<input type="text" id="SearchKey" class="searchonly" title="검색어(AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
-		<input type="text" id="QueryKey" class="queryonly" title="쿼리(단어, 필드:값, AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
-		<button type="button" id="SearchButton" class="primary searchonly enterbtn" title="서치 실행(Enter)" aria-label="실행"></button>
-		<button type="button" id="QueryRunButton" class="primary queryonly enterbtn" title="쿼리 실행(Enter)" aria-label="실행"></button>
-		<button type="button" id="QueryStopButton" class="primary queryonly stopbtn" title="쿼리 중단" disabled aria-label="중단"></button>
-		<button type="button" id="StopButton" class="primary searchonly stopbtn" title="검색 중단" disabled aria-label="중단"></button>
+		<input type="text" id="SearchKey" class="searchonly" title="검색어" autocomplete="off" spellcheck="false" autocapitalize="off">
+		<input type="text" id="QueryKey" class="queryonly" title="쿼리 조건" autocomplete="off" spellcheck="false" autocapitalize="off">
+		<button type="button" id="SearchButton" class="primary searchonly enterbtn" title="실행(Enter)" aria-label="실행"></button>
+		<button type="button" id="QueryRunButton" class="primary queryonly enterbtn" title="실행(Enter)" aria-label="실행"></button>
+		<button type="button" id="QueryStopButton" class="primary queryonly stopbtn" title="중단" disabled aria-label="중단"></button>
+		<button type="button" id="StopButton" class="primary searchonly stopbtn" title="중단" disabled aria-label="중단"></button>
 		</div>
 		</div>
 		</section>
-		<div class="splitter" id="FilterSplitter" title="위아래 크기 조절"></div>
+		<div class="splitter" id="FilterSplitter" title="높이 조절"></div>
 		<section class="panel" id="ResultPanel">
 		<div class="resulthead">
 		<div class="title" id="ResultTitle"></div>
 		<div class="title" id="QueryTitle"></div>
 		<div class="toolright">
 		<div class="btngroup">
-		<button type="button" id="QueryPrev" title="뒤로(이전 단계)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.89 14.12A5.75 5.75 0 1 0 4.52 3.59L5.27 4.88A4.25 4.25 0 1 1 8.5 12.67Z"/><path d="M4.52 3.59L3.23 4.34A0.75 0.75 0 0 0 3.98 5.63L5.27 4.88A0.75 0.75 0 0 0 4.52 3.59Z"/><path d="M8.5 12.67L6.57 13.19A0.75 0.75 0 0 0 6.96 14.64L8.89 14.12A0.75 0.75 0 0 0 8.5 12.67Z"/><path d="M4.32 5.18L5.1 2.28A0.75 0.75 0 0 0 3.65 1.89L2.88 4.79A0.75 0.75 0 0 0 4.32 5.18Z"/><path d="M3.41 5.71L6.3 6.49A0.75 0.75 0 0 0 6.69 5.04L3.79 4.26A0.75 0.75 0 0 0 3.41 5.71Z"/></svg></button>
-		<button type="button" id="QueryDepth" tabindex="-1" title="단계 입력" aria-label="단계">0</button>
-		<button type="button" id="QueryNext" title="앞으로(다음 단계)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><g transform="matrix(-1 0 0 1 16 0)"><path d="M8.89 14.12A5.75 5.75 0 1 0 4.52 3.59L5.27 4.88A4.25 4.25 0 1 1 8.5 12.67Z"/><path d="M4.52 3.59L3.23 4.34A0.75 0.75 0 0 0 3.98 5.63L5.27 4.88A0.75 0.75 0 0 0 4.52 3.59Z"/><path d="M8.5 12.67L6.57 13.19A0.75 0.75 0 0 0 6.96 14.64L8.89 14.12A0.75 0.75 0 0 0 8.5 12.67Z"/><path d="M4.32 5.18L5.1 2.28A0.75 0.75 0 0 0 3.65 1.89L2.88 4.79A0.75 0.75 0 0 0 4.32 5.18Z"/><path d="M3.41 5.71L6.3 6.49A0.75 0.75 0 0 0 6.69 5.04L3.79 4.26A0.75 0.75 0 0 0 3.41 5.71Z"/></g></svg></button>
+		<button type="button" id="QueryPrev" title="뒤로" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.89 14.12A5.75 5.75 0 1 0 4.52 3.59L5.27 4.88A4.25 4.25 0 1 1 8.5 12.67Z"/><path d="M4.52 3.59L3.23 4.34A0.75 0.75 0 0 0 3.98 5.63L5.27 4.88A0.75 0.75 0 0 0 4.52 3.59Z"/><path d="M8.5 12.67L6.57 13.19A0.75 0.75 0 0 0 6.96 14.64L8.89 14.12A0.75 0.75 0 0 0 8.5 12.67Z"/><path d="M4.32 5.18L5.1 2.28A0.75 0.75 0 0 0 3.65 1.89L2.88 4.79A0.75 0.75 0 0 0 4.32 5.18Z"/><path d="M3.41 5.71L6.3 6.49A0.75 0.75 0 0 0 6.69 5.04L3.79 4.26A0.75 0.75 0 0 0 3.41 5.71Z"/></svg></button>
+		<button type="button" id="QueryDepth" tabindex="-1" title="스텝" aria-label="단계">0</button>
+		<button type="button" id="QueryNext" title="앞으로" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><g transform="matrix(-1 0 0 1 16 0)"><path d="M8.89 14.12A5.75 5.75 0 1 0 4.52 3.59L5.27 4.88A4.25 4.25 0 1 1 8.5 12.67Z"/><path d="M4.52 3.59L3.23 4.34A0.75 0.75 0 0 0 3.98 5.63L5.27 4.88A0.75 0.75 0 0 0 4.52 3.59Z"/><path d="M8.5 12.67L6.57 13.19A0.75 0.75 0 0 0 6.96 14.64L8.89 14.12A0.75 0.75 0 0 0 8.5 12.67Z"/><path d="M4.32 5.18L5.1 2.28A0.75 0.75 0 0 0 3.65 1.89L2.88 4.79A0.75 0.75 0 0 0 4.32 5.18Z"/><path d="M3.41 5.71L6.3 6.49A0.75 0.75 0 0 0 6.69 5.04L3.79 4.26A0.75 0.75 0 0 0 3.41 5.71Z"/></g></svg></button>
 		</div>
 		</div>
 		</div>
@@ -603,7 +603,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		<div class="pager" id="ResultPager" hidden></div>
 		</section>
-		<div class="splitter" id="QuerySplitter" title="위아래 크기 조절" hidden></div>
+		<div class="splitter" id="QuerySplitter" title="높이 조절" hidden></div>
 		<section class="panel" id="QueryPanel" hidden>
 		<div class="resulthead">
 		<div class="title" id="QueryLogTitle"></div>
@@ -615,11 +615,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="fieldhead"><span>필드</span></div>
 		<ul id="QueryFieldList"></ul>
 		</aside>
-		<div class="vsplitter" id="QueryFieldSplitter" title="좌우 폭 조절"></div>
+		<div class="vsplitter" id="QueryFieldSplitter" title="폭 조절"></div>
 		<div class="scroll" id="QueryScroll">
 		<table id="QueryTable">
 		<colgroup><col><col><col><col><col><col></colgroup>
-		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th title="파일 줄 번호">Line</th><th title="단어 조건(AND, OR, NOT)">Log</th></tr></thead>
+		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th title="줄 번호">Line</th><th title="단어 조건">Log</th></tr></thead>
 		<tbody id="QueryBody"></tbody>
 		</table>
 		</div>
@@ -633,21 +633,21 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="scroll" id="QueryFieldScroll">
 		<table id="QueryFieldTable">
 		<colgroup><col><col><col></colgroup>
-		<thead><tr title="누를 때마다 내림차순(▼) → 오름차순(▲) → 원래 순서 (보이는 페이지만)"><th>No.<span class="sortmark"></span></th><th id="QueryFieldColumn">Value<span class="sortmark"></span></th><th>Count<span class="sortmark"></span></th></tr></thead>
+		<thead><tr title="칸 정렬"><th>No.<span class="sortmark"></span></th><th id="QueryFieldColumn">Value<span class="sortmark"></span></th><th>Count<span class="sortmark"></span></th></tr></thead>
 		<tbody id="QueryFieldBody"></tbody>
 		</table>
 		</div>
 		<div class="pager" id="QueryFieldPager" hidden></div>
 		</section>
-		<div class="splitter" id="Splitter" title="위아래 크기 조절"></div>
+		<div class="splitter" id="Splitter" title="높이 조절"></div>
 		<section class="panel" id="ViewPanel">
 		<div class="filter">
 		<span class="title" id="ViewTitle"></span>
 		<div class="toolright">
 		<div class="btngroup">
-		<button type="button" id="ViewPrev" title="포지션 위로(줄 단위, 위에 쌓임)" aria-label="포지션 위로" disabled>«</button>
+		<button type="button" id="ViewPrev" title="포지션 위로" aria-label="포지션 위로" disabled>«</button>
 		<button type="button" id="ViewShift" tabindex="-1" aria-label="포지션">0</button>
-		<button type="button" id="ViewNext" title="포지션 아래로(줄 단위, 아래에 쌓임)" aria-label="포지션 아래로" disabled>»</button>
+		<button type="button" id="ViewNext" title="포지션 아래로" aria-label="포지션 아래로" disabled>»</button>
 		</div>
 		</div>
 		</div>
@@ -658,13 +658,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="resulthead">
 		<div class="title" id="DumpTitle"></div>
 		<div class="toolright">
-		<button type="button" id="DumpDeleteAll" class="danger" title="전체 삭제(dmp, zip)" disabled>삭제</button>
+		<button type="button" id="DumpDeleteAll" class="danger" title="전체 삭제" disabled>삭제</button>
 		</div>
 		</div>
 		<div class="scroll" id="DumpScroll">
 		<table id="DumpTable">
 		<colgroup><col><col><col><col><col><col><col></colgroup>
-		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th>Date</th><th>Size</th><th title="다운, 압축, 삭제(dmp, zip)">Ac.</th></tr></thead>
+		<thead><tr><th>No.</th><th>Machine</th><th>Folder</th><th>File</th><th>Date</th><th>Size</th><th title="덤프 작업">Ac.</th></tr></thead>
 		<tbody id="DumpBody"></tbody>
 		</table>
 		</div>
@@ -676,15 +676,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="resulthead"><div class="title" id="FileTitle"></div></div>
 		<div class="scroll" id="FileScroll"><ul class="tree" id="FileTree"></ul></div>
 		</section>
-		<div class="vsplitter" id="FileSplitter" title="좌우 폭 조절"></div>
+		<div class="vsplitter" id="FileSplitter" title="폭 조절"></div>
 		<section class="panel" id="FileViewPanel">
 		<div class="resulthead">
 		<div class="title" id="FileViewTitle">*.log·*.txt·*.json·*.ini·*.bat·*.xml·*.config·*.md·*.lua</div>
 		<div class="toolright">
 		<div class="btngroup">
-		<button type="button" id="FilePrev" title="포지션 위로(줄 단위, 위에 쌓임)" aria-label="포지션 위로" disabled>«</button>
+		<button type="button" id="FilePrev" title="포지션 위로" aria-label="포지션 위로" disabled>«</button>
 		<button type="button" id="FileShift" tabindex="-1" aria-label="포지션">0</button>
-		<button type="button" id="FileNext" title="포지션 아래로(줄 단위, 아래에 쌓임)" aria-label="포지션 아래로" disabled>»</button>
+		<button type="button" id="FileNext" title="포지션 아래로" aria-label="포지션 아래로" disabled>»</button>
 		</div>
 		</div>
 		</div>
@@ -698,8 +698,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="title" id="ManagerServerTitle">서버</div>
 		<div class="toolright">
 		<button type="button" id="ManagerPatchButton" title="패치 시간(unix)">패치</button>
-		<span class="chip before" title="패치 시간 이전 기동">전</span>
-		<span class="chip after" title="패치 시간 이후 기동">후</span>
+		<span class="chip before" title="패치 전">전</span>
+		<span class="chip after" title="패치 후">후</span>
 		<b class="mono" id="ManagerPatchTime" title="패치 시간">-</b>
 		<button type="button" id="ManagerRefresh" class="iconbtn" title="새로 고침" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button>
 		</div>
@@ -722,9 +722,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</details>
 		<div class="progress" id="ManagerProgress" hidden></div>
 		</section>
-		<div class="vsplitter" id="ManagerSplitter" title="좌우 폭 조절"></div>
+		<div class="vsplitter" id="ManagerSplitter" title="폭 조절"></div>
 		<section class="panel" id="ManagerSidePanel">
-		<nav id="ManagerSideTab"><button type="button" id="ManagerCcuButton" class="cur">동접</button><button type="button" id="ManagerChartButton">차트</button><button type="button" id="ManagerMonitorButton">모니터</button><button type="button" id="ManagerCcuRefresh" class="iconbtn" title="새로 고침(동접 조회)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button></nav>
+		<nav id="ManagerSideTab"><button type="button" id="ManagerCcuButton" class="cur">동접</button><button type="button" id="ManagerChartButton">차트</button><button type="button" id="ManagerMonitorButton">모니터</button><button type="button" id="ManagerCcuRefresh" class="iconbtn" title="새로 고침" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button></nav>
 		<div id="ManagerCcuPanel">
 		<div class="resulthead">
 		<div class="title">Peak Concurrent Users</div>
@@ -772,7 +772,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div id="ProcessCards"></div>
 		<section class="panel" id="ProcessFilter">
 		<div class="filter">
-		<input type="text" id="ProcessSearch" title="검색(이름, 머신, 커밋, 명령)" autocomplete="off" spellcheck="false" autocapitalize="off">
+		<input type="text" id="ProcessSearch" title="서버 검색" autocomplete="off" spellcheck="false" autocapitalize="off">
 		<div class="chips" id="ProcessChips"></div>
 		<select id="ProcessMachine" title="머신"><option value="">모든 머신</option></select>
 		</div>
@@ -782,11 +782,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="resulthead">
 		<div class="pager" id="ProcessPager" hidden></div>
 		<div class="toolright">
-		<span id="ProcessTest" hidden><button type="button" id="ProcessTestOn" class="needs-conn" title="모든 서버 바로 On,True(테스트)">TestOn</button><button type="button" id="ProcessTestOff" class="needs-conn" title="모든 서버 바로 Off,True,0(테스트)">TestOff</button></span>
-		<span id="ProcessVersion" title="설정 버전(Data\Server.txt)"></span>
+		<span id="ProcessTest" hidden><button type="button" id="ProcessTestOn" class="needs-conn" title="테스트 시작">TestOn</button><button type="button" id="ProcessTestOff" class="needs-conn" title="테스트 정지">TestOff</button></span>
+		<span id="ProcessVersion" title="설정 버전"></span>
 		<button type="button" id="ProcessSummaryButton" title="현황·필터">현황</button>
 		<button type="button" id="ProcessLogButton" title="작업 로그">로그</button>
-		<button type="button" id="ProcessErrButton" title="에러 로그(Redis)">에러</button>
+		<button type="button" id="ProcessErrButton" title="에러 로그">에러</button>
 		<button type="button" id="ProcessAddButton" class="needs-conn" title="서버 등록">등록</button>
 		<button type="button" id="ProcessExpandButton" title="모두 펴기">펴기</button>
 		<button type="button" id="ProcessCollapseButton" title="모두 접기">접기</button>
@@ -856,7 +856,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<label for="AlarmEnable" class="alarmrow">사용</label><span class="alarmrow"><input type="checkbox" id="AlarmEnable"></span>
 		</div>
 		<div class="toolright">
-		<button type="button" id="AlarmTest" class="alarmrow" title="메일·훅 바로 발송">테스트</button>
+		<button type="button" id="AlarmTest" class="alarmrow" title="발송 테스트">테스트</button>
 		<button type="button" id="QuerySaveOk" class="primary">저장</button>
 		<button type="button" id="QuerySaveCancel">취소</button>
 		</div>
@@ -889,7 +889,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="savedlist"><table id="AccountTable"><tbody id="AccountList"></tbody></table></div>
 		<div class="pager" id="AccountPager"></div>
 		<div class="toolright">
-		<button type="button" id="AccountAdd" title="계정 추가 (관리 계정, 관리 비밀번호)" hidden>추가</button>
+		<button type="button" id="AccountAdd" title="계정 추가" hidden>추가</button>
 		<button type="button" id="AccountClose" autofocus>닫기</button>
 		</div>
 		</dialog>
@@ -902,9 +902,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<label for="AccountEditPhone" class="editrow">전화</label><input type="text" id="AccountEditPhone" class="editrow" maxlength="20" autocomplete="off" spellcheck="false" inputmode="tel">
 		<label class="editrow">메뉴</label><span class="editrow" id="AccountEditMenu"></span>
 		<label class="editrow">외부</label><span class="editrow" id="AccountEditApi"></span>
-		<label class="keyrow">키</label><span class="keyrow keybox"><span id="AccountEditKey"></span><button type="button" id="AccountEditKeyNew" title="새 키 만들기 (관리 비밀번호 입력 → 적용: 저장, 예전 키·링크: 못 씀)">새 키</button></span>
+		<label class="keyrow">키</label><span class="keyrow keybox"><span id="AccountEditKey"></span><button type="button" id="AccountEditKeyNew" title="키 생성">새 키</button></span>
 		<label class="keyrow">토큰</label><span class="keyrow" id="AccountEditToken"></span>
-		<label for="AccountEditAdmin">관리 비번</label><span class="adminbox"><input type="password" id="AccountEditAdmin" maxlength="100" autocomplete="new-password"><button type="button" id="AccountEditKeyApply" class="keyrow" title="새 키 적용 (관리 비밀번호 확인 → 저장)" disabled>적용</button></span>
+		<label for="AccountEditAdmin">관리 비번</label><span class="adminbox"><input type="password" id="AccountEditAdmin" maxlength="100" autocomplete="new-password"><button type="button" id="AccountEditKeyApply" class="keyrow" title="키 적용" disabled>적용</button></span>
 		</div>
 		<div class="toolright">
 		<button type="button" id="AccountEditOk" class="primary">저장</button>
@@ -1492,9 +1492,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		}
 
-		function ShowStatus()	// 설정 버튼 툴팁 (지금 탭 설정·상태 요약)
+		function ShowStatus()	// 설정 버튼 툴팁 (설정 관리, 상태 값: 설정 팝업)
 		{
-		    kSettingButton.title = IsQueryMode() ? `설정(쿼리 제한 ${nQueryLimitSec}초)` : `설정(접속 ${nMachineCount}, 머신당 ${nMachineMax}, 최대 ${nResultMax}, 서치 제한 ${nSearchLimitSec}초, ${sSort === SORT_TIME ? "시간" : "머신"} 정렬)`;
+		    kSettingButton.title = "설정 관리";
 		}
 
 		function ClampLimit(value, nDefault, nLimit)	// 최대 건수 값 정리 (정수 1 ~ nLimit, 그 외: nDefault)
@@ -1824,7 +1824,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kPos.kPrev.disabled		= arrRange == null || nNow <= arrRange[0];
 		    kPos.kNext.disabled		= arrRange == null || nNow >= arrRange[1];
 		    kPos.kShift.textContent	= String(nNow);
-		    kPos.kShift.title		= arrRange == null ? "포지션" : `포지션(${arrRange[0]} ~ ${arrRange[1]})`;
+		    kPos.kShift.title		= arrRange == null ? "포지션" : `포지션 ${arrRange[0]} ~ ${arrRange[1]}`;
 		}
 
 		function SchedulePos(kPos)	// 스크롤: 포지션 표시 예약 (스크롤 여러 번: 화면 그릴 때 1번만)
@@ -1857,7 +1857,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kInput.type			= "text";
 		    kInput.id			= kPos.sInput;
-		    kInput.title		= `포지션(${arrRange[0]} ~ ${arrRange[1]})`;
+		    kInput.title		= `포지션 ${arrRange[0]} ~ ${arrRange[1]}`;
 		    kInput.value		= kShift.textContent;
 		    kInput.style.width	= `${Math.max(kShift.offsetWidth, 44)}px`;
 		    kInput.style.height	= `${kShift.offsetHeight}px`;
@@ -1934,7 +1934,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kInput.type			= "text";
 		    kInput.id			= "TimerInput";
-		    kInput.title		= `${kItem.sName} 타이머 주기(초, ${TIMER_SEC_MIN} ~ ${TIMER_SEC_MAX})`;
+		    kInput.title		= "타이머 주기(초)";
 		    kInput.value		= String(kItem.nSec);
 		    kInput.style.width	= `${Math.max(kTimerButton.offsetWidth, 44)}px`;
 		    kInput.style.height	= `${kTimerButton.offsetHeight}px`;
@@ -3521,7 +3521,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		        if (kAccount.bMain)	// 관리 계정: 설정 파일에서만
 		        {
 		            kAct.textContent	= "관리";
-		            kAct.title			= "관리 계정 (Server.json sID·sCode, 모든 메뉴, 비밀번호: 관리 비밀번호)";
+		            kAct.title			= "관리 계정";
 
 		            return kRow;
 		        }

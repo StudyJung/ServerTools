@@ -405,7 +405,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		            kDelete.className		= "qdel";
 		            kDelete.dataset.action	= "delete";
 		            kDelete.ariaLabel		= "삭제";
-		            kDelete.title			= "삭제(dmp, zip)";
+		            kDelete.title			= "덤프 삭제";
 		            kAction.append(kDown, kDelete);
 
 		            Dump.SetDumpButton(kDown, kDump.bZip, kDump.sBusy ?? null);	// zip 있음: 다운, 없음: 압축, 진행 중: 진행 글 (다시 그려도 유지)

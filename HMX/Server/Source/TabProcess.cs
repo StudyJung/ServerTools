@@ -520,7 +520,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            const	nDrift	= kSec.arrGroup.reduce((nSum, kGroup) => nSum + Process.GetDrift(kGroup.arrRow).length, 0);
 		            const sTag		= (kCount.failed ? `<span class="tag fail">✕ Failed ${kCount.failed}</span>` : "")
 		                + (kCount.transit ? `<span class="tag start"><span class="spin"></span> 진행 중 ${kCount.transit}</span>` : "")
-		                + (nDrift ? `<span class="tag warn" title="그룹 다수와 다른 커밋">⚠ 커밋 불일치 ${nDrift}</span>` : "")
+		                + (nDrift ? `<span class="tag warn" title="다른 커밋">⚠ 커밋 불일치 ${nDrift}</span>` : "")
 		                + (!kCount.failed && !kCount.transit && !nDrift && kCount.running === kCount.total ? `<span class="tag run">정상</span>` : "")
 		                + (kCount.running === 0 && !kCount.failed && !kCount.transit ? `<span class="tag off">전체 정지</span>` : "");
 
@@ -591,15 +591,15 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        const	sLock	= sScope === "srv" && kCount.transit ? " disabled" : "";
 		        const	sKey	= Process.Escape(sId);
 
-		        return `<span class="pair"><button type="button" class="pbtn ${sOn} needs-conn" data-act="op" data-op="On" data-scope="${sScope}" data-id="${sKey}"${sLock} title="시작${bAllOn ? "(이미 실행 중)" : ""}" aria-label="시작">▶</button>`
-		            + `<button type="button" class="pbtn ${sOff} needs-conn" data-act="op" data-op="Off" data-scope="${sScope}" data-id="${sKey}"${sLock} title="정지${bAllOff ? "(이미 정지됨)" : ""}" aria-label="정지">■</button></span>`;
+		        return `<span class="pair"><button type="button" class="pbtn ${sOn} needs-conn" data-act="op" data-op="On" data-scope="${sScope}" data-id="${sKey}"${sLock} title="시작${bAllOn ? "(실행 중)" : ""}" aria-label="시작">▶</button>`
+		            + `<button type="button" class="pbtn ${sOff} needs-conn" data-act="op" data-op="Off" data-scope="${sScope}" data-id="${sKey}"${sLock} title="정지${bAllOff ? "(정지됨)" : ""}" aria-label="정지">■</button></span>`;
 		    }
 
 		    static DownButton(sScope, sId, arrList)	// 다운 버튼 (다운 중: 보라 깜빡임, 서버 진행 중: 잠금)
 		    {
 		        const	kCount	= Process.GetCount(arrList);
 
-		        return `<button type="button" class="pbtn down${kCount.downloading ? " pend" : ""} needs-conn" data-act="op" data-op="Down" data-scope="${sScope}" data-id="${Process.Escape(sId)}"${sScope === "srv" && kCount.transit ? " disabled" : ""} title="다운(Git 갱신, 실행 중 불가)" aria-label="다운">↓</button>`;
+		        return `<button type="button" class="pbtn down${kCount.downloading ? " pend" : ""} needs-conn" data-act="op" data-op="Down" data-scope="${sScope}" data-id="${Process.Escape(sId)}"${sScope === "srv" && kCount.transit ? " disabled" : ""} title="Git 갱신" aria-label="다운">↓</button>`;
 		    }
 
 		    static KebabButton(sScope, sId)	// 줄 메뉴 버튼 (⋯)
@@ -613,7 +613,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        const	arrSec	= Process.GetModel();
 		        const	arrPage	= Process.GetPages(arrSec);
 		        const	sPage	= Process.GetCurPage(arrPage);	// 지금 페이지 (필터 중: 안 씀)
-		        const sHead			= `<thead><tr><th class="c-btn"><button type="button" class="th-help" data-act="legend" title="범례(힌트)">작업 ⓘ</button></th><th class="c-name">이름</th><th class="c-state">상태</th><th class="c-machine">머신</th><th class="c-pid">PID</th><th class="c-commit">커밋</th><th class="c-act"></th></tr></thead>`;
+		        const sHead			= `<thead><tr><th class="c-btn"><button type="button" class="th-help" data-act="legend" title="작업 범례">작업 ⓘ</button></th><th class="c-name">이름</th><th class="c-state">상태</th><th class="c-machine">머신</th><th class="c-pid">PID</th><th class="c-commit">커밋</th><th class="c-act"></th></tr></thead>`;
 		        let	sHtml			= "";
 
 		        for (const kSec of arrSec)
@@ -647,7 +647,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		                sRows += `<tr class="grp-row${bGroupOpen ? " open" : ""}" data-act="toggle" data-id="g:${Process.Escape(kGroup.sId)}"><td colspan="7"><div class="row-head">${Process.PairButtons("grp", kGroup.sId, kGroup.arrRow)}`
 		                    + `<span class="chev">▶</span><span class="grp-name">${Process.Escape(kGroup.sLabel)}</span><span class="muted">${kGroupCount.running}/${kGroupCount.total}</span>`
-		                    + (kGroupCount.failed ? `<span class="tag fail">✕ ${kGroupCount.failed}</span>` : "") + (nDrift ? `<span class="tag warn" title="그룹 다수 커밋: ${Process.Escape(sMajor)}">⚠ 커밋 불일치 ${nDrift}</span>` : "")
+		                    + (kGroupCount.failed ? `<span class="tag fail">✕ ${kGroupCount.failed}</span>` : "") + (nDrift ? `<span class="tag warn" title="다수 커밋: ${Process.Escape(sMajor)}">⚠ 커밋 불일치 ${nDrift}</span>` : "")
 		                    + `<span class="acts">${Process.DownButton("grp", kGroup.sId, kGroup.arrRow)}${Process.KebabButton("grp", kGroup.sId)}</span></div></td></tr>`;
 
 		                if (!bGroupOpen)
@@ -661,7 +661,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		                    const	kInfo	= Process.GetInfo(kRow);
 		                    const	sKey	= Process.Escape(kRow.sField);
 		                    const sPid		= kInfo.nPid > 0 ? String(kInfo.nPid) : `<span class="muted">${Process.Escape(isNaN(kInfo.nPid) ? "—" : kInfo.nPid)}</span>`;
-		                    const sCommit	= kInfo.sCommit !== sMajor ? `<span class="commit drift" title="그룹 다수 커밋: ${Process.Escape(sMajor)}">⚠ ${Process.Escape(kInfo.sCommit)}</span>` : `<span class="commit">${Process.Escape(kInfo.sCommit)}</span>`;
+		                    const sCommit	= kInfo.sCommit !== sMajor ? `<span class="commit drift" title="다수 커밋: ${Process.Escape(sMajor)}">⚠ ${Process.Escape(kInfo.sCommit)}</span>` : `<span class="commit">${Process.Escape(kInfo.sCommit)}</span>`;
 
 		                    sRows += `<tr class="srv-row ${sState}${Process.sDrawer === kRow.sField ? " active" : ""}${Process.sSelect === kRow.sField ? " sel" : ""}" data-act="select" data-id="${sKey}" data-key="${sKey}">`
 		                        + `<td class="c-btn">${Process.PairButtons("srv", kRow.sField, [kRow])}</td><td class="c-name" title="${sKey}">${Process.Escape(Process.GetLabel(kRow.sField))}</td><td class="c-state">${Process.Badge(kRow)}</td>`
@@ -1204,17 +1204,17 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            + (bEdit ? "" : `<label for="ProcessFormClone">기존 서버에서 값 가져오기 <span class="opt">(선택)</span></label><div class="field"><select id="ProcessFormClone"><option value="">— 빈 양식으로 시작 —</option>${Process.arrRow.map(kRow => `<option${kSrc != null && kSrc.sField === kRow.sField ? " selected" : ""}>${Process.Escape(kRow.sField)}</option>`).join("")}</select></div>`)
 		            + (bRunning ? `<div class="notice warn">실행 중인 서버입니다. 실행 설정 변경은 다음 시작 때 적용됩니다.</div>` : "")
 		            + `<div class="form-sec">String (Redis 키) — 대분류,중분류,이름</div>`
-		            + `<label for="ProcessFormSec">대분류</label><div class="field"><input id="ProcessFormSec" list="ProcessSecList" value="${Process.Escape(arrKey[0])}" title="대분류(예: 111_DEV)" spellcheck="false" autocapitalize="off"><datalist id="ProcessSecList">${funcOption(arrSec)}</datalist><span class="err">대분류를 입력하세요</span></div>`
-		            + `<label for="ProcessFormGroup">중분류</label><div class="field"><input id="ProcessFormGroup" list="ProcessGroupList" value="${Process.Escape(arrKey[1] ?? "")}" title="중분류(예: 1_Center)" spellcheck="false" autocapitalize="off"><datalist id="ProcessGroupList">${funcOption(arrGroup)}</datalist><span class="err">중분류를 입력하세요</span></div>`
+		            + `<label for="ProcessFormSec">대분류</label><div class="field"><input id="ProcessFormSec" list="ProcessSecList" value="${Process.Escape(arrKey[0])}" title="대분류" spellcheck="false" autocapitalize="off"><datalist id="ProcessSecList">${funcOption(arrSec)}</datalist><span class="err">대분류를 입력하세요</span></div>`
+		            + `<label for="ProcessFormGroup">중분류</label><div class="field"><input id="ProcessFormGroup" list="ProcessGroupList" value="${Process.Escape(arrKey[1] ?? "")}" title="중분류" spellcheck="false" autocapitalize="off"><datalist id="ProcessGroupList">${funcOption(arrGroup)}</datalist><span class="err">중분류를 입력하세요</span></div>`
 		            + `<label for="ProcessFormName">이름</label><div class="field"><input id="ProcessFormName" value="${Process.Escape(sName)}" spellcheck="false" autocapitalize="off"${bEdit ? "" : " autofocus"}><span class="err">이름을 입력하세요</span></div>`
 		            + `<div class="form-sec">실행 위치</div>`
 		            + `<label for="ProcessFormMachine">머신이름 <span class="opt">(${arrMachine.length}대)</span></label><div class="field"><div class="combo"><input class="mono" id="ProcessFormMachine" value="${Process.Escape(kInfo.sMachine)}" spellcheck="false" autocapitalize="off"><button type="button" class="cb-btn" tabindex="-1" title="머신 목록" aria-label="머신 목록">▾</button><div class="cb-list" hidden></div></div><span class="err">머신이름을 입력하세요</span></div>`
-		            + `<label for="ProcessFormFolder">다운폴더</label><div class="field"><input class="mono" id="ProcessFormFolder" value="${Process.Escape(kInfo.sFolder)}" title="다운폴더(예: C:\\NHNServices\\...)" spellcheck="false" autocapitalize="off"><span class="err">드라이브 경로(C:\\…)로 입력하세요</span></div>`
+		            + `<label for="ProcessFormFolder">다운폴더</label><div class="field"><input class="mono" id="ProcessFormFolder" value="${Process.Escape(kInfo.sFolder)}" title="다운 폴더" spellcheck="false" autocapitalize="off"><span class="err">드라이브 경로(C:\\…)로 입력하세요</span></div>`
 		            + `<label for="ProcessFormRepo">깃헙폴더</label><div class="field"><input class="mono" id="ProcessFormRepo" value="${Process.Escape(kInfo.sRepo)}" spellcheck="false" autocapitalize="off"><span class="help">다운폴더 안의 저장소 폴더</span></div>`
 		            + `<div class="form-sec">실행 방식</div>`
 		            + `<label for="ProcessFormSync">Sync</label><div class="field"><label class="switch"><input type="checkbox" id="ProcessFormSync"${kInfo.sSync !== "0" ? " checked" : ""}> 시작할 때 Git 갱신</label><span class="help">끄면 현재 폴더 그대로 실행 (Sync=0)</span></div>`
 		            + `<label>Mode</label><div class="field"><div class="seg"><label><input type="radio" name="ProcessFormMode" value="0"${kInfo.sMode !== "1" ? " checked" : ""}>0 · Detached 독립실행</label><label><input type="radio" name="ProcessFormMode" value="1"${kInfo.sMode === "1" ? " checked" : ""}>1 · Graceful 콘솔+Ctrl+C</label></div></div>`
-		            + `<label for="ProcessFormCmd">실행파일+인자들</label><div class="field"><input class="mono" id="ProcessFormCmd" value="${Process.Escape(kInfo.sCmd)}" title="실행파일+인자들(예: BoxMT.exe -c _XLO_CommonService.xml)" spellcheck="false" autocapitalize="off"><span class="err">실행파일을 입력하세요</span></div>`
+		            + `<label for="ProcessFormCmd">실행파일+인자들</label><div class="field"><input class="mono" id="ProcessFormCmd" value="${Process.Escape(kInfo.sCmd)}" title="실행 명령" spellcheck="false" autocapitalize="off"><span class="err">실행파일을 입력하세요</span></div>`
 		            + `<details class="adv"><summary>고급 — State 직접 편집 (상태,적용,PID,커밋해시)</summary><div class="muted">State는 HMXClient가 관리합니다. 꼬였을 때만 수정하세요.</div><label class="switch"><input type="checkbox" id="ProcessFormUnlock"> 직접 편집 허용</label><div class="field"><input class="mono" id="ProcessFormState" value="${Process.Escape(sState)}" spellcheck="false" autocapitalize="off" readonly><span class="err">State는 비울 수 없습니다</span></div></details>`
 		            + `<div class="preview" id="ProcessFormPreview"></div></form>`
 		            + `<div class="toolright"><button type="button" class="primary" data-act="saveForm" data-id="${bEdit ? Process.Escape(kSrc.sField) : ""}" title="저장(Enter)">${bEdit ? "저장" : "등록"}</button><button type="button" data-act="modalCancel" title="취소(Esc)">취소</button></div>`, "wide");
@@ -1670,10 +1670,10 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        const sMinute	= Array.from({ length: 60 }, (_, nIndex) => `<option>${Process.Pad(nIndex)}</option>`).join("");
 		        const kDialog	= Process.OpenModal(`<div class="resulthead"><div class="title">작업 로그</div><span class="hint">반영 로그 · 최신순 ${Process.PAGE_SIZE}줄 단위</span></div>`
 		            + `<div class="filter"><div class="chips">${Process.LOG_RANGE.map(([sId, sName]) => `<button type="button" class="chip${Process.kLogState.sRange === sId ? " cur" : ""}" data-act="logRange" data-id="${sId}">${sName}</button>`).join("")}</div>`
-		            + `<label title="Start(날짜, 시, 분, 포함)"><input type="date" id="ProcessLogStartDate"><select class="hour" id="ProcessLogStartHour">${sHour}</select><select class="hour" id="ProcessLogStartMinute">${sMinute}</select><span class="rangeop">이상</span></label>`
-		            + `<label title="End(날짜, 시, 분, 포함)"><input type="date" id="ProcessLogEndDate"><select class="hour" id="ProcessLogEndHour">${sHour}</select><select class="hour" id="ProcessLogEndMinute">${sMinute}</select><span class="rangeop">이하</span></label>`
-		            + `<button type="button" data-act="logCustom" title="직접 지정 조회">조회</button></div>`
-		            + `<div class="filter"><div class="chips" id="ProcessLogTypes"></div><input type="text" id="ProcessLogKey" title="검색(대상, 사용자, 내용, 지금 페이지)" value="${Process.Escape(Process.kLogState.sKey)}" autocomplete="off" spellcheck="false" autocapitalize="off"></div>`
+		            + `<label title="시작 시간(포함)"><input type="date" id="ProcessLogStartDate"><select class="hour" id="ProcessLogStartHour">${sHour}</select><select class="hour" id="ProcessLogStartMinute">${sMinute}</select><span class="rangeop">이상</span></label>`
+		            + `<label title="종료 시간(포함)"><input type="date" id="ProcessLogEndDate"><select class="hour" id="ProcessLogEndHour">${sHour}</select><select class="hour" id="ProcessLogEndMinute">${sMinute}</select><span class="rangeop">이하</span></label>`
+		            + `<button type="button" data-act="logCustom" title="기간 조회">조회</button></div>`
+		            + `<div class="filter"><div class="chips" id="ProcessLogTypes"></div><input type="text" id="ProcessLogKey" title="로그 검색" value="${Process.Escape(Process.kLogState.sKey)}" autocomplete="off" spellcheck="false" autocapitalize="off"></div>`
 		            + `<div class="scrollwrap"><div class="scroll" id="ProcessLogScroll"><table class="log"><thead><tr><th class="c-time">시간</th><th class="c-level">레벨</th><th class="c-type">종류</th><th>내용</th></tr></thead><tbody id="ProcessLogBody"></tbody></table></div><div class="progress" id="ProcessLogProgress" hidden></div></div>`
 		            + `<div class="toolright"><span class="hint" id="ProcessLogCount"></span><button type="button" data-act="logPage" data-id="prev">▲ 더 최신</button><button type="button" data-act="logPage" data-id="next">더 과거 ▼</button><button type="button" data-act="modalCancel" autofocus>닫기</button></div>`, "xl");
 
@@ -1881,7 +1881,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        Process.nErrOffset = 0;
 
 		        const kDialog = Process.OpenModal(`<div class="resulthead"><div class="title">에러</div><span class="hint">Redis 에러 리스트 · 같은 서버·같은 종류는 묶어서 표시 · ${Process.PAGE_SIZE}건 단위</span></div>`
-		            + `<div class="filter"><select id="ProcessErrMachine" title="머신"><option value="">모든 머신</option></select><select id="ProcessErrLevel" title="레벨"><option value="">모든 레벨</option><option>ERROR</option><option>FATAL</option></select><input type="text" id="ProcessErrKey" title="검색(서버, 경로)" value="${Process.Escape(Process.kErrState.sKey)}" autocomplete="off" spellcheck="false" autocapitalize="off"></div>`
+		            + `<div class="filter"><select id="ProcessErrMachine" title="머신"><option value="">모든 머신</option></select><select id="ProcessErrLevel" title="레벨"><option value="">모든 레벨</option><option>ERROR</option><option>FATAL</option></select><input type="text" id="ProcessErrKey" title="에러 검색" value="${Process.Escape(Process.kErrState.sKey)}" autocomplete="off" spellcheck="false" autocapitalize="off"></div>`
 		            + `<div class="scrollwrap"><div class="scroll" id="ProcessErrScroll"><div id="ProcessErrBody"></div></div><div class="progress" id="ProcessErrProgress" hidden></div></div>`
 		            + `<div class="toolright"><span class="hint" id="ProcessErrCount"></span><button type="button" data-act="errPage" data-id="prev">▲ 더 최신</button><button type="button" data-act="errPage" data-id="next">더 과거 ▼</button><button type="button" data-act="modalCancel" autofocus>닫기</button></div>`, "xl");
 		        const	kLevel	= kDialog.querySelector("#ProcessErrLevel");
@@ -2011,7 +2011,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		            const	kRow	= Process.FindRow(kGroup.sTarget) ?? Process.arrRow.find(kItem => Process.GetTarget(kItem.sField) === Process.GetTarget(kGroup.sTarget));
 		            const	sLast	= kGroup.arrItem[0].sTime;
 		            const	sFirst	= kGroup.arrItem[kGroup.arrItem.length - 1].sTime;
-		            const sGoto		= kRow != null ? `<button type="button" data-act="errGoto" data-id="${Process.Escape(kRow.sField)}">서버 보기</button>` : (kGroup.sTarget.includes(",") ? `<span class="tag off" title="목록에 없는 서버(삭제, 이름 변경)">목록에 없음</span>` : "");
+		            const sGoto		= kRow != null ? `<button type="button" data-act="errGoto" data-id="${Process.Escape(kRow.sField)}">서버 보기</button>` : (kGroup.sTarget.includes(",") ? `<span class="tag off" title="없는 서버">목록에 없음</span>` : "");
 
 		            return `<div class="eg"><div class="eg-head" data-act="errToggle"><span class="lv ${Process.Escape(kGroup.sLevel)}">${Process.Escape(kGroup.sLevel)}</span><div class="eg-title"><b>${Process.Escape(kGroup.sKind)}</b><span class="mono">${Process.Escape(kGroup.sTarget)}</span></div>`
 		                + `<div class="eg-meta"><div><span class="eg-count">×${kGroup.arrItem.length}</span> · ${Process.Escape(kGroup.sMachine)}</div><div class="mono">${kGroup.arrItem.length > 1 ? Process.Escape(sFirst) + " ~ " : ""}${Process.Escape(sLast)}</div></div>${sGoto}</div>`

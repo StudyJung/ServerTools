@@ -4578,7 +4578,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        const	nLast	= Query.GetBack(bQuery).length - 1;	// 마지막 실행 위치
 
 		        kPrev.disabled										= nPos <= 0;
-		        kPrev.title											= `네비게이션: 뒤로(이전 실행, 최대 ${Query.BACK_MAX}회)`;
+		        kPrev.title											= "뒤로";
 		        document.getElementById("RunNext").disabled		= nPos < 0 || nPos >= nLast;
 		        document.getElementById("RunDepth").textContent	= String(nPos - nLast);
 		    }
@@ -6727,7 +6727,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            kItem.classList.toggle("baseend", kField.bBase && arrShow[nIndex + 1]?.bBase !== true);	// 기본 필드 끝: 아래 구분선
 		            kName.className		= "fieldname";
 		            kName.dataset.field	= kField.sName;
-		            kName.title			= `${kField.sName}(${kField.bBase ? "기본 필드" : "설정 aField"})`;
+		            kName.title			= (kField.bBase ? "기본 필드" : "추가 필드");
 
 		            kItem.append(kName);
 		            kFragment.append(kItem);
