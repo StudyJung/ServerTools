@@ -38,7 +38,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	UNIX_DIGIT	= 10;	// Unix 칸 자릿수 (초, 고정: 넘는 자리 입력 안 됨)
 		    static	nDragIndex	= -1;	// 2번 창 끄는 줄 (arrTime 번호, 없음: -1)
 		    static	sDateLast	= "";	// KST 날짜 마지막 맞는 값 (범위 밖: 되돌림)
-		    static	SORT_FOLD_MAX	= 5000;	// 소트 접힘 한 줄 최대 글자 (안쪽 글 넘음: … 상자)
+		    static	SORT_FOLD_MAX	= 1000;	// 소트 접힘 한 줄: { }·[ ] 마다 안쪽 최대 글자 (넘음: { ... })
 		    static	SORT_BACK_MAX	= 10;	// 소트 네비게이션 기억 (실행한 입력, 넘음: 가장 오래된 것 버림)
 		    static	arrSortBack	= [];	// 소트 네비게이션 기억 [{ sText, sName, kFile: 연 파일 (저장: 그 파일에 덮어씀, 없음: null), bRun: 펼침 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
 		    static	nSortPos	= -1;	// 소트 네비게이션 지금 위치 (없음: -1)
@@ -2752,9 +2752,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilSortRightSave").disabled		= Util.arrSortLine.length === 0;
 		    }
 
-		    static OnSortFold(kEvent)	// 우 창 접기 표시·접힌 … 누름: 그 { }·[ ] 접기·펴기
+		    static OnSortFold(kEvent)	// 우 창 접기 표시 (▾·▸) 누름: 그 { }·[ ] 접기·펴기
 		    {
-		        const	kRow	= kEvent.target.closest(".jf, .jdots")?.closest(".jl");
+		        const	kRow	= kEvent.target.closest(".jf")?.closest(".jl");
 
 		        if (kRow != null)
 		        {
@@ -2764,7 +2764,39 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: 안쪽 글 한 줄 "키": { "a": 1, … }, , 안쪽 X 자 넘음: "키": {…},)·펴기 (안쪽 접힘: 그대로)
+		    static FoldInner(nOpen)	// 접는 블록 안쪽 한 줄 (여는 줄 ~ 닫는 줄 사이 줄, 앞뒤 빈칸 뗌·빈칸 하나로 이음·빈 줄 뺌, 안쪽 여러 줄 블록: 그 블록도 한 줄), 안쪽 X 자 넘음: ... (블록마다 안쪽부터: { "nMinute": { ... } }, 넘으면 나머지 안 봄)
+		    {
+		        const	nClose	= Util.mapSortFold.get(nOpen);
+		        let		sInner	= "";
+
+		        for (let nIndex = nOpen + 1; nIndex < nClose; ++nIndex)
+		        {
+		            let	sPart	= Util.arrSortLine[nIndex].trim();
+
+		            if (Util.mapSortFold.has(nIndex))	// 안쪽 여러 줄 블록: 그 블록도 한 줄 (여는 줄 + 안쪽 + 닫는 줄)
+		            {
+		                const	nEnd	= Util.mapSortFold.get(nIndex);
+		                const	sChild	= Util.FoldInner(nIndex);
+
+		                sPart	= `${sPart}${sChild === "" ? "" : ` ${sChild} `}${Util.arrSortLine[nEnd].trim()}`;
+		                nIndex	= nEnd;
+		            }
+
+		            if (sPart !== "")
+		            {
+		                sInner += (sInner === "" ? "" : " ") + sPart;
+		            }
+
+		            if (sInner.length > Util.SORT_FOLD_MAX)
+		            {
+		                return "...";
+		            }
+		        }
+
+		        return sInner;
+		    }
+
+		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: 안쪽 글 한 줄 "키": { "a": 1, … }, , { }·[ ] 마다 안쪽 X 자 넘음: { ... })·펴기 (안쪽 접힘: 그대로)
 		    {
 		        const	nEnd	= Util.mapSortFold.get(nStart);
 		        const	arrRow	= document.getElementById("UtilSortRightBody").children;
@@ -2793,29 +2825,15 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        kRow.querySelector(".jtail")?.remove();
 
-		        if (bFold)	// 접힘: 안쪽 글 한 줄 + 닫는 줄 (예: { "sQuery": "INFO" },, 안쪽 X 자 넘음: … + 닫는 줄)
+		        if (bFold)	// 접힘: 안쪽 글 한 줄 + 닫는 줄 (예: { "sQuery": "INFO" },, 안쪽 { }·[ ] 마다 X 자 넘음: { ... })
 		        {
 		            const	kTail	= document.createElement("span");
-		            const	sInner	= Util.arrSortLine.slice(nStart + 1, nEnd).map((sLine) => sLine.trim()).filter((sLine) => sLine !== "").join(" ");	// 안쪽 줄 (빈 줄 뺌, 안쪽 접힘: 다 보임)
+		            const	sInner	= Util.FoldInner(nStart);	// 안쪽 한 줄
 		            const	sClose	= Util.arrSortLine[nEnd].trim();	// 닫는 줄 (예: },)
 
 		            kTail.className = "jtail";
 
-		            if (sInner.length <= Util.SORT_FOLD_MAX)
-		            {
-		                kTail.append(sInner === "" ? sClose : ` ${sInner} ${sClose}`);
-		            }
-		            else	// 길음: … 상자 (누름: 펼침)
-		            {
-		                const	kDots	= document.createElement("span");
-
-		                kDots.className		= "jdots";
-		                kDots.textContent	= "…";
-		                kDots.title			= "펼치기";
-
-		                kTail.append(kDots, sClose);
-		            }
-
+		            kTail.append(sInner === "" ? sClose : ` ${sInner} ${sClose}`);
 		            kRow.querySelector(".jt").append(kTail);
 
 		            Util.setSortFold.add(nStart);
