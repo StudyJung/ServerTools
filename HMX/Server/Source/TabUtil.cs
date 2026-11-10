@@ -715,7 +715,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.ShowDiffBack();
 		    }
 
-		    static SaveDiffBack()	// 디프 네비게이션 지금 좌·우 글 기억 (실행·← → 떠날 때): 새 입력 (좌·우 리셋 뒤 입력·파일 열기)·처음: 새 기억 (지금 기억과 같은 글: 안 넣음, 과거에서: 그 뒤 기억 버림, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 좌·우 다 비움: 안 함, bRun: 지금 비교 중 (실행 전 글: false → 돌아와도 비교 안 함)
+		    static SaveDiffBack()	// 디프 네비게이션 지금 좌·우 글 기억 (실행·← → 떠날 때): 새 입력 (좌·우 리셋 뒤 입력·파일 열기)·처음: 새 기억 (맨 뒤: 과거에서도 앞 기억 그대로 밀림, 지금 기억과 같은 글: 안 넣음, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 좌·우 다 비움: 안 함, bRun: 지금 비교 중 (실행 전 글: false → 돌아와도 비교 안 함)
 		    {
 		        const	kState	= { sLeft: Util.GetDiffText("Left"), sRight: Util.GetDiffText("Right"), sLeftName: Util.mapDiffName.Left, sRightName: Util.mapDiffName.Right, bRun: Util.bDiffView };
 		        const	kNow	= Util.arrDiffBack[Util.nDiffPos];
@@ -727,8 +727,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        if (kNow == null || (Util.bDiffNew && (kNow.sLeft !== kState.sLeft || kNow.sRight !== kState.sRight)))	// 새 기억
 		        {
-		            Util.arrDiffBack.length = Util.nDiffPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
-		            Util.arrDiffBack.push(kState);
+		            Util.arrDiffBack.push(kState);	// 늘 맨 뒤 (과거에서도: 앞 기억 그대로 하나씩 밀림)
 
 		            if (Util.arrDiffBack.length > Util.DIFF_BACK_MAX)
 		            {
@@ -2458,7 +2457,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.ShowSortBack();
 		    }
 
-		    static SaveSortBack()	// 소트 네비게이션 지금 좌 글 기억 (실행·← → 떠날 때): 새 입력 (리셋 뒤 입력·파일 열기)·처음: 새 기억 (지금 기억과 같은 글: 안 넣음, 과거에서: 그 뒤 기억 버림, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 비움: 안 함, bRun: 지금 펼침 (실행 전 글: false → 돌아와도 펼치지 않음)
+		    static SaveSortBack()	// 소트 네비게이션 지금 좌 글 기억 (실행·← → 떠날 때): 새 입력 (리셋 뒤 입력·파일 열기)·처음: 새 기억 (맨 뒤: 과거에서도 앞 기억 그대로 밀림, 지금 기억과 같은 글: 안 넣음, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 비움: 안 함, bRun: 지금 펼침 (실행 전 글: false → 돌아와도 펼치지 않음)
 		    {
 		        const	kState	= { sText: document.getElementById("UtilSortLeftText").value, bRun: Util.bSortRun };
 		        const	kNow	= Util.arrSortBack[Util.nSortPos];
@@ -2470,8 +2469,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        if (kNow == null || (Util.bSortNew && kNow.sText !== kState.sText))	// 새 기억
 		        {
-		            Util.arrSortBack.length = Util.nSortPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
-		            Util.arrSortBack.push(kState);
+		            Util.arrSortBack.push(kState);	// 늘 맨 뒤 (과거에서도: 앞 기억 그대로 하나씩 밀림)
 
 		            if (Util.arrSortBack.length > Util.SORT_BACK_MAX)
 		            {
