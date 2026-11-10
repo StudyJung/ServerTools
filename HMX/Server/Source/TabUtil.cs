@@ -44,6 +44,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	arrSortHide	= [];	// 줄마다 접은 바깥 수 (0: 보임)
 		    static	sSortCount	= "";	// 소트 결과 제목: 줄 수 + 요소별 개수 요약 (빈 입력: 줄 0)
 		    static	setSortError	= new Set();	// 소트 결과 JSON 틀린 줄 (연한 빨강)
+		    static	mapSortMark		= new Map();	// 소트 결과 틀린 곳 (줄 → [[시작, 끝]] 글자 자리, 노랑: 디프 줄 안 다른 부분과 같은 색)
 		    static	kSortFile	= null;	// 소트 좌 창 연 파일 { kHandle (덮어쓰기, 없음: null), sName, bBom, sEol } (없음·다 지움: null)
 		    static	sSortName	= "";	// 소트 좌 창 파일 이름 (제목, 없음·다 지움: "")
 		    static	DAY_NAME	= ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];	// 타임 결과 요일 (영어 세 글자)
@@ -2009,7 +2010,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        return setError;
 		    }
 
-		    static FormatJson(sText)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold } (2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만)
+		    static FormatJson(sText)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]) } (2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만)
 		    {
 		        const	arrToken	= Util.JsonTokens(sText);
 		        const	arrClose	= new Array(arrToken.length).fill(-1);	// 여는 괄호 → 짝 닫는 괄호 토큰 위치
@@ -2020,6 +2021,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        let		sLine		= "";	// 지금 줄
 		        let		nDepth		= 0;
 		        const		arrAt		= new Array(arrToken.length).fill(0);	// 토큰 → 결과 줄 (틀린 줄 표시)
+		        const		arrCol		= new Array(arrToken.length).fill(-1);	// 토큰 → 결과 줄 안 자리 (틀린 곳 노랑, -1: 없음)
 
 		        arrToken.forEach((kToken, nIndex) =>
 		        {
@@ -2052,6 +2054,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const funcBlank	= (kToken) => Math.max(0, (kToken?.nLine ?? 1) - 1);	// 토큰 앞 빈 줄 수 (입력 그대로)
 		        const funcStart	= () => sLine.trim() === "";	// 줄 처음 (들여쓰기만)
 		        const funcAt	= (nFrom, nTo = nFrom) => arrAt.fill(arrLine.length, nFrom, nTo + 1);	// 그 토큰들: 지금 줄
+		        const funcCol	= (nIndex) => { arrCol[nIndex] = sLine.length; };	// 그 토큰: 지금 줄 끝 자리 (붙이기 전)
 
 		        for (let nIndex = 0; nIndex < arrToken.length; ++nIndex)
 		        {
@@ -2070,6 +2073,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                }
 
 		                funcAt(nIndex);
+		                funcCol(nIndex);
 		                sLine += sToken;
 
 		                if (sToken.startsWith("//"))
@@ -2083,6 +2087,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            if (kToken.sType !== "punct")	// 문자열·숫자 등: 그대로
 		            {
 		                funcAt(nIndex);
+		                funcCol(nIndex);
 		                sLine += sToken;
 
 		                continue;
@@ -2095,6 +2100,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                if (nClose === nIndex + 1)	// 빈 {}·[]
 		                {
 		                    funcAt(nIndex, nClose);
+		                    funcCol(nIndex);
+		                    arrCol[nClose] = sLine.length + 1;
 		                    sLine += sToken + arrToken[nClose].sText;
 		                    nIndex = nClose;
 
@@ -2103,14 +2110,26 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		                if (sToken === "[" && nClose > 0 && arrToken.slice(nIndex + 1, nClose).every(kItem => kItem.sType !== "comment" && kItem.sText !== "{" && kItem.sText !== "["))	// 값만 든 배열: 한 줄
 		                {
+		                    let	sItem	= "";	// 안쪽 (, 뒤 한 칸)
+
 		                    funcAt(nIndex, nClose);
-		                    sLine += "[ " + arrToken.slice(nIndex + 1, nClose).map(kItem => kItem.sText === "," ? ", " : kItem.sText).join("").trimEnd() + " ]";
+		                    funcCol(nIndex);
+
+		                    for (let nItem = nIndex + 1; nItem < nClose; ++nItem)
+		                    {
+		                        arrCol[nItem] = sLine.length + 2 + sItem.length;	// "[ " 뒤
+		                        sItem += arrToken[nItem].sText === "," ? ", " : arrToken[nItem].sText;
+		                    }
+
+		                    sLine += "[ " + sItem.trimEnd() + " ]";
+		                    arrCol[nClose] = sLine.length - 1;
 		                    nIndex = nClose;
 
 		                    continue;
 		                }
 
 		                funcAt(nIndex);
+		                funcCol(nIndex);
 		                sLine += sToken;
 		                nDepth++;
 
@@ -2147,6 +2166,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                }
 
 		                funcAt(nIndex);
+		                funcCol(nIndex);
 		                sLine += sToken;
 
 		                continue;
@@ -2155,6 +2175,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            if (sToken === ",")
 		            {
 		                funcAt(nIndex);
+		                funcCol(nIndex);
 		                sLine += ",";
 
 		                if (arrToken[nIndex + 1]?.sType === "comment" && arrToken[nIndex + 1].nLine === 0)	// 같은 줄 주석: 그 줄 뒤 그대로
@@ -2168,6 +2189,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            }
 
 		            funcAt(nIndex);
+		            funcCol(nIndex);
 		            sLine += ": ";	// :
 		        }
 
@@ -2176,7 +2198,20 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            arrLine.push(sLine.trimEnd());
 		        }
 
-		        return { arrLine, mapFold, sCount: Util.JsonCount(arrToken, arrLine.length), setError: new Set([...Util.JsonErrors(arrToken)].map((nIndex) => arrAt[nIndex])) };	// setError: 틀린 줄
+		        const	setIndex	= Util.JsonErrors(arrToken);	// 틀린 토큰
+		        const	mapMark		= new Map();	// 틀린 곳: 줄 → [[시작, 끝]]
+
+		        for (const nIndex of setIndex)
+		        {
+		            if (arrCol[nIndex] >= 0)
+		            {
+		                const	nLine	= arrAt[nIndex];
+
+		                mapMark.set(nLine, [...(mapMark.get(nLine) ?? []), [arrCol[nIndex], arrCol[nIndex] + arrToken[nIndex].sText.length]]);
+		            }
+		        }
+
+		        return { arrLine, mapFold, sCount: Util.JsonCount(arrToken, arrLine.length), setError: new Set([...setIndex].map((nIndex) => arrAt[nIndex])), mapMark };	// setError: 틀린 줄, mapMark: 틀린 곳
 		    }
 
 		    static RenderSortLines()	// 소트 좌 창: 줄 번호 (줄 수 바뀜만 다시) + 제목 (요소별 개수 요약)
@@ -2214,6 +2249,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.mapSortFold	= kResult.mapFold;
 		        Util.sSortCount		= kResult.sCount;
 		        Util.setSortError	= kResult.setError;
+		        Util.mapSortMark	= kResult.mapMark ?? new Map();
 		        Util.setSortFold	= new Set();
 		        Util.arrSortHide	= new Array(kResult.arrLine.length).fill(0);
 
@@ -2255,6 +2291,11 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                kRow.classList.add("err");
 		            }
 
+		            if (Util.mapSortMark.has(nIndex))	// 틀린 곳: 노랑 (디프 줄 안 다른 부분과 같은 색)
+		            {
+		                Util.MarkSortText(kText, sLine, Util.mapSortMark.get(nIndex));
+		            }
+
 		            kRow.append(kNum, kFold, kText);
 		            kFragment.append(kRow);
 		        });
@@ -2263,6 +2304,31 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilSortRightTitle").textContent = Util.sSortCount === "" ? "대상" : `대상 · ${Util.sSortCount}`;	// 대상 · 줄 수 + 요소별 개수
 		        document.getElementById("UtilSortUnfold").disabled			= Util.mapSortFold.size === 0;	// 접을 곳 없음: 펴기·접기 꺼짐
 		        document.getElementById("UtilSortFold").disabled				= Util.mapSortFold.size === 0;
+		    }
+
+		    static MarkSortText(kText, sLine, arrMark)	// 소트 줄 글 → 틀린 곳 <mark> 노랑 (겹침: 앞 것만)
+		    {
+		        let	nPos	= 0;	// 붙인 글 끝
+
+		        kText.replaceChildren();
+
+		        for (const [nStart, nEnd] of [...arrMark].sort((kA, kB) => kA[0] - kB[0]))
+		        {
+		            if (nStart < nPos)
+		            {
+		                continue;
+		            }
+
+		            const	kMark	= document.createElement("mark");
+
+		            kMark.textContent = sLine.slice(nStart, nEnd);
+
+		            kText.append(sLine.slice(nPos, nStart), kMark);
+
+		            nPos = nEnd;
+		        }
+
+		        kText.append(sLine.slice(nPos));
 		    }
 
 		    static OnSortFold(kEvent)	// 우 창 접기 표시·접힌 … 누름: 그 { }·[ ] 접기·펴기
