@@ -548,7 +548,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</section>
 		<div class="vsplitter" id="UtilSortSplitter" title="폭 조절"></div>
 		<section class="panel" id="UtilSortRight">
-		<div class="resulthead"><div class="title" id="UtilSortRightTitle"></div></div>
+		<div class="resulthead"><div class="title" id="UtilSortRightTitle"></div><div class="toolright"><button type="button" id="UtilSortRightSave" class="savebtn" title="파일 저장" aria-label="저장" disabled></button></div></div>
 		<div class="scroll jsonview" id="UtilSortRightBody"></div>
 		</section>
 		</div>

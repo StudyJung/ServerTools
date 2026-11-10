@@ -22,6 +22,10 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	mapDiffName		= { Left: "", Right: "" };	// 디프 좌·우 내용 이름: 연 파일 이름·붙여넣기·직접 입력: 복사 (비움: 없음)
 		    static	DIFF_HISTORY_MAX	= 100;	// 비교 중 고침 기억 (Ctrl+Z·Y 줄 색, 넘음: 가장 오래된 것 버림)
 		    static	DIFF_HISTORY_LINE	= 500000;	// 비교 중 고침 기억 줄 정보 합 최대 (큰 글: 기억 줄임, 메모리)
+		    static	UNDO_MAX		= 200;		// 편집 칸 되돌리기 기억 (창마다 최근 X번, 넘음: 가장 오래된 것 버림)
+		    static	UNDO_TEXT_MAX	= 5000000;	// 되돌리기 기억 글자 합 최대 (창마다, 큰 글: 기억 줄임, 메모리)
+		    static	UNDO_GROUP_MS	= 1000;		// 이어 친 글자·지운 글자 한 번에 되돌림 (ms 안)
+		    static	mapUndo			= new Map();	// 편집 칸 되돌리기 (창 id → { arrUndo: [{ nPos, sOld, sNew, sType, nTick }], arrRedo, sBefore: 고침 전 실제 글 }) (브라우저 기본 Ctrl+Z·Y 대신: 창마다 따로, 실제 글 (회색 빈 줄 뺌) 바뀐 부분만, 프로그램이 글 바꿈 (파일 열기·네비게이션·리셋): 버림)
 		    static	DIFF_BACK_MAX	= 10;	// 디프 네비게이션 기억 (실행한 좌·우 입력, 넘음: 가장 오래된 것 버림)
 		    static	arrDiffBack		= [];	// 디프 네비게이션 기억 [{ sLeft, sRight, sLeftName, sRightName, bRun: 비교함 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
 		    static	nDiffPos		= -1;	// 디프 네비게이션 지금 위치 (없음: -1)
@@ -47,6 +51,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	setSortError	= new Set();	// 소트 결과 JSON 틀린 줄 (연한 빨강)
 		    static	mapSortMark		= new Map();	// 소트 결과 틀린 곳 (줄 → [[시작, 끝]] 글자 자리, 노랑: 디프 줄 안 다른 부분과 같은 색)
 		    static	kSortFile	= null;	// 소트 좌 창 연 파일 { kHandle (덮어쓰기, 없음: null), sName, bBom, sEol } (없음·다 지움: null)
+		    static	kSortRightFile	= null;	// 소트 우 창 저장한 파일 { kHandle, sName } (다음 저장: 덮어씀, 좌 새 입력·파일 열기·네비게이션·비움: null)
 		    static	sSortName	= "";	// 소트 좌 창 파일 이름 (제목, 없음·다 지움: "")
 		    static	DAY_NAME	= ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];	// 타임 결과 요일 (영어 세 글자)
 		    static	KST_HOUR	= 9;	// KST = UTC + X시간 (브라우저 시간대 무관)
@@ -908,6 +913,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.mapDiffName.Left								= kState.sLeftName;
 		        Util.mapDiffName.Right								= kState.sRightName;
 
+		        Util.ClearUndo(document.getElementById("UtilDiffLeftText"));	// 네비게이션 글: 되돌리기 새로
+		        Util.ClearUndo(document.getElementById("UtilDiffRightText"));
+
 		        Util.RenderLines("Left");
 		        Util.RenderLines("Right");
 		        Util.ShowDiffBack();
@@ -1024,7 +1032,37 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const	sValue	= document.getElementById(`UtilDiff${sSide}Text`).value;
 		        const	arrMeta	= Util.mapDiffMeta[sSide];
 
+		        return Util.StripGap(sValue, arrMeta);
+		    }
+
+		    static StripGap(sValue, arrMeta)	// 줄 맞춤 글 → 실제 글 (회색 빈 줄 뺌, 줄 정보 없음: 그대로)
+		    {
 		        return arrMeta == null ? sValue : sValue.split("\n").filter((sLine, nIndex) => !Util.IsGapLine(arrMeta[nIndex], sLine)).join("\n");
+		    }
+
+		    static RebuildGap(sText, arrMeta)	// 실제 글 + 줄 정보 → 줄 맞춤 글 (줄 정보 회색 빈 줄 자리: 빈 줄, 줄 수 안 맞음: null)
+		    {
+		        const	arrReal	= sText.split("\n");
+		        const	arrLine	= [];
+		        let		nReal	= 0;
+
+		        for (const kMeta of arrMeta)
+		        {
+		            if (kMeta?.sKind === "gap")
+		            {
+		                arrLine.push("");
+		            }
+		            else if (nReal < arrReal.length)
+		            {
+		                arrLine.push(arrReal[nReal++]);
+		            }
+		            else
+		            {
+		                return null;
+		            }
+		        }
+
+		        return nReal === arrReal.length ? arrLine.join("\n") : null;
 		    }
 
 		    static IsDiffFile(sSide)	// 그 창 글이 연 파일 (찾기·끌어 놓기·저장한 파일, 이름 그대로: 통째로 바꿈·고침에도 유지, 다 지움: 끊음)
@@ -1346,30 +1384,11 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            return;
 		        }
 
-		        const	arrNow	= document.getElementById(`UtilDiff${sSide}Text`).value.split("\n");
-		        const	arrReal	= arrNow.filter((sLine, nIndex) => !Util.IsGapLine(Util.mapDiffMeta[sSide][nIndex], sLine));	// 지금 실제 줄
-		        const	arrLine	= [];
-		        let		nReal	= 0;
+		        const	sAligned	= Util.RebuildGap(Util.GetDiffText(sSide), kState.arrMeta);	// 지금 실제 글 + 그때 회색 빈 줄 자리
 
-		        for (const kMeta of kState.arrMeta)
+		        if (sAligned != null && Util.TextKey(sAligned) === kState.sKey)
 		        {
-		            if (kMeta?.sKind === "gap")
-		            {
-		                arrLine.push("");
-		            }
-		            else if (nReal < arrReal.length)
-		            {
-		                arrLine.push(arrReal[nReal++]);
-		            }
-		            else
-		            {
-		                return;
-		            }
-		        }
-
-		        if (nReal === arrReal.length && Util.TextKey(arrLine.join("\n")) === kState.sKey)
-		        {
-		            Util.SetDiffSide(sSide, arrLine, kState.arrMeta);
+		            Util.SetDiffSide(sSide, sAligned.split("\n"), kState.arrMeta);
 		        }
 		    }
 
@@ -1470,6 +1489,267 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.KeepDiffName(sOther, Util.GetDiffText(sOther), Util.mapDiffName[sOther]);
 		        Util.RenderLines(sOther);
 		        Util.ShowDiffInfo();
+		    }
+
+		    static UndoSide(kText)	// 편집 칸 → 디프 창 (Left·Right, 디프 아님: "")
+		    {
+		        return kText.id === "UtilDiffLeftText" ? "Left" : (kText.id === "UtilDiffRightText" ? "Right" : "");
+		    }
+
+		    static UndoText(kText)	// 편집 칸 실제 글 (디프 비교 중: 회색 빈 줄 뺌)
+		    {
+		        const	sSide	= Util.UndoSide(kText);
+
+		        return sSide === "" ? kText.value : Util.GetDiffText(sSide);
+		    }
+
+		    static GetUndo(kText)	// 그 창 되돌리기 기억 (없음: 만듦)
+		    {
+		        let	kUndo	= Util.mapUndo.get(kText.id);
+
+		        if (kUndo == null)
+		        {
+		            kUndo = { arrUndo: [], arrRedo: [], sBefore: null };
+
+		            Util.mapUndo.set(kText.id, kUndo);
+		        }
+
+		        return kUndo;
+		    }
+
+		    static ClearUndo(kText)	// 프로그램이 글 바꿈 (파일 열기·네비게이션·리셋·새 창 복원): 그 창 되돌리기 기억 버림 (그 글부터 새로)
+		    {
+		        Util.mapUndo.delete(kText.id);
+		    }
+
+		    static OnUndoKey(kEvent)	// 편집 칸 Ctrl+Z: 되돌림, Ctrl+Y·Ctrl+Shift+Z: 다시 하기 (그 창 기억, 브라우저 기본 막음, 한글 조합 중: 기본)
+		    {
+		        if (kEvent.isComposing || kEvent.altKey || !(kEvent.ctrlKey || kEvent.metaKey))
+		        {
+		            return;
+		        }
+
+		        const	bUndo	= kEvent.code === "KeyZ" && !kEvent.shiftKey;
+		        const	bRedo	= kEvent.code === "KeyY" || (kEvent.code === "KeyZ" && kEvent.shiftKey);
+
+		        if (bUndo || bRedo)
+		        {
+		            kEvent.preventDefault();
+
+		            Util.DoUndo(kEvent.currentTarget, bRedo);
+		        }
+		    }
+
+		    static OnUndoBefore(kEvent)	// 편집 칸 고침 전: 실제 글 기억 (메뉴 실행 취소·다시 실행: 브라우저 기본 막고 그 창 기억)
+		    {
+		        const	kText	= kEvent.currentTarget;
+
+		        if (kEvent.inputType === "historyUndo" || kEvent.inputType === "historyRedo")
+		        {
+		            kEvent.preventDefault();
+
+		            Util.DoUndo(kText, kEvent.inputType === "historyRedo");
+
+		            return;
+		        }
+
+		        Util.GetUndo(kText).sBefore = Util.UndoText(kText);
+		    }
+
+		    static OnUndoInput(kEvent)	// 편집 칸 고친 뒤 (줄 색 맞춘 뒤): 실제 글 바뀐 부분 기억 (이어 친·지운 글자: 앞 기억에 합침, 새 고침: 다시 하기 기억 버림, 되돌림·다시 하기: 안 넣음)
+		    {
+		        const	kText	= kEvent.currentTarget;
+		        const	kUndo	= Util.GetUndo(kText);
+		        const	sBefore	= kUndo.sBefore;
+
+		        kUndo.sBefore = null;
+
+		        if (sBefore == null || kEvent.inputType?.startsWith("history"))
+		        {
+		            return;
+		        }
+
+		        const	sAfter	= Util.UndoText(kText);
+		        const	nMin	= Math.min(sBefore.length, sAfter.length);
+		        let		nPre	= 0;
+		        let		nSuf	= 0;
+
+		        while (nPre < nMin && sBefore.charCodeAt(nPre) === sAfter.charCodeAt(nPre))
+		        {
+		            nPre++;
+		        }
+
+		        while (nSuf < nMin - nPre && sBefore.charCodeAt(sBefore.length - 1 - nSuf) === sAfter.charCodeAt(sAfter.length - 1 - nSuf))
+		        {
+		            nSuf++;
+		        }
+
+		        if (nPre === sBefore.length && nPre === sAfter.length)	// 실제 글 같음 (회색 빈 줄만)
+		        {
+		            return;
+		        }
+
+		        const	kStep	= { nPos: nPre, sOld: sBefore.slice(nPre, sBefore.length - nSuf), sNew: sAfter.slice(nPre, sAfter.length - nSuf), sType: kEvent.inputType ?? "", nTick: Date.now() };
+		        const	kLast	= kUndo.arrUndo.at(-1);
+
+		        kUndo.arrRedo = [];
+
+		        if (!Util.MergeUndo(kLast, kStep))
+		        {
+		            kUndo.arrUndo.push(kStep);
+		        }
+		        else if (kLast.sOld === kLast.sNew)	// 합쳐서 바뀐 것 없음 (친 글자 다 지움)
+		        {
+		            kUndo.arrUndo.pop();
+		        }
+
+		        let	nTotal	= kUndo.arrUndo.reduce((nSum, kItem) => nSum + kItem.sOld.length + kItem.sNew.length, 0);
+
+		        while (kUndo.arrUndo.length > 1 && (kUndo.arrUndo.length > Util.UNDO_MAX || nTotal > Util.UNDO_TEXT_MAX))	// 넘음: 오래된 것 버림
+		        {
+		            const	kOld	= kUndo.arrUndo.shift();
+
+		            nTotal -= kOld.sOld.length + kOld.sNew.length;
+		        }
+		    }
+
+		    static MergeUndo(kLast, kStep)	// 이어 친·지운 글자 → 앞 기억에 합침 (글자 입력·지움만, X ms 안, 줄바꿈 없음, 붙은 자리만, 반환: 합침)
+		    {
+		        const	setType	= new Set(["insertText", "insertCompositionText", "deleteContentBackward", "deleteContentForward"]);
+
+		        if (kLast == null || !setType.has(kLast.sType) || !setType.has(kStep.sType) || kStep.nTick - kLast.nTick > Util.UNDO_GROUP_MS || (kStep.sOld + kStep.sNew).includes("\n"))
+		        {
+		            return false;
+		        }
+
+		        const	nOffset	= kStep.nPos - kLast.nPos;	// 앞 기억 새 글 안 자리
+
+		        if (nOffset >= 0 && nOffset + kStep.sOld.length <= kLast.sNew.length)	// 앞에 친 글 안에서 고침 (이어 치기·조합·친 글자 지움)
+		        {
+		            kLast.sNew = kLast.sNew.slice(0, nOffset) + kStep.sNew + kLast.sNew.slice(nOffset + kStep.sOld.length);
+		        }
+		        else if (kLast.sNew === "" && kStep.sNew === "" && kStep.nPos + kStep.sOld.length === kLast.nPos)	// 이어 Backspace
+		        {
+		            kLast.nPos	= kStep.nPos;
+		            kLast.sOld	= kStep.sOld + kLast.sOld;
+		        }
+		        else if (kLast.sNew === "" && kStep.sNew === "" && kStep.nPos === kLast.nPos)	// 이어 Delete
+		        {
+		            kLast.sOld += kStep.sOld;
+		        }
+		        else
+		        {
+		            return false;
+		        }
+
+		        kLast.nTick = kStep.nTick;
+
+		        return true;
+		    }
+
+		    static DoUndo(kText, bRedo)	// 되돌림 (Ctrl+Z)·다시 하기 (Ctrl+Y·Ctrl+Shift+Z): 그 창 기억 한 단계 → 실제 글 바꿈 + 커서 그 자리 (기억과 지금 글 안 맞음: 기억 버림)
+		    {
+		        const	kUndo	= Util.GetUndo(kText);
+		        const	arrFrom	= bRedo ? kUndo.arrRedo : kUndo.arrUndo;
+		        const	kStep	= arrFrom.at(-1);
+
+		        if (kStep == null)
+		        {
+		            return;
+		        }
+
+		        const	sNow	= Util.UndoText(kText);
+		        const	sCut	= bRedo ? kStep.sOld : kStep.sNew;	// 지금 그 자리 글
+		        const	sPut	= bRedo ? kStep.sNew : kStep.sOld;	// 바꿀 글
+
+		        if (sNow.slice(kStep.nPos, kStep.nPos + sCut.length) !== sCut)	// 밖에서 글 바뀜
+		        {
+		            Util.ClearUndo(kText);
+
+		            return;
+		        }
+
+		        arrFrom.pop();
+		        (bRedo ? kUndo.arrUndo : kUndo.arrRedo).push(kStep);
+
+		        Util.PutUndoText(kText, sNow.slice(0, kStep.nPos) + sPut + sNow.slice(kStep.nPos + sCut.length), kStep.nPos + sPut.length, bRedo);
+		    }
+
+		    static PutUndoText(kText, sText, nCaret, bRedo)	// 되돌린 실제 글 넣음: 디프 비교 중 → 그때 회색 빈 줄·줄 색 (색 기억 없음: 다시 비교, 보던 자리), 비교 푼 직전 글 → 비교 다시 켬 (다시 하기: 다시 풂), 그 외: 글 그대로 → 고침과 같은 처리 (input) + 커서
+		    {
+		        const	sSide		= Util.UndoSide(kText);
+		        const	nTop		= kText.scrollTop;
+		        const	sAligned	= sSide === "" ? sText : Util.AlignUndoText(sSide, sText, bRedo);	// 넣을 글 (null: 색 기억 없음)
+
+		        if (sAligned == null)	// 비교 중 색 기억 없음: 실제 글 → 다시 비교
+		        {
+		            Util.mapDiffMeta[sSide]		= null;
+		            Util.mapDiffLines[sSide]	= null;
+		        }
+
+		        kText.value		= sAligned ?? sText;
+		        kText.scrollTop	= nTop;
+
+		        kText.dispatchEvent(new InputEvent("input", { inputType: bRedo ? "historyRedo" : "historyUndo" }));	// 줄 색·비교 풂·켬·제목 (되돌리기 기억: 안 넣음)
+
+		        if (sAligned == null)
+		        {
+		            Util.RunDiffKeep();
+		        }
+
+		        Util.SetUndoCaret(kText, sSide, sText, nCaret);
+		    }
+
+		    static AlignUndoText(sSide, sText, bRedo)	// 디프 되돌린 실제 글 → 편집 칸에 넣을 글 (비교 중: 그때 줄 정보 (지문 맞음) 회색 빈 줄 넣음·없음: null, 비교 안 함: 비교 푼 직전 글 → 그 줄 맞춤 글, 그 외: 그대로)
+		    {
+		        const	kRelease	= Util.kDiffRelease;
+
+		        if (Util.mapDiffMeta[sSide] == null)	// 비교 안 함
+		        {
+		            const	bBefore	= !bRedo && kRelease != null && !kRelease.bRestored && kRelease.sSide === sSide && Util.StripGap(kRelease.sBefore, kRelease.mapMeta[sSide]) === sText;	// 비교 푼 직전 글
+
+		            return bBefore ? kRelease.sBefore : sText;
+		        }
+
+		        if (bRedo && kRelease?.bRestored && kRelease.sSide === sSide && kRelease.sAfter === sText)	// 비교 다시 켠 뒤 다시 하기: 다시 풂
+		        {
+		            return sText;
+		        }
+
+		        for (let nIndex = Util.mapDiffHistory[sSide].length - 1; nIndex >= 0; --nIndex)	// 그때 줄 정보 (최근부터)
+		        {
+		            const	kItem		= Util.mapDiffHistory[sSide][nIndex];
+		            const	sAligned	= Util.RebuildGap(sText, kItem.arrMeta);
+
+		            if (sAligned != null && Util.TextKey(sAligned) === kItem.sKey)
+		            {
+		                return sAligned;
+		            }
+		        }
+
+		        return null;
+		    }
+
+		    static SetUndoCaret(kText, sSide, sText, nCaret)	// 되돌린 자리 커서 (실제 글 자리 → 편집 칸 줄·글자, 회색 빈 줄 건넘) + 안 보이면 그 줄로 스크롤
+		    {
+		        const	arrBefore	= sText.slice(0, nCaret).split("\n");
+
+		        if (sSide === "")
+		        {
+		            kText.setSelectionRange(nCaret, nCaret);
+		        }
+		        else
+		        {
+		            Util.SetCaret(sSide, { nReal: arrBefore.length - 1, nCol: arrBefore.at(-1).length });
+		        }
+
+		        const	nHeight	= Util.LineHeight(kText);
+		        const	nTop	= 4 + (kText.value.slice(0, kText.selectionStart).split("\n").length - 1) * nHeight;	// 커서 줄 위치 (위 여백 X px)
+
+		        if (nTop < kText.scrollTop || nTop + nHeight > kText.scrollTop + kText.clientHeight)
+		        {
+		            kText.scrollTop = nTop - (kText.clientHeight - nHeight) / 2;
+		        }
 		    }
 
 		    static OnDiffCopy(sSide, kEvent)	// 비교 중 복사·잘라내기: 회색 빈 줄 빼고 (잘라내기: 고른 글 지움 → Ctrl+Z 됨)
@@ -1672,6 +1952,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		            Util.bDiffNew = true;	// 파일 열기: 다음 실행 네비게이션 새 기억
 
+		            Util.ClearUndo(document.getElementById(`UtilDiff${sSide}Text`));	// 파일 글: 되돌리기 새로
+
 		            Util.RenderLines(sSide);
 		        });
 		    }
@@ -1737,6 +2019,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        for (const sSide of ["Left", "Right"])
 		        {
 		            document.getElementById(`UtilDiff${sSide}Text`).value			= "";
+
+		            Util.ClearUndo(document.getElementById(`UtilDiff${sSide}Text`));
 		            Util.mapDiffName[sSide] = "";
 
 		            Util.RenderLines(sSide);
@@ -2328,7 +2612,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        });
 
 		        document.getElementById("UtilSortRightBody").replaceChildren(kFragment);
-		        document.getElementById("UtilSortRightTitle").textContent = Util.sSortCount === "" ? "대상" : `대상 · ${Util.sSortCount}`;	// 대상 · 줄 수 + 요소별 개수
+		        Util.RenderSortTitle();
 		        document.getElementById("UtilSortUnfold").disabled			= Util.mapSortFold.size === 0;	// 접을 곳 없음: 펴기·접기 꺼짐
 		        document.getElementById("UtilSortFold").disabled				= Util.mapSortFold.size === 0;
 		    }
@@ -2356,6 +2640,12 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 
 		        kText.append(sLine.slice(nPos));
+		    }
+
+		    static RenderSortTitle()	// 소트 우 창 제목: 대상 · 줄 수 + 요소별 개수 + 저장한 파일 이름, 우 저장: 펼친 글 있음
+		    {
+		        document.getElementById("UtilSortRightTitle").textContent	= `${Util.sSortCount === "" ? "대상" : `대상 · ${Util.sSortCount}`}${Util.kSortRightFile == null ? "" : ` - ${Util.kSortRightFile.sName}`}`;
+		        document.getElementById("UtilSortRightSave").disabled		= Util.arrSortLine.length === 0;
 		    }
 
 		    static OnSortFold(kEvent)	// 우 창 접기 표시·접힌 … 누름: 그 { }·[ ] 접기·펴기
@@ -2506,6 +2796,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        document.getElementById("UtilSortLeftText").value = kState.sText;
 
+		        Util.kSortRightFile = null;	// 다른 글: 우 저장 파일 끊음
+		        Util.ClearUndo(document.getElementById("UtilSortLeftText"));	// 네비게이션 글: 되돌리기 새로
+
 		        Util.RenderSortLines();
 		        Util.ShowSortBack();
 		        Util.RunSort(kState.bRun !== false);	// 실행 전 글: 펼치지 않음
@@ -2529,6 +2822,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            Util.sSortName	= kFile.name;
 		            Util.kSortFile	= { kHandle, sName: kFile.name, bBom: sText.startsWith("\uFEFF"), sEol: sText.includes("\r\n") ? "\r\n" : "\n" };	// 저장: 같은 BOM·줄 끝
 		            Util.bSortNew	= true;	// 파일 열기: 다음 실행 네비게이션 새 기억
+		            Util.kSortRightFile	= null;	// 새 글: 우 저장 파일 끊음
+
+		            Util.ClearUndo(document.getElementById("UtilSortLeftText"));	// 파일 글: 되돌리기 새로
 		            Util.bSortRun	= false;	// 펼치기 전 (네비게이션: 실행 전 글)
 
 		            Util.RenderSortLines();
@@ -2652,6 +2948,67 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
+		    static async SaveSortRight()	// 소트 우 저장 (펼친 글: 비주얼 스튜디오 기본 형식, UTF-8·CRLF): 저장한 파일에 덮어씀, 처음: 저장 창 → 저장할 폴더·이름 고름 (기본 대상.json, 좌 저장과 같은 마지막 폴더), 쓰기 허용 창 취소: 저장 안 함, 저장 창 없음 (http 주소): 다운
+		    {
+		        if (Util.arrSortLine.length === 0)	// 펼친 글 없음
+		        {
+		            return;
+		        }
+
+		        const	kFile	= Util.kSortRightFile ?? { kHandle: null, sName: "대상.json" };
+		        const	sText	= Util.arrSortLine.join("\r\n");
+		        let		sName	= kFile.sName;	// 저장한 이름
+
+		        try
+		        {
+		            let	kHandle	= kFile.kHandle;
+
+		            if (kHandle == null && window.showSaveFilePicker != null)	// 처음: 저장 창
+		            {
+		                kHandle = await window.showSaveFilePicker({ id: "HMXUtilSort", suggestedName: kFile.sName });
+		            }
+
+		            if (kHandle != null && (await kHandle.requestPermission?.({ mode: "readwrite" }) ?? "granted") !== "granted")	// 쓰기 허용 창 취소: 저장 안 함
+		            {
+		                return;
+		            }
+
+		            if (kHandle != null)
+		            {
+		                const	kWrite	= await kHandle.createWritable();	// 파일 비우고 새로 씀
+
+		                await kWrite.write(sText);
+		                await kWrite.close();
+
+		                sName				= kHandle.name;
+		                Util.kSortRightFile	= { kHandle, sName };	// 다음 저장: 덮어씀
+
+		                Util.RenderSortTitle();
+		            }
+		            else	// 저장 창 없음: 그 이름 다운
+		            {
+		                const	kLink	= document.createElement("a");
+
+		                kLink.href		= URL.createObjectURL(new Blob([sText], { type: "application/json" }));
+		                kLink.download	= sName;
+
+		                kLink.click();
+
+		                setTimeout(() => URL.revokeObjectURL(kLink.href), 1000);
+		            }
+
+		            Process.Toast(`저장: ${sName}`, "ok");
+		        }
+		        catch (kError)	// 저장 창 닫음 (AbortError): 그대로, 그 밖: 실패 알림
+		        {
+		            if (kError?.name !== "AbortError")
+		            {
+		                console.error(kError);
+		                Process.Toast(`저장 실패: ${sName} (${ErrorText(kError)})`, "fail");
+		            }
+		        }
+		    }
+
 		    static ClearSort()	// 소트 좌·우 창 비움 (F5 리셋, 파일 연결 끊음)
 		    {
 		        Util.kSortFile	= null;
@@ -2659,6 +3016,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.bSortNew	= true;	// F5 리셋: 다음 실행 네비게이션 새 기억
 
 		        document.getElementById("UtilSortLeftText").value = "";
+
+		        Util.kSortRightFile = null;
+		        Util.ClearUndo(document.getElementById("UtilSortLeftText"));
 
 		        Util.RenderSortLines();
 		        Util.RunSort();
@@ -2703,6 +3063,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        kLeft.value				= kSnap.sLeft;
 		        kRight.value			= kSnap.sRight;
+
+		        Util.ClearUndo(kLeft);	// 새 창: 되돌리기 새로
+		        Util.ClearUndo(kRight);
 		        Util.mapDiffName.Left	= kSnap.sLeftName;
 		        Util.mapDiffName.Right	= kSnap.sRightName;
 		        Util.arrDiffBack		= kSnap.arrDiffBack;
@@ -2730,6 +3093,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.SyncBack("Left");
 		        Util.SyncBack("Right");
 
+		        Util.ClearUndo(document.getElementById("UtilSortLeftText"));	// 새 창: 되돌리기 새로
 		        document.getElementById("UtilSortLeftText").value	= kSnap.sSortText;	// 소트: 입력·파일 이름·네비게이션 기억·좌 창 폭 → 펼쳤음: 다시 펼침 + 접은 곳·스크롤
 		        Util.sSortName										= kSnap.sSortName ?? "";	// 덮어쓸 곳: 안 옮김 (저장: 저장 창)
 		        Util.arrSortBack									= kSnap.arrSortBack;
@@ -2868,8 +3232,11 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                kFile.value = "";	// 같은 파일 다시 골라도 읽음
 		            });
 		            kText.addEventListener("paste", () => Util.KeepDiffName(sSide, "붙여넣기", "복사"));	// 붙여넣기: 이름 복사 (연 파일: 그대로)
+		            kText.addEventListener("keydown", Util.OnUndoKey);	// Ctrl+Z·Y: 창마다 되돌리기 (브라우저 기본 대신)
+		            kText.addEventListener("beforeinput", Util.OnUndoBefore);	// 고침 전 실제 글 기억 (메뉴 실행 취소: 막고 창마다)
 		            kText.addEventListener("beforeinput", (kEvent) => Util.OnDiffBeforeInput(sSide, kEvent));	// 모두 고름 → 지움·붙여넣기: 비교 풂
 		            kText.addEventListener("input", (kEvent) => Util.OnDiffInput(sSide, kEvent));	// 고침: 기본 편집 그대로 + 비교 중 색 맞춤
+		            kText.addEventListener("input", Util.OnUndoInput);	// 고친 뒤 바뀐 부분 기억 (색 맞춘 뒤)
 		            kText.addEventListener("copy", (kEvent) => Util.OnDiffCopy(sSide, kEvent));	// 복사·잘라내기: 회색 빈 줄 뺌
 		            kText.addEventListener("cut", (kEvent) => Util.OnDiffCopy(sSide, kEvent));
 		            kText.addEventListener("scroll", () => Util.OnDiffScroll(sSide));	// 줄 뒤 색·줄 번호 + 비교 중: 좌·우 세로 같이
@@ -2901,6 +3268,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                Util.kSortFile	= null;
 		                Util.sSortName	= "";
 		                Util.bSortNew	= true;	// 리셋: 다음 실행 네비게이션 새 기억
+		                Util.kSortRightFile	= null;	// 리셋: 우 저장 파일 끊음
 
 		                Util.RunSort();
 		            }
@@ -2915,8 +3283,12 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                });
 		            }
 		        });
+		        kSortText.addEventListener("keydown", Util.OnUndoKey);	// Ctrl+Z·Y: 창 되돌리기 (브라우저 기본 대신)
+		        kSortText.addEventListener("beforeinput", Util.OnUndoBefore);	// 고침 전 글 기억
+		        kSortText.addEventListener("input", Util.OnUndoInput);	// 고친 뒤 바뀐 부분 기억
 		        document.getElementById("UtilSortLeftOpen").addEventListener("click", Util.OpenSortFile);	// 좌 찾기: 파일 열기
 		        document.getElementById("UtilSortLeftSave").addEventListener("click", Util.SaveSortFile);	// 좌 저장: 입력 글
+		        document.getElementById("UtilSortRightSave").addEventListener("click", Util.SaveSortRight);	// 우 저장: 펼친 글
 		        document.getElementById("UtilSortLeftFile").addEventListener("change", (kEvent) =>	// 파일 칸 (http 주소)
 		        {
 		            if (kEvent.currentTarget.files?.[0] != null)
