@@ -13,7 +13,7 @@ internal static class HDC
     private const string LegacyFullEncryptionMagic = "HDC-HUFFMAN-3";
     private const int BufferSize = 128 * 1024;
     private const int MaximumEntries = 1_000_000;
-    private static readonly byte[] HuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC4");
+    private static readonly byte[] HuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC5");
     private static readonly FileAttributes StoredAttributes =
         FileAttributes.Hidden | FileAttributes.Archive | FileAttributes.NotContentIndexed;
 
@@ -175,8 +175,8 @@ internal static class HDC
             }
 
             string plainArchive = Encoding.ASCII.GetString(archive.ToArray());
-            string encryptedArchive = Encrypt(plainArchive);
-            string huffmanContainer = CompressEncryptedArchive(encryptedArchive);
+            (string transformedArchive, int plainPrefixLength, int encryptedPrefixLength) = EncryptArchivePrefix(plainArchive);
+            string huffmanContainer = CompressEncryptedArchive(transformedArchive, plainPrefixLength, encryptedPrefixLength);
 
             using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
@@ -1075,14 +1075,26 @@ internal static class HDC
 
     private static long EncryptedPayloadLength(long compressedLength)
     {
-        long huffmanLength = Base64Length(compressedLength);
-        long encryptedByteLength = checked((huffmanLength / 16 + 1) * 16);
+        return AesEncryptedTextLength(Base64Length(compressedLength));
+    }
+
+    private static long AesEncryptedTextLength(long plainTextLength)
+    {
+        long encryptedByteLength = checked((plainTextLength / 16 + 1) * 16);
         return Base64Length(encryptedByteLength);
     }
 
-    private static string CompressEncryptedArchive(string encryptedArchive)
+    private static (string Data, int PlainPrefixLength, int EncryptedPrefixLength) EncryptArchivePrefix(string archive)
     {
-        byte[] source = Encoding.ASCII.GetBytes(encryptedArchive);
+        int plainPrefixLength = Math.Min(100, archive.Length);
+        string encryptedPrefix = Encrypt(archive[..plainPrefixLength]);
+        string transformedArchive = encryptedPrefix + archive[plainPrefixLength..];
+        return (transformedArchive, plainPrefixLength, encryptedPrefix.Length);
+    }
+
+    private static string CompressEncryptedArchive(string transformedArchive, int plainPrefixLength, int encryptedPrefixLength)
+    {
+        byte[] source = Encoding.ASCII.GetBytes(transformedArchive);
         var frequencies = new long[256];
         var crc = new Crc32();
 
@@ -1116,6 +1128,8 @@ internal static class HDC
         using (var output = new BinaryWriter(container, Encoding.ASCII, true))
         {
             output.Write(HuffmanContainerMagic);
+            output.Write(plainPrefixLength);
+            output.Write(encryptedPrefixLength);
             output.Write((long)source.Length);
             output.Write(compressedLength);
             output.Write(crc.Value);
@@ -1150,12 +1164,16 @@ internal static class HDC
         using var reader = new BinaryReader(input, Encoding.ASCII, true);
         _ = reader.ReadBytes(HuffmanContainerMagic.Length);
 
+        int plainPrefixLength = reader.ReadInt32();
+        int encryptedPrefixLength = reader.ReadInt32();
         long rawLength = reader.ReadInt64();
         long compressedLength = reader.ReadInt64();
         uint expectedCrc = reader.ReadUInt32();
         byte[] codeLengths = reader.ReadBytes(256);
 
-        if (rawLength < 0 || rawLength > int.MaxValue || compressedLength < 0 || compressedLength > int.MaxValue ||
+        if (plainPrefixLength < 0 || plainPrefixLength > 100 ||
+            encryptedPrefixLength != AesEncryptedTextLength(plainPrefixLength) || encryptedPrefixLength > rawLength ||
+            rawLength < 0 || rawLength > int.MaxValue || compressedLength < 0 || compressedLength > int.MaxValue ||
             codeLengths.Length != 256 || input.Length - input.Position != compressedLength)
         {
             throw new InvalidDataException("HDC 데이터가 올바르지 않습니다.");
@@ -1177,15 +1195,23 @@ internal static class HDC
             throw new InvalidDataException("파일 무결성 검증에 실패했습니다.");
         }
 
-        string encryptedArchive = Encoding.ASCII.GetString(decrypted.ToArray());
+        string transformedArchive = Encoding.ASCII.GetString(decrypted.ToArray());
 
-        if (encryptedArchive.Any(static character => character > 0x7F))
+        if (transformedArchive.Length != rawLength || transformedArchive.Any(static character => character > 0x7F))
         {
             throw new InvalidDataException("문자열을 읽지 못했습니다.");
         }
 
-        archiveText = Decrypt(encryptedArchive)
+        string encryptedPrefix = transformedArchive[..encryptedPrefixLength];
+        string plainPrefix = Decrypt(encryptedPrefix)
             ?? throw new InvalidDataException("문자열을 읽지 못했습니다.");
+
+        if (plainPrefix.Length != plainPrefixLength || plainPrefix.Any(static character => character > 0x7F))
+        {
+            throw new InvalidDataException("문자열을 읽지 못했습니다.");
+        }
+
+        archiveText = plainPrefix + transformedArchive[encryptedPrefixLength..];
         return true;
     }
 
