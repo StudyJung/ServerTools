@@ -527,13 +527,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="utilbox" data-util="diff" hidden>
 		<div class="utilsplit" id="UtilDiffSplit">
 		<section class="panel" id="UtilDiffLeft">
-		<div class="resulthead"><div class="title" id="UtilDiffLeftTitle"></div><div class="toolright"><button type="button" id="UtilDiffLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffLeftSave" class="savebtn" title="저장(연 파일: 덮어쓰기, 파일 없음: 저장할 폴더·이름 고름 → 다시 비교)" aria-label="저장" disabled></button></div></div>
+		<div class="resulthead"><div class="title" id="UtilDiffLeftTitle"></div><div class="toolright"><button type="button" id="UtilDiffLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffLeftSave" class="savebtn" title="저장" aria-label="저장" disabled></button></div></div>
 		<input type="file" id="UtilDiffLeftFile" hidden>
 		<div class="scroll diffedit" id="UtilDiffLeftBody"><div class="diffln" id="UtilDiffLeftLn"></div><div class="diffback" id="UtilDiffLeftBack"></div><textarea id="UtilDiffLeftText" spellcheck="false" wrap="off" autocomplete="off" aria-label="좌 문서"></textarea></div>
 		</section>
 		<div class="vsplitter" id="UtilDiffSplitter" title="좌우 폭 조절"></div>
 		<section class="panel" id="UtilDiffRight">
-		<div class="resulthead"><div class="title" id="UtilDiffRightTitle"></div><div class="toolright"><button type="button" id="UtilDiffRightOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffRightSave" class="savebtn" title="저장(연 파일: 덮어쓰기, 파일 없음: 저장할 폴더·이름 고름 → 다시 비교)" aria-label="저장" disabled></button></div></div>
+		<div class="resulthead"><div class="title" id="UtilDiffRightTitle"></div><div class="toolright"><button type="button" id="UtilDiffRightOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffRightSave" class="savebtn" title="저장" aria-label="저장" disabled></button></div></div>
 		<input type="file" id="UtilDiffRightFile" hidden>
 		<div class="scroll diffedit" id="UtilDiffRightBody"><div class="diffln" id="UtilDiffRightLn"></div><div class="diffback" id="UtilDiffRightBack"></div><textarea id="UtilDiffRightText" spellcheck="false" wrap="off" autocomplete="off" aria-label="우 문서"></textarea></div>
 		</section>
@@ -542,7 +542,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="utilbox" data-util="sort" hidden>
 		<div class="utilsplit" id="UtilSortSplit">
 		<section class="panel" id="UtilSortLeft">
-		<div class="resulthead"><div class="title" id="UtilSortLeftTitle"></div><div class="toolright"><button type="button" id="UtilSortLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilSortLeftSave" class="savebtn" title="저장(연 파일: 덮어쓰기, 파일 없음: 저장할 폴더·이름 고름)" aria-label="저장" disabled></button></div></div>
+		<div class="resulthead"><div class="title" id="UtilSortLeftTitle"></div><div class="toolright"><button type="button" id="UtilSortLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilSortLeftSave" class="savebtn" title="저장" aria-label="저장" disabled></button></div></div>
 		<input type="file" id="UtilSortLeftFile" hidden>
 		<div class="scroll diffedit" id="UtilSortLeftBody"><div class="diffln" id="UtilSortLeftLn"></div><div class="diffback" id="UtilSortLeftBack"></div><textarea id="UtilSortLeftText" spellcheck="false" wrap="off" autocomplete="off" aria-label="JSON 입력"></textarea></div>
 		</section>

@@ -343,7 +343,7 @@
    ### 실행·중단 버튼 (공통 enterbtn·stopbtn): 실행: 한 줄 화살표 엔터 아이콘 (↵), 중단: 빈 네모 (□), 둘 다 존 색 (primary, 중단도 빨강 아님), 정사각 28px, 글자 없음 (이름: title·aria-label)
       실행 중 경과 초: 글자 (N초) → 끝: 다시 아이콘 (글자 비움), 아이콘: CSS mask (currentColor)
    ### 찾기 버튼 (공통 openbtn): 파일·폴더 찾기 = 폴더 아이콘 (파일 트리 폴더와 같은 Octicons·색), 정사각 28px, 글자 없음 (이름: title·aria-label)
-   ### 저장 버튼 (공통 savebtn): 파일 저장 = 다운 아이콘 (Octicons download, 찾기 버튼과 같은 색·크기, 꺼짐: 회색), 정사각 28px, 글자 없음 (이름: title·aria-label), 찾기 버튼 오른쪽
+   ### 저장 버튼 (공통 savebtn): 파일 저장 = 다운 아이콘 (Octicons download, 찾기 버튼과 같은 색·크기, 꺼짐: 회색), 정사각 28px, 글자 없음 (이름: title·aria-label, 툴팁: "저장" 만), 찾기 버튼 오른쪽
    ### 단어 Ctrl·Alt·Ctrl+Alt + 클릭 (결과·원문): 입력칸 끝에 AND·OR·NOT 추가, 같은 단어 다시: 빼기, 키 다 뗀 뒤 X초: 실행 (지금 단계의 하위)
       펼친 줄 필드 값: 필드:값, IP·IP:포트·날짜·시간: 한 단어 (쿼리: 원문 그대로 있는 줄만)
    ### UI Ctrl·Alt + 클릭 (버튼·입력칸·드롭 박스·파일명·상자 제목란): Ctrl 새 창 · Alt 새 탭, 지금 창 그대로
