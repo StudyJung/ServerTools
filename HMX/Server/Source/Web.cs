@@ -1824,7 +1824,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kPos.kPrev.disabled		= arrRange == null || nNow <= arrRange[0];
 		    kPos.kNext.disabled		= arrRange == null || nNow >= arrRange[1];
 		    kPos.kShift.textContent	= String(nNow);
-		    kPos.kShift.title		= arrRange == null ? "포지션" : `포지션 ${arrRange[0]} ~ ${arrRange[1]}`;
+		    kPos.kShift.title		= "포지션";
 		}
 
 		function SchedulePos(kPos)	// 스크롤: 포지션 표시 예약 (스크롤 여러 번: 화면 그릴 때 1번만)
@@ -1857,7 +1857,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kInput.type			= "text";
 		    kInput.id			= kPos.sInput;
-		    kInput.title		= `포지션 ${arrRange[0]} ~ ${arrRange[1]}`;
+		    kInput.title		= "포지션";
 		    kInput.value		= kShift.textContent;
 		    kInput.style.width	= `${Math.max(kShift.offsetWidth, 44)}px`;
 		    kInput.style.height	= `${kShift.offsetHeight}px`;
