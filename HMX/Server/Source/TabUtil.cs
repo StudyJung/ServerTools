@@ -38,6 +38,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	UNIX_DIGIT	= 10;	// Unix 칸 자릿수 (초, 고정: 넘는 자리 입력 안 됨)
 		    static	nDragIndex	= -1;	// 2번 창 끄는 줄 (arrTime 번호, 없음: -1)
 		    static	sDateLast	= "";	// KST 날짜 마지막 맞는 값 (범위 밖: 되돌림)
+		    static	SORT_FOLD_MAX	= 5000;	// 소트 접힘 한 줄 최대 글자 (안쪽 글 넘음: … 상자)
 		    static	SORT_BACK_MAX	= 10;	// 소트 네비게이션 기억 (실행한 입력, 넘음: 가장 오래된 것 버림)
 		    static	arrSortBack	= [];	// 소트 네비게이션 기억 [{ sText, sName, kFile: 연 파일 (저장: 그 파일에 덮어씀, 없음: null), bRun: 펼침 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
 		    static	nSortPos	= -1;	// 소트 네비게이션 지금 위치 (없음: -1)
@@ -2763,7 +2764,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: "키": {…}, 로 한 줄)·펴기 (안쪽 접힘: 그대로)
+		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: 안쪽 글 한 줄 "키": { "a": 1, … }, , 안쪽 X 자 넘음: "키": {…},)·펴기 (안쪽 접힘: 그대로)
 		    {
 		        const	nEnd	= Util.mapSortFold.get(nStart);
 		        const	arrRow	= document.getElementById("UtilSortRightBody").children;
@@ -2792,17 +2793,29 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        kRow.querySelector(".jtail")?.remove();
 
-		        if (bFold)	// 접힘: … + 닫는 줄 (예: },)
+		        if (bFold)	// 접힘: 안쪽 글 한 줄 + 닫는 줄 (예: { "sQuery": "INFO" },, 안쪽 X 자 넘음: … + 닫는 줄)
 		        {
 		            const	kTail	= document.createElement("span");
-		            const	kDots	= document.createElement("span");
+		            const	sInner	= Util.arrSortLine.slice(nStart + 1, nEnd).map((sLine) => sLine.trim()).filter((sLine) => sLine !== "").join(" ");	// 안쪽 줄 (빈 줄 뺌, 안쪽 접힘: 다 보임)
+		            const	sClose	= Util.arrSortLine[nEnd].trim();	// 닫는 줄 (예: },)
 
-		            kTail.className		= "jtail";
-		            kDots.className		= "jdots";
-		            kDots.textContent	= "…";
-		            kDots.title			= "펼치기";
+		            kTail.className = "jtail";
 
-		            kTail.append(kDots, Util.arrSortLine[nEnd].trim());
+		            if (sInner.length <= Util.SORT_FOLD_MAX)
+		            {
+		                kTail.append(sInner === "" ? sClose : ` ${sInner} ${sClose}`);
+		            }
+		            else	// 길음: … 상자 (누름: 펼침)
+		            {
+		                const	kDots	= document.createElement("span");
+
+		                kDots.className		= "jdots";
+		                kDots.textContent	= "…";
+		                kDots.title			= "펼치기";
+
+		                kTail.append(kDots, sClose);
+		            }
+
 		            kRow.querySelector(".jt").append(kTail);
 
 		            Util.setSortFold.add(nStart);
