@@ -2,7 +2,7 @@
   "sTitle": "HMX",
   "sZone": "Dev",
   "sLog": "Info",
-  "aMenu": [ "유틸", "쿼리", "서치", "파일", "덤프", "운영", "반영" ],
+  "aMenu": [ "쿼리", "서치", "파일", "덤프", "운영", "반영" ],
 
   "bLog": true,
   "bWeb": true,
@@ -10,14 +10,14 @@
   "bHttps": true,
   "bTest": false,
 
-  "sID": "nhn",
-  "sCode": "",
+  "sID": "Huns",
+  "sCode": "dNKiFt7UwcaY5wp3KRbj5w==",
 
   "nPort": 801,
 
   "Redis": {
-    "sHost": "더미",
-    "nPort": 0,
+    "sHost": "127.0.0.1",
+    "nPort": 7777,
     "nDB": 0,
     "sUser": "default",
     "sManager": "HMX:Manager:",
@@ -26,11 +26,11 @@
   },
 
   "Mail": {
-    "sHost": "smtp.dooray.com",
+    "sHost": "smtp.naver.com",
     "nPort": 587,
     "bSsl": true,
-    "sFrom": "spteam_bot@nhn.com",
-    "sID": "spteam_bot@nhn.com",
+    "sFrom": "study_jung@naver.com",
+    "sID": "study_jung",
     "sCode": ""
   }
 }

@@ -1,6 +1,6 @@
 {
   "aWhiteTCP": [
-    { "sIP": "127.0.0.1", "sID": "Local" }
+    { "sIP": "127.0.0.1", "sID": "로컬" }
   ],
   "aBlackWeb": [
   ]

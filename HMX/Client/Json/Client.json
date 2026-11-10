@@ -1,7 +1,6 @@
 {
   "sTitle": "HMX",
   "sZone": "Dev",
-  "sLog": "Info",
 
   "bLog": true,
 
@@ -18,13 +17,13 @@
   ],
 
   "aLogFolder": [
-    "C:\\NHNServices"
+    "C:\\NHNServices",
+ "D:\SRC\ServerTools\HMX\Client\bin\Debug\net10.0\Log"
   ],
 
   "aBlockQuery": [
     "C:\\NHNServices\\HMXServer\\Data",
     "C:\\NHNServices\\HMXClient\\Data",
-    "XCenter",
     "XLobby",
     "XRoom"
   ],
