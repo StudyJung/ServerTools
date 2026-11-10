@@ -3031,8 +3031,10 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static ClearSort()	// 소트 좌·우 창 비움 (F5 리셋, 파일 연결 끊음)
+		    static ClearSort()	// 소트 좌·우 창 비움 (F5 리셋, 파일 연결 끊음, 우 스왑: 0)
 		    {
+		        SetSwap(document.getElementById("UtilSortRightSwap"), 0);
+
 		        Util.kSortFile	= null;
 		        Util.sSortName	= "";
 		        Util.bSortNew	= true;	// F5 리셋: 다음 실행 네비게이션 새 기억
@@ -3314,6 +3316,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilSortLeftOpen").addEventListener("click", Util.OpenSortFile);	// 좌 찾기: 파일 열기
 		        document.getElementById("UtilSortLeftSave").addEventListener("click", Util.SaveSortFile);	// 좌 저장: 입력 글
 		        document.getElementById("UtilSortRightSave").addEventListener("click", Util.SaveSortRight);	// 우 저장: 펼친 글
+		        InitSwap(document.getElementById("UtilSortRightSwap"));	// 우 스왑: 처음 0, 누를 때마다 +1 (공통 스왑 버튼)
 		        document.getElementById("UtilSortLeftFile").addEventListener("change", (kEvent) =>	// 파일 칸 (http 주소)
 		        {
 		            if (kEvent.currentTarget.files?.[0] != null)
