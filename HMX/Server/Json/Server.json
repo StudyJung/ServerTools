@@ -2,7 +2,7 @@
   "sTitle": "HMX",
   "sZone": "Dev",
   "sLog": "Info",
-  "aMenu": [ "쿼리", "서치", "파일", "덤프", "운영", "반영" ],
+  "aMenu": [ "유틸", "쿼리", "서치", "파일", "덤프", "운영", "반영" ],
 
   "bLog": true,
   "bWeb": true,

@@ -8,10 +8,10 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	TIME_MAX	= 100;	// 타임 결과 최대 줄 (넘음: 맨 아래 (오래된) 줄부터 지움)
 		    static	TIME_KEY	= "HMX.UtilTime";	// 타임 결과 localStorage 키 (UnixTime 초 배열, 새로 고침 유지)
 		    static	DIFF_SPLIT_MIN	= 120;	// 디프 좌·우 창 최소 폭 (px)
-		    static	mapDiffMeta		= { Left: null, Right: null };	// 비교 중 편집 칸 줄마다 { sKind: "" 같음·chg 바뀜·gap 빈 줄 (반대쪽에만 있는 줄 자리)·add 고쳐 늘어난 줄, sOrig: 비교한 글 (add: null), sOther: 반대쪽 글 (줄 안 다른 부분 노랑, 없음: null), nBlock: 차이 번호 (같음: -1) } (비교 안 함: null)
+		    static	mapDiffMeta		= { Left: null, Right: null };	// 비교 중 편집 칸 줄마다 { sKind: "" 같음·chg 바뀜·gap 빈 줄 (반대쪽에만 있는 줄 자리)·add 고쳐 늘어난 줄, sOrig: 비교한 글 (add: null), sOther: 반대쪽 글 (줄 안 다른 부분 노랑, 없음: null), nBlock: 차이 번호 (같음: -1), bDel: 지운 자리 (연한 초록, 없음: undefined) } (비교 안 함: null)
 		    static	mapDiffLines	= { Left: null, Right: null };	// 비교 중 지난 줄 (고침 앞뒤 견줌: 바뀐 곳만 줄 정보 맞춤)
 		    static	mapDiffWhole	= { Left: false, Right: false };	// 이번 고침: 모두 고름 → 지움·붙여넣기 (비교 모두 풂)
-		    static	mapDiffHistory	= { Left: [], Right: [] };	// 비교 중 고침 전 [{ sKey: 글 지문, arrMeta }] (Ctrl+Z·Y 로 그 글: 그때 줄 색 그대로, 최근 X개·줄 정보 합 X줄까지, 글 사본 안 둠)
+		    static	mapDiffHistory	= { Left: [], Right: [] };	// 비교 중 고침 전 [{ sKey: 글 지문, arrMeta, kOther: 반대쪽 { sKey, arrMeta } }] (Ctrl+Z·Y 로 그 글: 그때 줄 색 그대로 + 반대쪽 회색 빈 줄도, 최근 X개·줄 정보 합 X줄까지, 글 사본 안 둠)
 		    static	mapDiffKey		= { Left: "", Right: "" };	// 비교 중 지금 글 지문 (길이:해시)
 		    static	mapSelBar		= new Map();	// 고른 빈 줄 표시 (창 → 그린 막대, 다음에 그것만 지움)
 		    static	nSelFrame		= 0;	// 고른 빈 줄 다시 그림 예약 (한 화면 틀에 1번)
@@ -965,7 +965,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    {
 		        const	kMeta	= arrMeta[nIndex];
 		        const	bGap	= Util.IsGapLine(kMeta, sLine);
-		        const	bEdit	= !bGap && sLine !== kMeta?.sOrig;	// 고친 줄·늘어난 줄
+		        const	bEdit	= !bGap && (kMeta?.bDel === true || sLine !== kMeta?.sOrig);	// 고친 줄·늘어난 줄·지운 자리
 		        const	kNum	= document.createElement("div");
 		        const	kLine	= document.createElement("div");
 
@@ -1110,9 +1110,10 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const	arrNew		= sValue.split("\n");
 		        const	arrMeta		= Util.mapDiffMeta[sSide];
 		        const	arrHistory	= Util.mapDiffHistory[sSide];
+		        const	sOther		= sSide === "Left" ? "Right" : "Left";
 		        let		nTotal		= 0;	// 기억 줄 정보 합
 
-		        arrHistory.push({ sKey: Util.mapDiffKey[sSide], arrMeta });	// 고침 전 (되돌림용)
+		        arrHistory.push({ sKey: Util.mapDiffKey[sSide], arrMeta, kOther: { sKey: Util.mapDiffKey[sOther], arrMeta: Util.mapDiffMeta[sOther] } });	// 고침 전 (되돌림용, 반대쪽: 회색 빈 줄 되돌림)
 		        arrHistory.forEach((kItem) => { nTotal += kItem.arrMeta.length; });
 
 		        while (arrHistory.length > Util.DIFF_HISTORY_MAX || (arrHistory.length > 1 && nTotal > Util.DIFF_HISTORY_LINE))	// 넘음: 오래된 것 버림
@@ -1130,6 +1131,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            if (kHit != null)
 		            {
 		                Util.mapDiffMeta[sSide] = kHit.arrMeta;
+
+		                Util.RestoreDiffGap(sOther, kHit.kOther);
 
 		                return null;
 		            }
@@ -1154,7 +1157,133 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        Util.mapDiffMeta[sSide] = arrMeta.slice(0, nPre).concat(arrMid, arrMeta.slice(arrMeta.length - nSuf));
 
-		        return { nStart: nPre, nOld, nNew };
+		        if (nNew > 0 || !arrOld.slice(nPre, nPre + nOld).some((sLine, nIndex) => !Util.IsGapLine(arrMeta[nPre + nIndex], sLine)))	// 줄 지움 아님·회색 빈 줄만 지움
+		        {
+		            return { nStart: nPre, nOld, nNew };
+		        }
+
+		        return Util.MarkDiffDelete(sSide, arrMeta.slice(nPre, nPre + nOld), nPre, nOld);
+		    }
+
+		    static MarkDiffDelete(sSide, arrDel, nPre, nOld)	// 비교 중 줄 지움: 지운 자리 다음 줄 (없음: 앞 줄, 회색 빈 줄 건넘) 연한 초록 + 지운 차이 이어받음 (이 창에 그 차이 줄 없음) + 반대쪽 그 줄 자리 회색 빈 줄 뺌 (그 차이 줄 없어짐: 그 자리 줄 하늘색·차이 이어받음), 반환: 다시 그릴 줄 { nStart, nOld, nNew }
+		    {
+		        const	sOther		= sSide === "Left" ? "Right" : "Left";
+		        const	arrMeta		= Util.mapDiffMeta[sSide];
+		        const	arrLine		= Util.mapDiffLines[sSide];
+		        const	nDelBlock	= arrDel.find((kMeta) => kMeta?.nBlock >= 0)?.nBlock ?? -1;	// 지운 차이 (없음: -1)
+		        let		nMark		= -1;	// 지운 자리 줄 (없음: -1)
+
+		        for (let nIndex = nPre; nIndex < arrLine.length && nMark < 0; ++nIndex)
+		        {
+		            nMark = Util.IsGapLine(arrMeta[nIndex], arrLine[nIndex]) ? -1 : nIndex;
+		        }
+
+		        for (let nIndex = nPre - 1; nIndex >= 0 && nMark < 0; --nIndex)
+		        {
+		            nMark = Util.IsGapLine(arrMeta[nIndex], arrLine[nIndex]) ? -1 : nIndex;
+		        }
+
+		        if (nMark >= 0)	// 새 줄 정보 (지난 줄 정보: 되돌림 기억 → 안 고침)
+		        {
+		            const	kMark	= arrMeta[nMark];
+		            const	bTake	= kMark.nBlock < 0 && nDelBlock >= 0 && !arrMeta.some((kMeta) => kMeta.nBlock === nDelBlock);	// 지운 차이 이어받음
+
+		            arrMeta[nMark] = { ...kMark, bDel: true, nBlock: bTake ? nDelBlock : kMark.nBlock };
+		        }
+
+		        const	arrOtherMeta	= Util.mapDiffMeta[sOther];
+		        const	arrOtherLine	= document.getElementById(`UtilDiff${sOther}Text`).value.split("\n");
+		        const	setRemove		= new Set();	// 뺄 반대쪽 회색 빈 줄 (줄 맞춤 자리)
+
+		        arrDel.forEach((kMeta, nIndex) =>
+		        {
+		            const	nRow	= nPre + nIndex;	// 지우기 전 줄 맞춤 자리
+		            const	funcPair	= (nAt) => !setRemove.has(nAt) && arrOtherMeta?.[nAt]?.nBlock === kMeta?.nBlock && Util.IsGapLine(arrOtherMeta[nAt], arrOtherLine[nAt]);	// 같은 차이 회색 빈 줄
+		            const	nPair	= kMeta?.nBlock >= 0 && arrOtherMeta != null ? (funcPair(nRow) ? nRow : arrOtherMeta.findIndex((_, nAt) => funcPair(nAt))) : -1;	// 같은 자리 먼저 (고쳐 어긋남: 같은 차이 첫 빈 줄)
+
+		            if (nPair >= 0)
+		            {
+		                setRemove.add(nPair);
+		            }
+		        });
+
+		        if (setRemove.size > 0)
+		        {
+		            const	arrKeepMeta	= arrOtherMeta.filter((_, nIndex) => !setRemove.has(nIndex));
+		            const	arrKeepLine	= arrOtherLine.filter((_, nIndex) => !setRemove.has(nIndex));
+
+		            for (const nRow of [...setRemove].sort((nA, nB) => nA - nB))	// 그 차이 줄 없어짐: 뺀 자리 줄 하늘색 (차이 이어받음 → 이동·지금 차이 표시)
+		            {
+		                const	nBlock	= arrOtherMeta[nRow].nBlock;
+		                const	nAt		= Math.min(nRow - [...setRemove].filter((nRemove) => nRemove < nRow).length, arrKeepMeta.length - 1);	// 뺀 뒤 자리
+
+		                if (nAt >= 0 && arrKeepMeta[nAt].nBlock < 0 && !arrKeepMeta.some((kMeta) => kMeta.nBlock === nBlock))
+		                {
+		                    arrKeepMeta[nAt] = { ...arrKeepMeta[nAt], sKind: "chg", nBlock };
+		                }
+		            }
+
+		            Util.SetDiffSide(sOther, arrKeepLine, arrKeepMeta);
+		        }
+
+		        if (nMark < 0)
+		        {
+		            return { nStart: nPre, nOld, nNew: 0 };
+		        }
+
+		        return nMark >= nPre ? { nStart: nPre, nOld: nOld + nMark - nPre + 1, nNew: nMark - nPre + 1 } : { nStart: nMark, nOld: nPre - nMark + nOld, nNew: nPre - nMark };	// 지운 자리 줄까지
+		    }
+
+		    static SetDiffSide(sSide, arrLine, arrMeta)	// 비교 중 그 창 글·줄 정보 바꿈 (반대쪽 고침 따라: 회색 빈 줄 넣고 뺌, 스크롤 그대로) + 다시 그림
+		    {
+		        const	kText	= document.getElementById(`UtilDiff${sSide}Text`);
+		        const	sValue	= arrLine.join("\n");
+		        const	nTop	= kText.scrollTop;
+		        const	nLeft	= kText.scrollLeft;
+
+		        kText.value		= sValue;
+		        kText.scrollTop		= nTop;
+		        kText.scrollLeft	= nLeft;
+
+		        Util.mapDiffMeta[sSide]		= arrMeta;
+		        Util.mapDiffLines[sSide]	= arrLine;
+		        Util.mapDiffKey[sSide]		= Util.TextKey(sValue);
+
+		        Util.RenderLines(sSide);
+		    }
+
+		    static RestoreDiffGap(sSide, kState)	// Ctrl+Z·Y: 반대쪽 고침 때 넣고 뺀 이 창 회색 빈 줄 → 그때 줄 정보대로 (실제 글 같음·지문 맞음만, 글 사본 없이: 지금 실제 줄 + 그때 회색 빈 줄 자리)
+		    {
+		        if (kState == null || Util.mapDiffMeta[sSide] == null || kState.sKey === Util.mapDiffKey[sSide])
+		        {
+		            return;
+		        }
+
+		        const	arrNow	= document.getElementById(`UtilDiff${sSide}Text`).value.split("\n");
+		        const	arrReal	= arrNow.filter((sLine, nIndex) => !Util.IsGapLine(Util.mapDiffMeta[sSide][nIndex], sLine));	// 지금 실제 줄
+		        const	arrLine	= [];
+		        let		nReal	= 0;
+
+		        for (const kMeta of kState.arrMeta)
+		        {
+		            if (kMeta?.sKind === "gap")
+		            {
+		                arrLine.push("");
+		            }
+		            else if (nReal < arrReal.length)
+		            {
+		                arrLine.push(arrReal[nReal++]);
+		            }
+		            else
+		            {
+		                return;
+		            }
+		        }
+
+		        if (nReal === arrReal.length && Util.TextKey(arrLine.join("\n")) === kState.sKey)
+		        {
+		            Util.SetDiffSide(sSide, arrLine, kState.arrMeta);
+		        }
 		    }
 
 		    static OnDiffBeforeInput(sSide, kEvent)	// 고침 앞: 비교 중 모두 고름 → 지움·붙여넣기 (비교 모두 풂)
