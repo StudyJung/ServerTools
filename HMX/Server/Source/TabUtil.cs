@@ -2857,21 +2857,21 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static FoldInner(nOpen)	// 접는 블록 안쪽 한 줄 (여는 줄 ~ 닫는 줄 사이 줄, 앞뒤 빈칸 뗌·빈칸 하나로 이음·빈 줄 뺌, 안쪽 여러 줄 블록: 그 블록도 한 줄), 안쪽 X 자 넘음: 줄임 자리 SORT_FOLD_MARK (블록마다 안쪽부터: { "nMinute": {…} }, 넘으면 나머지 안 봄)
+		    static FoldInner(nOpen, arrLine = Util.arrSortLine, nMax = Util.SORT_FOLD_MAX)	// 접는 블록 안쪽 한 줄 (여는 줄 ~ 닫는 줄 사이 줄, 앞뒤 빈칸 뗌·빈칸 하나로 이음·빈 줄 뺌, 안쪽 여러 줄 블록: 그 블록도 한 줄), 안쪽 nMax 자 넘음: 줄임 자리 SORT_FOLD_MARK (블록마다 안쪽부터: { "nMinute": {…} }, 넘으면 나머지 안 봄, 우 저장: 끝 없음)
 		    {
 		        const	nClose	= Util.mapSortFold.get(nOpen);
 		        let		sInner	= "";
 
 		        for (let nIndex = nOpen + 1; nIndex < nClose; ++nIndex)
 		        {
-		            let	sPart	= Util.arrSortLine[nIndex].trim();
+		            let	sPart	= arrLine[nIndex].trim();
 
 		            if (Util.mapSortFold.has(nIndex))	// 안쪽 여러 줄 블록: 그 블록도 한 줄 (여는 줄 + 안쪽 + 닫는 줄)
 		            {
 		                const	nEnd	= Util.mapSortFold.get(nIndex);
-		                const	sChild	= Util.FoldInner(nIndex);
+		                const	sChild	= Util.FoldInner(nIndex, arrLine, nMax);
 
-		                sPart	= `${sPart}${sChild === "" || sChild === Util.SORT_FOLD_MARK ? sChild : ` ${sChild} `}${Util.arrSortLine[nEnd].trim()}`;	// 줄임: {…} 붙임
+		                sPart	= `${sPart}${sChild === "" || sChild === Util.SORT_FOLD_MARK ? sChild : ` ${sChild} `}${arrLine[nEnd].trim()}`;	// 줄임: {…} 붙임
 		                nIndex	= nEnd;
 		            }
 
@@ -2880,13 +2880,39 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                sInner += (sInner === "" ? "" : " ") + sPart;
 		            }
 
-		            if (sInner.length > Util.SORT_FOLD_MAX)
+		            if (sInner.length > nMax)
 		            {
 		                return Util.SORT_FOLD_MARK;
 		            }
 		        }
 
 		        return sInner;
+		    }
+
+		    static GetSortSaveLines()	// 소트 우 저장 줄: 보이는 모양 그대로 (뎁스 한 줄·▸ 접힌 줄: 그 한 줄, 숨은 줄: 뺌, 줄임 상자: 줄임 없이 다 씀)
+		    {
+		        const	arrBase	= Util.arrSortLine.some((sLine) => sLine.includes(Util.SORT_FOLD_MARK)) ? Util.FormatJson(Util.sSortText, Util.nSortDepth, Infinity).arrLine : Util.arrSortLine;	// 뎁스 한 줄 줄임 있음: 줄임 없이 다시 펼침 (줄 위치 같음)
+		        const	arrLine	= [];
+
+		        for (let nIndex = 0; nIndex < arrBase.length; ++nIndex)
+		        {
+		            if (Util.setSortFold.has(nIndex))	// 접힌 줄: 안쪽 글 한 줄 + 닫는 줄 (줄임 없이)
+		            {
+		                const	nEnd	= Util.mapSortFold.get(nIndex);
+		                const	sInner	= Util.FoldInner(nIndex, arrBase, Infinity);
+		                const	sClose	= arrBase[nEnd].trim();
+
+		                arrLine.push(arrBase[nIndex] + (sInner === "" ? sClose : ` ${sInner} ${sClose}`));
+
+		                nIndex = nEnd;
+
+		                continue;
+		            }
+
+		            arrLine.push(arrBase[nIndex]);
+		        }
+
+		        return arrLine;
 		    }
 
 		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: 안쪽 글 한 줄 "키": { "a": 1, … }, , { }·[ ] 마다 안쪽 X 자 넘음: {…} 줄임 상자)·펴기 (안쪽 접힘: 그대로)
@@ -3188,7 +3214,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 
 		        const	kFile	= Util.kSortRightFile ?? { kHandle: null, sName: Util.sSortName || "대상.json" };	// 처음: 기본 이름 = 좌 파일 이름 (없음: 대상.json)
-		        const	arrLine	= Util.arrSortLine.some((sLine) => sLine.includes(Util.SORT_FOLD_MARK)) ? Util.FormatJson(Util.sSortText, Util.nSortDepth, Infinity).arrLine : Util.arrSortLine;	// 뎁스 한 줄 줄임 있음: 줄임 없이 다시 펼침 (보이는 형식·글 다 그대로)
+		        const	arrLine	= Util.GetSortSaveLines();	// 보이는 모양 그대로 (뎁스·접힘 한 줄, 줄임 없이)
 		        const	sText	= arrLine.join("\r\n");
 		        let		sName	= kFile.sName;	// 저장한 이름
 
