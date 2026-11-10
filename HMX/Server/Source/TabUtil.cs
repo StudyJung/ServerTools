@@ -764,7 +764,12 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                kHandle = await window.showSaveFilePicker({ id: "HMXUtilDiff", suggestedName: kFile.sName });
 		            }
 
-		            if (kHandle != null && (await kHandle.requestPermission?.({ mode: "readwrite" }) ?? "granted") === "granted")
+		            if (kHandle != null && (await kHandle.requestPermission?.({ mode: "readwrite" }) ?? "granted") !== "granted")	// 쓰기 허용 창 취소: 저장 안 함 (다운 안 함)
+		            {
+		                return;
+		            }
+
+		            if (kHandle != null)
 		            {
 		                const	kWrite	= await kHandle.createWritable();	// 파일 비우고 새로 씀 (앞 글 안 남김)
 
@@ -778,7 +783,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		                Util.RenderTitle(sSide);
 		            }
-		            else	// http 주소 등 저장 창·파일 쓰기 없음: 그 이름 다운 (브라우저 다운 폴더)
+		            else	// http 주소 등 저장 창·파일 쓰기 없음: 그 이름 다운 (브라우저 다운 폴더, 허용 창 취소: 위에서 끝)
 		            {
 		                const	kLink	= document.createElement("a");
 
@@ -2407,7 +2412,12 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                kHandle = await window.showSaveFilePicker({ id: "HMXUtilSort", suggestedName: kFile.sName });
 		            }
 
-		            if (kHandle != null && (await kHandle.requestPermission?.({ mode: "readwrite" }) ?? "granted") === "granted")
+		            if (kHandle != null && (await kHandle.requestPermission?.({ mode: "readwrite" }) ?? "granted") !== "granted")	// 쓰기 허용 창 취소: 저장 안 함 (다운 안 함)
+		            {
+		                return;
+		            }
+
+		            if (kHandle != null)
 		            {
 		                const	kWrite	= await kHandle.createWritable();	// 파일 비우고 새로 씀 (앞 글 안 남김)
 
@@ -2420,7 +2430,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		                Util.RenderSortLines();
 		            }
-		            else	// http 주소 등 저장 창·파일 쓰기 없음: 그 이름 다운 (브라우저 다운 폴더)
+		            else	// http 주소 등 저장 창·파일 쓰기 없음: 그 이름 다운 (브라우저 다운 폴더, 허용 창 취소: 위에서 끝)
 		            {
 		                const	kLink	= document.createElement("a");
 
