@@ -1,1 +1,7 @@
-httpPlatformHandler_amd64.msi
+
+# IIS( HttpPlatformHandler)
+## httpPlatformHandler_amd64.msi - HttpPlatformHandler v1.2(x64) 설치(https://www.iis.net/downloads/microsoft/httpplatformhandler)
+
+## DoNet( 빌드에 닷넷을 포함하지 않는 경우에만 설치 )
+- dotnet-runtime-10.0.13-win-x64.exe 설치(https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win-x64&os=win10&apphost_version=10.0.10)
+- aspnetcore-runtime-10.0.13-win-x64.exe 설치(https://aka.ms/dotnet-core-applaunch?framework=Microsoft.AspNetCore.App&framework_version=10.0.0&arch=x64&rid=win-x64&os=win10)

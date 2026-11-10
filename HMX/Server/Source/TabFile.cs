@@ -347,7 +347,6 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 		            return;
 		        }
 
-		        const	sMachine	= GetMachineText();	// 머신 표시 글자
 		        const	arrMachine	= GetMachines();	// 보여줄 머신 (목록 순서)
 
 		        if (arrMachine.length === 0)	// 접속 머신 없음
@@ -364,7 +363,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		        kFileScroll.scrollTop	= 0;
 		        kFileScroll.scrollLeft	= 0;
-		        kFileTitle.textContent	= `[${sMachine} : File] 머신 ${arrMachine.length}대`;
+		        kFileTitle.textContent	= `파일 머신 ${arrMachine.length}대`;
 		        File.bFileLoaded		= true;
 
 		        ShowPanel("file");
@@ -481,7 +480,7 @@ class TabFile	// 파일 탭: 클라 감시 폴더 보기·파일 다운 (조각�
 
 		                kLine.className	= "line";
 		                kNo.className	= "lno";
-		                kNo.textContent	= String(kResult.nStart + nIndex).padStart(7, " ") + " : ";
+		                kNo.textContent	= String(kResult.nStart + nIndex);	// 줄 번호 (왼쪽 회색 칸, 디프와 같음)
 
 		                kLine.append(kNo, sText);
 		                kFragment.append(kLine);

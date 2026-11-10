@@ -9,7 +9,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 	public void MapRoute(WebApplication WebApp)	// 라우트 등록 (반영 탭)
 	{
-		WebApp.MapGet("/api/process", m_kProcess.OnRequest);	// 반영 API (action 쿼리로 분기, HMXServer /api/hmx 와 같은 응답)
+		WebApp.MapMethods("/api/process", new[] { HttpMethods.Get, HttpMethods.Post }, m_kProcess.OnRequest);	// 반영 API (action 쿼리로 분기, HMXServer /api/hmx 와 같은 응답, 이름 변경: POST 본문 JSON)
 	}
 
 	public static string ProcessHTML()	// 페이지 반영 탭 스크립트 (Web.IndexHtml 조립)
@@ -19,6 +19,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		{
 		    static	POLL_MS			= 1000;					// 목록 갱신 주기 (ms, 반영 탭 보일 때만, 첫 로딩·순차 작업 중: 계속)
 		    static	PAGE_SIZE		= 300;					// 로그·에러 한 페이지 (서버 PAGE_LIMIT 와 같음)
+		    static	PAGE_UNIT		= 100;					// 목록 페이지 나눔: 대분류 번호 X 단위
 		    static	TRY_COUNT		= 3;					// 시작·정지·다운 요청 시도 횟수
 		    static	STALE_WAIT_MS	= 1500;					// 버전 불일치 배너 뒤 다시 읽기 (ms)
 		    static	TOAST_MS		= 3500;					// 토스트 표시 (ms)
@@ -42,6 +43,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    static	kChips			= document.getElementById("ProcessChips");			// 상태 칩
 		    static	kMachine		= document.getElementById("ProcessMachine");		// 머신 드롭 박스
 		    static	kVersion		= document.getElementById("ProcessVersion");		// 설정 버전 Ver.N
+		    static	kPager			= document.getElementById("ProcessPager");			// 페이지 버튼 (상자 머리 맨 앞, PAGE_UNIT 단위)
 		    static	kTest			= document.getElementById("ProcessTest");			// TestOn·TestOff (설정 bTest)
 		    static	kError			= document.getElementById("ProcessError");			// 목록 오류
 		    static	kTables			= document.getElementById("ProcessTables");			// 서버 표 (대분류마다 상자)
@@ -65,6 +67,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		    static	sSelect		= null;			// 선택 줄 서버 키
 		    static	setExpand	= new Set();	// 펼친 중분류 ("g:대분류,중분류")
 		    static	kFilter		= { sKey: "", sState: "all", sMachine: "" };	// 검색어·상태 칩·머신
+		    static	sPage		= null;			// 지금 페이지: 대분류 번호 PAGE_UNIT 단위 ("0"·"1"·…, 번호 없음: "0", 최초·목록에 없음: 첫 페이지 = 0번)
 		    static	funcModal	= null;			// 확인 팝업 결과 대기 (resolve)
 		    static	kRename		= null;			// 이름 변경 대상 { sScope, arrList, funcKey }
 		    static	sLogNew		= "";			// 로그 최신 커서 (▲ 더 최신)
@@ -199,7 +202,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        return Process.arrRow.find(kRow => kRow.sField === sField);
 		    }
 
-		    static GetModel()	// 대분류: 중분류 첫 숫자 100 단위 (이름: 첫 그룹 첫째 값, 숫자 자연 정렬) → [{ sId, nNumber, sLabel, arrGroup: [{ sId, sLabel, arrRow }], arrRow }]
+		    static GetModel()	// 대분류: 중분류 첫 숫자마다 (이름: 첫 그룹 첫째 값, 숫자 자연 정렬) → [{ sId, nNumber, sLabel, arrGroup: [{ sId, sLabel, arrRow }], arrRow }]
 		    {
 		        const	mapGroup	= new Map();	// 중분류 → 서버 (목록 순서)
 		        const	arrSec		= [];
@@ -222,7 +225,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        for (const sGroup of arrGroup)
 		        {
 		            const	nNumber	= parseInt(sGroup, 10);
-		            const	sId		= isNaN(nNumber) ? "x" : String(Math.floor(nNumber / 100));
+		            const	sId		= isNaN(nNumber) ? "x" : String(nNumber);
 
 		            if (kSec == null || kSec.sId !== sId)
 		            {
@@ -238,9 +241,24 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        return arrSec;
 		    }
 
-		    static FindSec(sId)	// 대분류 (100 단위 번호)
+		    static FindSec(sId)	// 대분류 (첫 숫자, 번호 없음: x)
 		    {
 		        return Process.GetModel().find(kSec => kSec.sId === sId);
+		    }
+
+		    static GetPage(kSec)	// 대분류 페이지: 번호 PAGE_UNIT 단위 (PAGE_UNIT 미만·번호 없음: 0)
+		    {
+		        return isNaN(kSec.nNumber) ? "0" : String(Math.floor(kSec.nNumber / Process.PAGE_UNIT));
+		    }
+
+		    static GetPages(arrSec)	// 페이지 목록: 서버 있는 PAGE_UNIT 단위만 (번호 순, 겹침 없음)
+		    {
+		        return [...new Set(arrSec.map(kSec => Process.GetPage(kSec)))].sort((sA, sB) => Number(sA) - Number(sB));
+		    }
+
+		    static GetCurPage(arrPage)	// 지금 페이지 (없음·목록에 없음: 첫 페이지, 페이지 없음: null)
+		    {
+		        return arrPage.includes(Process.sPage) ? Process.sPage : (arrPage[0] ?? null);
 		    }
 
 		    static GetGroupRows(sGroup)	// 중분류 서버
@@ -481,10 +499,11 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        kProcessPanel.classList.toggle("offline", Process.bListError || !kOffText.hidden);
 		    }
 
-		    static Render()	// 요약 카드·상태 칩·표·상세 패널
+		    static Render()	// 요약 카드·상태 칩·페이지 버튼·표·상세 패널
 		    {
 		        Process.RenderCards();
 		        Process.RenderChips();
+		        Process.RenderPager();
 		        Process.RenderTable();
 
 		        if (Process.sDrawer != null)
@@ -524,6 +543,17 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		            Process.kMachine.dataset.sig = sSignature;
 		        }
+		    }
+
+		    static RenderPager()	// 페이지 버튼 (상자 머리 맨 앞): 서버 있는 PAGE_UNIT 단위만 (PAGE_UNIT 미만·번호 없음: 0, 번호 / PAGE_UNIT), 지금 페이지 존 색, 1페이지도 보임 (서버 없음: 숨김), 필터 중: 모든 페이지 결과 → 버튼 잠금
+		    {
+		        const	arrSec	= Process.GetModel();
+		        const	arrPage	= Process.GetPages(arrSec);
+		        const	sCur	= Process.GetCurPage(arrPage);
+		        const	bFilter	= Process.IsFiltering();
+
+		        Process.kPager.hidden		= arrPage.length === 0;
+		        Process.kPager.innerHTML	= arrPage.map(sPage => `<button type="button"${!bFilter && sPage === sCur ? ' class="cur"' : ""} data-act="page" data-id="${sPage}"${bFilter ? " disabled" : ""}>${sPage}</button>`).join("");
 		    }
 
 		    static IsMatch(kRow)	// 필터 맞음 (상태 칩·머신·검색어: 키·머신·커밋·실행 명령 부분 일치, 대소문자 무시)
@@ -577,16 +607,18 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        return `<button type="button" class="kebab" data-act="menu" data-scope="${sScope}" data-id="${Process.Escape(sId)}" title="더보기" aria-label="더보기">⋯</button>`;
 		    }
 
-		    static RenderTable()	// 서버 표: 대분류마다 상자, 대분류 → 중분류 → 서버 줄 (필터 중: 맞는 서버 그룹 모두 펼침, 1000번대 바뀜: 간격 세 배)
+		    static RenderTable()	// 서버 표: 지금 페이지 대분류마다 상자, 대분류 → 중분류 → 서버 줄 (필터 중: 모든 페이지 맞는 서버 그룹 모두 펼침)
 		    {
 		        const	bFilter	= Process.IsFiltering();
+		        const	arrSec	= Process.GetModel();
+		        const	arrPage	= Process.GetPages(arrSec);
+		        const	sPage	= Process.GetCurPage(arrPage);	// 지금 페이지 (필터 중: 안 씀)
 		        const sHead			= `<thead><tr><th class="c-btn"><button type="button" class="th-help" data-act="legend" title="범례(힌트)">작업 ⓘ</button></th><th class="c-name">이름</th><th class="c-state">상태</th><th class="c-machine">머신</th><th class="c-pid">PID</th><th class="c-commit">커밋</th><th class="c-act"></th></tr></thead>`;
 		        let	sHtml			= "";
-		        let	nPrevThousand	= null;	// 앞 상자 1000 단위
 
-		        for (const kSec of Process.GetModel())
+		        for (const kSec of arrSec)
 		        {
-		            if (bFilter && !kSec.arrRow.some(kRow => Process.IsMatch(kRow)))
+		            if (bFilter ? !kSec.arrRow.some(kRow => Process.IsMatch(kRow)) : Process.GetPage(kSec) !== sPage)	// 필터 중: 맞는 서버 있음, 그 외: 지금 페이지만
 		            {
 		                continue;
 		            }
@@ -638,12 +670,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		                }
 		            }
 
-		            const	nThousand	= isNaN(kSec.nNumber) ? null : Math.floor(kSec.nNumber / 1000);
-		            const	bTierGap	= nPrevThousand !== null && nThousand !== null && nThousand !== nPrevThousand;
-
-		            nPrevThousand = nThousand;
-
-		            sHtml += `<div class="scroll sec-block${bTierGap ? " tier-gap" : ""}"><table class="fixed">${sHead}<tbody>${sRows}</tbody></table></div>`;
+		            sHtml += `<div class="scroll sec-block"><table class="fixed">${sHead}<tbody>${sRows}</tbody></table></div>`;
 		        }
 
 		        if (sHtml === "")	// 빈 상태: 가운데 흐린 안내
@@ -702,10 +729,11 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        Process.RenderTable();
 		    }
 
-		    static async ResetState()	// F5 리셋: 최초 입장 상태 (줄 메뉴·상세 패널 닫기·필터 초기화 → TestOn 표시·버전·목록 다시, 그대로: 펼침·현황 보관)
+		    static async ResetState()	// F5 리셋: 최초 입장 상태 (줄 메뉴·상세 패널 닫기·필터 초기화·0번 탭 → TestOn 표시·버전·목록 다시, 그대로: 펼침·현황 보관)
 		    {
 		        Process.CloseMenu();
 		        Process.CloseDrawer();
+		        Process.SetPage(null);	// 첫 페이지 (0번)
 		        Process.ClearFilter();
 
 		        if (!Process.bOpened)	// 처음 열기 전: 처음 열기
@@ -1595,7 +1623,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 
 		        try
 		        {
-		            const	kData	= await Process.Api("action=rename" + arrRename.map(kItem => "&field=" + encodeURIComponent(kItem.sOld) + "&newfield=" + encodeURIComponent(kItem.sNew)).join("") + "&version=" + Process.nVersion);
+		            const	kData	= await FetchJson("api/process?action=rename&version=" + Process.nVersion, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arrField: arrRename.map(kItem => kItem.sOld), arrNewField: arrRename.map(kItem => kItem.sNew) }) });	// 키 쌍: 본문 (대분류 키 많음: 쿼리 길이 제한 넘음 → 404)
 
 		            if (Process.CheckStale(kData))
 		            {
@@ -2005,6 +2033,7 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        }
 
 		        Process.setExpand.add("g:" + Process.GetGroup(kRow.sField));
+		        Process.SetSecPage(Process.GetModel().find(kSec => kSec.arrRow.includes(kRow)));	// 그 서버 페이지
 
 		        Process.kFilter			= { sKey: "", sState: "all", sMachine: "" };
 		        Process.kSearch.value	= "";
@@ -2128,6 +2157,30 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        }
 
 		        navigator.clipboard.writeText(sText).then(() => Process.Toast("복사했습니다", "ok"), () => Process.Toast("복사 실패", "fail"));
+		    }
+
+		    static SetPage(sPage)	// 지금 페이지 바꿈 (보관 안 함: 최초 입장·F5 리셋 → 0번)
+		    {
+		        Process.sPage = sPage;
+		    }
+
+		    static SetSecPage(kSec)	// 대분류가 보이는 페이지로 (없음: 그대로)
+		    {
+		        if (kSec != null)
+		        {
+		            Process.SetPage(Process.GetPage(kSec));
+		        }
+		    }
+
+		    static JumpSec(sId)	// 요약 카드 누름: 그 대분류 페이지 (필터 중: 모든 페이지 그대로) → 대분류 줄 가운데
+		    {
+		        if (!Process.IsFiltering())
+		        {
+		            Process.SetSecPage(Process.FindSec(sId));
+		            Process.Render();
+		        }
+
+		        document.getElementById("ProcessSec-" + sId)?.scrollIntoView({ behavior: "smooth", block: "center" });
 		    }
 
 		    static SaveExpand()	// 펼침 보관 (localStorage: 새로 고침 유지)
@@ -2295,7 +2348,8 @@ class TabProcess	// 반영 탭: 게임 서버 프로세스 시작·정지·다�
 		        errGoto:		(kItem) => Process.GotoServer(kItem.dataset.id),
 		        state:			(kItem) => { Process.kFilter.sState = kItem.dataset.id; Process.Render(); },
 		        clearFilter:	() => Process.ClearFilter(),
-		        jump:			(kItem) => document.getElementById("ProcessSec-" + kItem.dataset.id)?.scrollIntoView({ behavior: "smooth", block: "center" }),
+		        jump:			(kItem) => Process.JumpSec(kItem.dataset.id),
+		        page:			(kItem) => { Process.SetPage(kItem.dataset.id); Process.Render(); },
 		        copy:			(kItem) => Process.Copy(kItem.dataset.id),
 		        legend:			() => ShowHelp(),	// 힌트 팝업 (맨 위부터, 범례: 실행 묶음)
 		    };

@@ -1,0 +1,240 @@
+
+
+HMXList:111_DEV,0_MPAgent,Major
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_MPAgent_Major_new,MobilePoker_MPAgent,1,0,MPAgentManagerMajor.exe MPAgentMajor.exe MPAgentManagerMajor.bat
+HMXList:111_DEV,0_MPAgent,Minor
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_MPAgent_Minor_new,MobilePoker_MPAgent,1,0,MPAgentManagerMinor.exe MPAgentMinor.exe MPAgentManagerMinor.bat
+
+HMXList:111_DEV,1_Center,Common
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_Common_new,MobilePoker_Common,1,0,BoxMT.exe -c _XLO_CommonService.xml
+HMXList:111_DEV,1_Center,Guild
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_Guild_new,MobilePoker_Guild,1,0,BoxMT.exe -c _XLO_GuildCenterService.xml
+HMXList:111_DEV,1_Center,Ranking
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_Ranking_new,MobilePoker_Ranking,1,0,BoxMT.exe -c _XLO_RankingService.xml
+HMXList:111_DEV,1_Center,Tournament
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_Tournament_new,MobilePoker_Tournament,1,0,BoxMT.exe -c _XLO_TournamentService.xml
+
+HMXList:111_DEV,2_Game,BadukiLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_BadukiLobby_101_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_BadukiLobby_11_101.xml
+HMXList:111_DEV,2_Game,BadukiRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_BadukiRoom_101_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_BadukiRoom_11_101_1.xml
+HMXList:111_DEV,2_Game,7PokerLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_7PokerLobby_201_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_7PokerLobby_11_201.xml
+HMXList:111_DEV,2_Game,7PokerRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_7PokerRoom_201_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_7PokerRoom_11_201_1.xml
+HMXList:111_DEV,2_Game,HoldemLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_HoldemLobby_301_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_HoldemLobby_11_301.xml
+HMXList:111_DEV,2_Game,HoldemRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_HoldemRoom_301_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_HoldemRoom_11_301_1.xml
+HMXList:111_DEV,2_Game,HighLowLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_HighlowLobby_401_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_HighlowLobby_11_401.xml
+HMXList:111_DEV,2_Game,HighLowRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_HighlowRoom_401_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_HighlowRoom_11_401_1.xml
+
+HMXList:111_DEV,3_ETC,LuckLand1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_Blackjack_501_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_Blackjack_11_501.xml
+HMXList:111_DEV,3_ETC,LuckLand2
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_Blackjack_502_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_Blackjack_11_502.xml
+HMXList:111_DEV,3_ETC,BadukiCoinLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_BadukiCoinLobby_1101_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_BadukiCoinLobby_11_1101.xml
+HMXList:111_DEV,3_ETC,BadukiCoinRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_BadukiCoinRoom_1101_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_BadukiCoinRoom_11_1101_1.xml
+HMXList:111_DEV,3_ETC,RushHoldemLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_RushHoldemLobby_3301_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_RushHoldemLobby_11_3301.xml
+HMXList:111_DEV,3_ETC,RushHoldemRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_RushHoldemRoom_3301_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_RushHoldemRoom_11_3301_1.xml
+HMXList:111_DEV,3_ETC,RushHoldemLobby2
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_RushHoldemLobby_3302_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_RushHoldemLobby_11_3302.xml
+HMXList:111_DEV,3_ETC,RushHoldemRoom2
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_RushHoldemRoom_3302_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_RushHoldemRoom_11_3302_2.xml
+HMXList:111_DEV,3_ETC,TournamentLobby1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_TournamentLobby_10011_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_TournamentLobby_11_10011.xml
+HMXList:111_DEV,3_ETC,TournamentRoom1
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_TournamentRoom_10011_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_TournamntRoom_11_10011_1.xml
+HMXList:111_DEV,3_ETC,TournamentLobby2
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_TournamentLobby_10012_new,MobilePoker_Lobby,1,0,BoxMT.exe -c _XLO_TournamentLobby_11_10012.xml
+HMXList:111_DEV,3_ETC,TournamentRoom2
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MobilePoker_TournamentRoom_10012_new,MobilePoker_Room,1,0,BoxMT.exe -c _XLO_TournamntRoom_11_10012_2.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:222_QA,0_MPAgent,Major
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_MPAgent_Major_new,MobilePoker_MPAgent_QA,1,0,MPAgentManagerMajor.exe MPAgentMajor.exe MPAgentManagerMajor.bat
+HMXList:222_QA,0_MPAgent,Minor
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_MPAgent_Minor_new,MobilePoker_MPAgent_QA,1,0,MPAgentManagerMinor.exe MPAgentMinor.exe MPAgentManagerMinor.bat
+
+HMXList:222_QA,1_Center,Common
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_Common_new,MobilePoker_Common_QA,1,0,BoxMT.exe -c _XLO_CommonService.xml
+HMXList:222_QA,1_Center,Guild
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_Guild_new,MobilePoker_Guild_QA,1,0,BoxMT.exe -c _XLO_GuildCenterService.xml
+HMXList:222_QA,1_Center,Ranking
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_Ranking_new,MobilePoker_Ranking_QA,1,0,BoxMT.exe -c _XLO_RankingService.xml
+HMXList:222_QA,1_Center,Tournament
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_Tournament_new,MobilePoker_Tournament_QA,1,0,BoxMT.exe -c _XLO_TournamentService.xml
+
+HMXList:222_QA,2_Game,BadukiLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_BadukiLobby_101_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_BadukiLobby_21_101.xml
+HMXList:222_QA,2_Game,BadukiRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_BadukiRoom_101_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_BadukiRoom_21_101_1.xml
+HMXList:222_QA,2_Game,BadukiLobby2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_BadukiLobby_102_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_BadukiLobby_21_102.xml
+HMXList:222_QA,2_Game,BadukiRoom2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_BadukiRoom_102_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_BadukiRoom_21_102_2.xml
+HMXList:222_QA,2_Game,7PokerLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_7PokerLobby_201_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_7PokerLobby_21_201.xml
+HMXList:222_QA,2_Game,7PokerRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_7PokerRoom_201_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_7PokerRoom_21_201_1.xml
+HMXList:222_QA,2_Game,7PokerLobby2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_7PokerLobby_202_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_7PokerLobby_21_202.xml
+HMXList:222_QA,2_Game,7PokerRoom2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_7PokerRoom_202_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_7PokerRoom_21_202_2.xml
+HMXList:222_QA,2_Game,HoldemLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_HoldemLobby_301_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_HoldemLobby_21_301.xml
+HMXList:222_QA,2_Game,HoldemRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_HoldemRoom_301_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_HoldemRoom_21_301_1.xml
+HMXList:222_QA,2_Game,HighLowLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_HighlowLobby_401_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_HighlowLobby_21_401.xml
+HMXList:222_QA,2_Game,HighLowRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_HighlowRoom_401_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_HighlowRoom_21_401_1.xml
+
+HMXList:222_QA,3_ETC,LuckLand1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_Blackjack_501_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_Blackjack_21_501.xml
+HMXList:222_QA,3_ETC,LuckLand2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_Blackjack_502_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_Blackjack_21_502.xml
+HMXList:222_QA,3_ETC,BadukiCoinLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_BadukiCoinLobby_1101_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_BadukiCoinLobby_21_1101.xml
+HMXList:222_QA,3_ETC,BadukiCoinRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_BadukiCoinRoom_1101_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_BadukiCoinRoom_21_1101_1.xml
+HMXList:222_QA,3_ETC,RushHoldemLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_RushHoldemLobby_3301_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_RushHoldemLobby_21_3301.xml
+HMXList:222_QA,3_ETC,RushHoldemRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_RushHoldemRoom_3301_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_RushHoldemRoom_21_3301_1.xml
+HMXList:222_QA,3_ETC,RushHoldemLobby2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_RushHoldemLobby_3302_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_RushHoldemLobby_21_3302.xml
+HMXList:222_QA,3_ETC,RushHoldemRoom2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_RushHoldemRoom_3302_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_RushHoldemRoom_21_3302_2.xml
+HMXList:222_QA,3_ETC,TournamentLobby1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_TournamentLobby_10011_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_TournamentLobby_21_10011.xml
+HMXList:222_QA,3_ETC,TournamentRoom1
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_TournamentRoom_10011_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_TournamentRoom_21_10011_1.xml
+HMXList:222_QA,3_ETC,TournamentLobby2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_TournamentLobby_10012_new,MobilePoker_Lobby_QA,1,0,BoxMT.exe -c _XLO_TournamentLobby_21_10012.xml
+HMXList:222_QA,3_ETC,TournamentRoom2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MobilePoker_TournamentRoom_10012_new,MobilePoker_Room_QA,1,0,BoxMT.exe -c _XLO_TournamentRoom_21_10012_2.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:888_,1_Center,Common
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_Common,Test_888,1,0,BoxMT.exe -c _XLO_CommonService.xml
+HMXList:888_,1_Center,Guild
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_Guild,Test_888,1,0,BoxMT.exe -c _XLO_GuildCenterService.xml
+HMXList:888_,1_Center,Ranking
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_Ranking,Test_888,1,0,BoxMT.exe -c _XLO_RankingService.xml
+HMXList:888_,1_Center,Tournament
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_Tournament,Test_888,1,0,BoxMT.exe -c _XLO_TournamentService.xml
+
+HMXList:888_,2_Game,BadukiLobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_BadukiLobby,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_baduki.xml
+HMXList:888_,2_Game,BadukiRoom
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_BadukiRoom,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_baduki.xml
+HMXList:888_,2_Game,7PokerLobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_7PokerLobby,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_poker7.xml
+HMXList:888_,2_Game,7PokerRoom
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_7PokerRoom,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_poker7.xml
+HMXList:888_,2_Game,HoldemLobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_HoldemLobby,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_holdem.xml
+HMXList:888_,2_Game,HoldemRoom
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_HoldemRoom,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_holdem.xml
+HMXList:888_,2_Game,HighLowLobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_HighLowLobby,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_highlow.xml
+HMXList:888_,2_Game,HighLowRoom
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_HighLowRoom,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_highlow.xml
+
+HMXList:888_,3_ETC,LuckLand
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_LuckLand,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_blackjack.xml
+HMXList:888_,3_ETC,BadukiCoinLobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_BadukiCoinLobby,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_BadukiCoin.xml
+HMXList:888_,3_ETC,BadukiCoinRoom
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_BadukiCoinRoom,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_BadukiCoin.xml
+HMXList:888_,3_ETC,RushHoldemLobby1
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_RushHoldemLobby1,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_RushHoldem1.xml
+HMXList:888_,3_ETC,RushHoldemRoom1
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_RushHoldemRoom1,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_RushHoldem1.xml
+HMXList:888_,3_ETC,RushHoldemLobby2
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_RushHoldemLobby2,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_RushHoldem2.xml
+HMXList:888_,3_ETC,RushHoldemRoom2
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_RushHoldemRoom2,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_RushHoldem2.xml
+HMXList:888_,3_ETC,TournamentLobby1
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_TournamentLobby1,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_Tournament1.xml
+HMXList:888_,3_ETC,TournamentRoom1
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_TournamentRoom1,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_Tournament1.xml
+HMXList:888_,3_ETC,TournamentLobby2
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_TournamentLobby2,Test_888,1,0,BoxMT.exe -c _XLO_LobbyService_Tournament2.xml
+HMXList:888_,3_ETC,TournamentRoom2
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_888_TournamentRoom2,Test_888,1,0,BoxMT.exe -c _XLO_RoomService_Tournament2.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:999_,1_Center,Common
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Common,Test_999,1,0,BoxMT.exe -c _XLO_CommonService.xml
+HMXList:999_,1_Center,Guild
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Guild,Test_999,1,0,BoxMT.exe -c _XLO_GuildCenterService.xml
+HMXList:999_,1_Center,Tournament
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Tournament,Test_999,1,0,BoxMT.exe -c _XLO_TournamentService.xml
+HMXList:999_,2_Game,7Poker_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_7Poker_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_poker7.xml
+HMXList:999_,2_Game,7Poker_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_7Poker_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_poker7.xml
+HMXList:999_,2_Game,Baduki_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Baduki_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_baduki.xml
+HMXList:999_,2_Game,Baduki_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Baduki_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_baduki.xml
+HMXList:999_,2_Game,HighLow_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_HighLow_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_highlow.xml
+HMXList:999_,2_Game,HighLow_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_HighLow_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_highlow.xml
+HMXList:999_,2_Game,Holdem_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Holdem_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_holdem.xml
+HMXList:999_,2_Game,Holdem_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Holdem_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_holdem.xml
+HMXList:999_,3_ETC,BadukiCoin_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_BadukiCoin_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_BadukiCoin.xml
+HMXList:999_,3_ETC,BadukiCoin_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_BadukiCoin_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_BadukiCoin.xml
+HMXList:999_,3_ETC,LuckyLand
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_LuckyLand,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_blackjack.xml
+HMXList:999_,3_ETC,Tournament_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Tournament_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_Tournament.xml
+HMXList:999_,3_ETC,Tournament_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_Tournament_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_Tournament.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:3333_ETC,1_MPMGMT,Dev
+Off,True,0,0,MPSA-DEVS-WA801,C:\NHNServices\MPMGMT,MPMGMT_Dev,1,0,mpmgmt.exe config_dev.json
+HMXList:3333_ETC,1_MPMGMT,QA
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\MPMGMT,MPMGMT_QA,1,0,mpmgmt.exe config_alpha.json
+HMXList:3333_ETC,1_MPMGMT,Real
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\MPMGMT,MPMGMT_Real,1,0,mpmgmt.exe config_real.json
+
+HMXList:3333_ETC,2_RheaServer,Server
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\RHEA,RheaServer_QA,1,0,LogServer.exe C:\NHNServices\RHEA\RheaServer_QA\LogServerConfig.txt C:\NHNServices\RHEA\RheaServer_QA\AnalysisConfig.ini
+HMXList:3333_ETC,3_RheaClient,Client2
+Off,True,0,0,MPSA-DEVS-WA802,C:\NHNServices\RHEA,RheaClient_Mobile,1,0,LogClient.exe C:\NHNServices\RHEA\RheaClient_Mobile\LogClient_MOBILE_POKER_QA.txt C:\NHNServices\RHEA\RheaClient_Mobile\AnalysisConfig.ini
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:7777_TEST,Test1,Lucky
+Off,True,0,0,C:\NHNServices\Test_999_LuckyLand_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_blackjack.xml
+HMXList:7777_TEST,Test3,BadukiCoin_Lobby
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_BadukiCoin_Lobby,Test_999,1,1,BoxMT.exe -c _XLO_LobbyService_BadukiCoin.xml
+HMXList:7777_TEST,Test5,Test Crash
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\TestCrash,Tournament,1,0,BoxMTD.exe -c _XLO_TournamentServiceD.xml
+HMXList:7777_TEST,Test5,ToLobby
+Off,True,0,0,AD01595795,C:\NHNServices\Test_999_Tournament_Lobby,Test_999,1,0,BoxMT.exe -c _XLO_LobbyService_Tournament.xml
+HMXList:7777_TEST,Test7,BadukiCoin_Room
+Off,True,0,0,MPSA-DEVS-WA803,C:\NHNServices\Test_999_BadukiCoin_Room,Test_999,1,0,BoxMT.exe -c _XLO_RoomService_BadukiCoin.xml
+HMXList:7777_TEST,Test7,ToRoom
+Off,True,0,0,AD01595795,C:\NHNServices\Test_999_Tournament_Room,Test_999,1,1,BoxMT.exe -c _XLO_RoomService_Tournament.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

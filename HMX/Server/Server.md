@@ -7,7 +7,7 @@
 - 프레임워크: net10.0 (Web SDK, file-based app), Microsoft.Extensions.Hosting.WindowsServices 10.0.10, StackExchange.Redis 2.13.17 (운영·반영 탭), win-x64 단일 exe
 - 역할: 다수 Client 접속 관리, 로그 줄 원문 저장·단어/필드 역색인 → 쿼리·통계, 조건 알람 (메일·훅), 머신 원격 검색·파일 보기·덤프 수집
 - 포트: 웹 HTTP 800 (인자 1, 기본 호스트 localhost), TCP 수신 801 (json nPort, 모든 인터페이스)
-- UI: 내장 단일 페이지 (GitHub Primer), 탭 쿼리·서치·파일·덤프·운영·반영, 존 색 (Dev 초록·Alpha 파랑·Real 빨강), 다른 툴 공통 UI 기준
+- UI: 내장 단일 페이지 (GitHub Primer), 탭 유틸 (타임·디프·소트, 처음 화면)·쿼리·서치·파일·덤프·운영·반영, 존 색 (Dev 초록·Alpha 파랑·Real 빨강), 다른 툴 공통 UI 기준
 
 ## 구조
 | 경로 | 설명 |
@@ -51,6 +51,7 @@
 | TabOperation.cs | TabOperation·OperationServer·OperationCCU·OperationMonitor·OperationRedis | 운영 탭 (ServerManager 이식): XLO 모니터 점검·서버 버전·패치 시각·X분 정각 동접 기록 API + ManagerHTML (페이지 JS Operation) |
 | Redis.cs | Redis | Redis 연결 (서버 전용, StackExchange.Redis, 최초 사용 시 1회 연결·자동 재연결) |
 | TabProcess.cs | TabProcess | 반영 탭 (HMXServer 이식): 라우트 + ProcessHTML (페이지 JS Process) |
+| TabUtil.cs | TabUtil | 유틸 탭: UtilHTML (페이지 JS Util, 하위 탭 타임·디프·소트, 타임: KST·UnixTime 입력 (1번 창) → KST·UTC·UnixTime 표 (2번 창, 같은 시간도 쌓음, 최대 1,000줄), 서버 API 없음) |
 | Process.cs | Process·ProcessVersion·ProcessLog | 반영 API /api/process (목록·등록·수정·삭제·이름 변경·시작·정지·다운 지시·작업 로그·에러), 설정 버전 data\Server.txt, 반영 로그 ([v.버전] 표시) 기록·조회 |
 | TabQuery.cs | TabQuery·QueryResult·IngestWorker·IndexBuffer·PostingPool 등 | 쿼리 탭: 적재·역색인·쿼리·통계 (Gate·제한 시간 nLimit·Yield)·저장 쿼리 (SavedList)·알람·필드 설정 API + QueryHTML (페이지 JS Query) |
 | Alarm.cs | Alarm·AlarmMatcher·AlarmNode·AlarmCount·AlarmHit·AlarmJob | 알람 매칭 스냅샷·조건 트리 |
@@ -78,9 +79,9 @@
 - 얼라이브: 클라 1분마다 Alive (관리 목록) → 관리 폴더와 다름만 Count 처럼 맞춤 + 답 aField (받은 진행 없음)
 
 ## 반영 탭 (HMXServer 이식)
-- 기능: 서버 목록 트리 (대분류 = 중분류 첫 숫자 100 단위·중분류·서버)·요약 카드·상태 칩·머신·검색 필터·펼침 보관, 시작·정지·다운 (개별·그룹·대분류 순차: 시작 위 그룹부터·정지 아래 그룹부터, 그룹 모두 Running·Stopped → 다음, 실패: 중단), 커밋 불일치, 줄 메뉴·상세 패널, 등록·편집·복제·삭제·이름 변경, 버전 불일치 배너, 작업 로그·에러 팝업, TestOn·TestOff, 토스트·확인 팝업
+- 기능: 서버 목록 트리 (대분류 = 중분류 첫 숫자마다·중분류·서버, 페이지 탭: 대분류 번호 100 단위)·요약 카드·상태 칩·머신·검색 필터·펼침 보관, 시작·정지·다운 (개별·그룹·대분류 순차: 시작 위 그룹부터·정지 아래 그룹부터, 그룹 모두 Running·Stopped → 다음, 실패: 중단), 커밋 불일치, 줄 메뉴·상세 패널, 등록·편집·복제·삭제·이름 변경, 버전 불일치 배너, 작업 로그·에러 팝업, TestOn·TestOff, 토스트·확인 팝업
 - 화면: HMX 공통 구조 (TabProcess.ProcessHTML class Process + Web.cs #ProcessPanel 마크업·CSS + IndexTail 연결·ShowPanel("process")), 폴링 1초 (반영 탭 보일 때만, 첫 로딩·순차 작업 중: 계속), 저장·삭제 뒤 반영 탭 데이터만 다시 읽기 (페이지 새로 고침 안 함), 연결 끊김: HMX 제목 줄 + 작업 버튼 잠금, 인증: HMX 공통 (401 → 로그인 페이지)
-- API: GET /api/process (목록 "필드\|값" 줄, 키 이름순)·?action=check (TestOn 표시)·version·set (등록·수정: version 검증·+1, 시작·정지·다운: 상태,False)·rename (일괄)·del·errlog (X개씩)·log (반영 로그 커서 조회)·actlog (클릭 기록), HMXServer /api/hmx 와 같은 응답, 페이지: 상대 주소 (ToolManager 경유)
+- API: GET /api/process (목록 "필드\|값" 줄, 키 이름순)·?action=check (TestOn 표시)·version·set (등록·수정: version 검증·+1, 시작·정지·다운: 상태,False)·rename (일괄, POST 본문 JSON arrField·arrNewField)·del·errlog (X개씩)·log (반영 로그 커서 조회)·actlog (클릭 기록), HMXServer /api/hmx 와 같은 응답, 페이지: 상대 주소 (ToolManager 경유)
 - 설정: 공통 Redis 연결 (Redis:sHost 등) + 키 앞 Redis:sProcess (서버 목록, 기본 HMX:Process:)·Redis:sError (에러 리스트, 기본 HMX:Error:), 실제 키 = 값 + sZone + ":" (예: HMX:Process:Dev:111_DEV,1_Center,Common·HMX:Error:Dev:, HMXClient 와 같게), bTest (TestOn·TestOff 표시), 설정 버전 data\Server.txt (등록·수정·삭제·이름 변경 성공: +1, 화면 버전 다름: 버전 불일치 → 배너 후 다시 읽기)
 - 로그: 공통 시간별 로그에 레벨 뒤 [v.버전] 표시 (예: [시각] [HMX_][INFO_] [v.4] 수정: …, 등록·수정·이름·삭제·액션·클릭·버전 불일치·오류, 끝: 아이디@IP), 로그 팝업: [v.버전] 줄·로그인 줄·예전 [HMX_] 태그 줄만
 
@@ -131,7 +132,7 @@
 | POST | /api/dump, /api/dump/download, /api/dump/delete | 덤프 목록·zip 수집·삭제 |
 | GET | /api/dump/zip, /api/files, /api/files/download | zip 받기, 폴더 보기, 파일 다운 |
 | GET·POST | /api/manager/server·version·monitor·cds·patch·ccu·redis | 운영 탭: 점검 목록, 버전 임시, XLO 모니터 이동, 1대 CDS, 패치 시각, 동접, Redis PING |
-| GET | /api/process | 반영 탭: 목록 ("필드\|값" 줄)·?action=check·version·set·rename·del (등록·수정·삭제·이름 변경: version 검증)·errlog·log·actlog |
+| GET·POST | /api/process | 반영 탭: 목록 ("필드\|값" 줄)·?action=check·version·set·rename (POST 본문 JSON)·del (등록·수정·삭제·이름 변경: version 검증)·errlog·log·actlog |
 | ANY | /api/echo | 쿼리 문자열 반환 |
 
 ## 외부 API (/api/external, 목록: API.m_arrExternal)
@@ -145,7 +146,7 @@
 | Method | Path | 권한 (aAPI) | 설명 |
 |---|---|---|---|
 | GET·POST | /api/external/log/{키}/{토큰}/ | 로그 | 로그 수신 (쿼리 문자열 ?sMachine=&sPath=&sFolder=&aLine=&aNo=&추가 필드=값, 없음: 본문 JSON {sMachine, sPath, sFolder, aLine, aNo, aField}, TCP arr* 키 → a*, 추가 필드: 설정 aField 키·고정값만 → 그 밖: 400 필드 오류) → TCP Log 와 같은 처리 (ReadLog → 적재 큐, 받은 진행 관리 안 함, 원문 시간: 요청 받은 시각 (원문은 그대로), 쿼리 탭 켜짐만) |
-| GET·POST | /api/external/query/{키}/{토큰}/ | 쿼리 | 쿼리 (쿼리 문자열 ?sKey=&nStart=&nEnd=&nMinute=&nPage=&nLimit=, 없음: POST 본문 JSON 같은 키, sKey 없음: *, nStart·nEnd: yyyyMMddHHmm·yyyyMMddHHmmss (시작 포함·끝 미포함, 끝 없음: 지금, 시작 없음: 끝 nMinute 분 전 (기본 60)) → /api/query 와 같은 응답 {nTotal, arrHour, arrMinute, arrLine (1,000건씩 nPage)...}), 알람 메일 링크 (받는 계정 토큰, 훅: 링크 없음) |
+| GET·POST | /api/external/query/{키}/{토큰}/ | 쿼리 | 쿼리 (쿼리 문자열 ?sType=&nStart=&nEnd=&nMinute=&nPage=&nLimit=, 없음: POST 본문 JSON 같은 키, sType (로그 타입 등 쿼리) 없음: *, nStart·nEnd: yyyyMMddHHmm·yyyyMMddHHmmss (시작 포함·끝 미포함, 끝 없음: 지금, 시작 없음: 끝 nMinute 분 전 (기본 60)) → /api/query 와 같은 응답 {nTotal, arrHour, arrMinute, arrLine (1,000건씩 nPage)...}), 알람 메일 링크 (받는 계정 토큰, 훅: 링크 없음) |
 | GET·POST | /api/external/search/{키}/{토큰}/ | 서치 | 서치 (쿼리 문자열 ?sKey=&aMachine=&nStart=&nEnd=&nHour=&nMax=&nLimit=, 없음: POST 본문 JSON 같은 키 (aMachine: 배열), sKey: 검색어 필수, aMachine: 반복·쉼표 (없음: 접속 머신 전체), nStart·nEnd: yyyyMMddHH (끝 없음: 지금 시, 시작 없음: 끝 nHour - 1 시간 전, 기본 1) → /api/search 와 같은 응답 (NDJSON: 머신마다 한 줄 {nIndex, sMachine, sError, kResult}), 서치 탭 켜짐만) |
 
 ## 실행·배포

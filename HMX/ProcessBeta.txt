@@ -1,0 +1,140 @@
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:600_BETA,1_Center,Common
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_Common,MobilePoker_Common_Test,1,0,BoxMT.exe -c _XLO_CommonService_6_2000002.xml
+HMXList:600_BETA,1_Center,Guild
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_Guild,MobilePoker_Guild_Test,1,0,BoxMT.exe -c _XLO_GuildCenterService_6_1.xml
+HMXList:600_BETA,1_Center,Ranking
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_Ranking,MobilePoker_Ranking_Test,1,0,BoxMT.exe -c _XLO_RankingService_6_3000002.xml
+HMXList:600_BETA,1_Center,Tournament
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_Tournament,MobilePoker_Tournament_Test,1,0,BoxMT.exe -c _XLO_Center_Tournament_6_1000002.xml
+
+HMXList:600_BETA,2_Game,BadukiLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_BadukiLobby_101,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_BadukiLobby_6_1991.xml
+HMXList:600_BETA,2_Game,BadukiRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_BadukiRoom_101,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_BadukiRoom_6_1991_1.xml
+HMXList:600_BETA,2_Game,7PokerLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_7PokerLobby_201,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_7PokerLobby_6_1992.xml
+HMXList:600_BETA,2_Game,7PokerRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_7PokerRoom_201,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_7PokerRoom_6_1992_2.xml
+HMXList:600_BETA,2_Game,HoldemLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_HoldemLobby_301,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HoldemLobby_6_1993.xml
+HMXList:600_BETA,2_Game,HoldemRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_HoldemRoom_301,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HoldemRoom_6_1993_3.xml
+HMXList:600_BETA,2_Game,HighLowLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_HighlowLobby_401,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HighlowLobby_6_1994.xml
+HMXList:600_BETA,2_Game,HighLowRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_HighlowRoom_401,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HighlowRoom_6_1994_4.xml
+
+HMXList:600_BETA,3_ETC,LuckLand1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_Blackjack_501,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_Blackjack_6_1995.xml
+HMXList:600_BETA,3_ETC,BadukiCoinLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_BadukiCoinLobby_1101,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_BadukiCoinLobby_6_1996.xml
+HMXList:600_BETA,3_ETC,BadukiCoinRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_BadukiCoinRoom_1101,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_BadukiCoinRoom_6_1996_11.xml
+HMXList:600_BETA,3_ETC,RushHoldemLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_RushHoldemLobby_3301,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_RushHoldemLobby_6_3301.xml
+HMXList:600_BETA,3_ETC,RushHoldemRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_RushHoldemRoom_3301,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_RushHoldemRoom_6_3301_33.xml
+HMXList:600_BETA,3_ETC,TournamentLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_TournamentLobby_10011,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HoldemTournamentLobby_6_10011.xml
+HMXList:600_BETA,3_ETC,TournamentRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_TournamentRoom_10011,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HoldemTournamentRoom_6_10011.xml
+HMXList:600_BETA,3_ETC,TournamentLobby2
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_TournamentLobby_10012,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HoldemTournamentLobby_6_10012.xml
+HMXList:600_BETA,3_ETC,TournamentRoom2
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_6_TournamentRoom_10012,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HoldemTournamentRoom_6_10012.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+HMXList:800_IOS,1_Center,Common
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_Common,MobilePoker_Common_Test,1,0,BoxMT.exe -c _XLO_CommonService_8_2000003.xml
+HMXList:800_IOS,1_Center,Guild
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_Guild,MobilePoker_Guild_Test,1,0,BoxMT.exe -c _XLO_GuildCenterService_8_1.xml
+HMXList:800_IOS,1_Center,Ranking
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_Ranking,MobilePoker_Ranking_Test,1,0,BoxMT.exe -c _XLO_RankingService_8_3000003.xml
+HMXList:800_IOS,1_Center,Tournament
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_Tournament,MobilePoker_Tournament_Test,1,0,BoxMT.exe -c _XLO_Center_Tournament_8_1000003.xml
+
+HMXList:800_IOS,2_Game,BadukiLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_BadukiLobby_101,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_BadukiLobby_8_2001.xml
+HMXList:800_IOS,2_Game,BadukiRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_BadukiRoom_101,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_BadukiRoom_8_2001_1.xml
+HMXList:800_IOS,2_Game,7PokerLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_7PokerLobby_201,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_7PokerLobby_8_2002.xml
+HMXList:800_IOS,2_Game,7PokerRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_7PokerRoom_201,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_7PokerRoom_8_2002_2.xml
+HMXList:800_IOS,2_Game,HoldemLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_HoldemLobby_301,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HoldemLobby_8_2003.xml
+HMXList:800_IOS,2_Game,HoldemRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_HoldemRoom_301,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HoldemRoom_8_2003_3.xml
+HMXList:800_IOS,2_Game,HighLowLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_HighlowLobby_401,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HighlowLobby_8_2004.xml
+HMXList:800_IOS,2_Game,HighLowRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_HighlowRoom_401,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HighlowRoom_8_2004_4.xml
+
+HMXList:800_IOS,3_ETC,LuckLand1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_Blackjack_501,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_Blackjack_8_2005.xml
+HMXList:800_IOS,3_ETC,BadukiCoinLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_BadukiCoinLobby_1101,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_BadukiCoinLobby_8_2011.xml
+HMXList:800_IOS,3_ETC,BadukiCoinRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_BadukiCoinRoom_1101,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_BadukiCoinRoom_8_2011_11.xml
+HMXList:800_IOS,3_ETC,RushHoldemLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_RushHoldemLobby_3301,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_RushHoldemLobby_8_3301.xml
+HMXList:800_IOS,3_ETC,RushHoldemRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_RushHoldemRoom_3301,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_RushHoldemRoom_8_3301_133.xml
+HMXList:800_IOS,3_ETC,TournamentLobby1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_TournamentLobby_10011,MobilePoker_Lobby_Test,1,0,BoxMT.exe -c _XLO_HoldemTournamentLobby_8_10011.xml
+HMXList:800_IOS,3_ETC,TournamentRoom1
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\MobilePoker_8_TournamentRoom_10011,MobilePoker_Room_Test,1,0,BoxMT.exe -c _XLO_HoldemTournamentRoom_8_10011.xml
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+HMXList:900_RHEA,1_SERVER,Server
+Off,True,0,0,MPSA-REAL-WB912,C:\NHNServices\RheaServer,RheaServer,1,0,LogServer.exe C:\NHNServices\RheaServer\RheaServer\LogServerConfig.txt C:\NHNServices\RheaServer\RheaServer\AnalysisConfig.ini
+
+HMXList:900_RHEA,2_CLIENT,Client_A901
+Off,True,0,0,MPSA-REAL-WA901,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A902
+Off,True,0,0,MPSA-REAL-WA902,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A903
+Off,True,0,0,MPSA-REAL-WA903,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A904
+Off,True,0,0,MPSA-REAL-WA904,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A905
+Off,True,0,0,MPSA-REAL-WA905,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A906
+Off,True,0,0,MPSA-REAL-WA906,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A907
+Off,True,0,0,MPSA-REAL-WA907,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+
+HMXList:900_RHEA,2_CLIENT,Client_A910
+Off,True,0,0,MPSA-REAL-WA910,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_A911
+Off,True,0,0,MPSA-REAL-WA911,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+
+
+HMXList:900_RHEA,2_CLIENT,Client_B901
+Off,True,0,0,MPSA-REAL-WB901,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B902
+Off,True,0,0,MPSA-REAL-WB902,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B903
+Off,True,0,0,MPSA-REAL-WB903,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B904
+Off,True,0,0,MPSA-REAL-WB904,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B905
+Off,True,0,0,MPSA-REAL-WB905,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B906
+Off,True,0,0,MPSA-REAL-WB906,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B907
+Off,True,0,0,MPSA-REAL-WB907,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+
+HMXList:900_RHEA,2_CLIENT,Client_B910
+Off,True,0,0,MPSA-REAL-WB910,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+HMXList:900_RHEA,2_CLIENT,Client_B911
+Off,True,0,0,MPSA-REAL-WB911,C:\NHNServices\RheaClient,RheaClient,1,0,LogClient.exe C:\NHNServices\RheaClient\RheaClient\LogClient_MOBILE_POKER.txt C:\NHNServices\RheaClient\RheaClient\AnalysisConfig.ini
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -373,7 +373,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 		    static ShowDumpTitle()	// 덤프 1번 창 제목: 조건 · 덤프 수 (머신 수) · 조회 시간 · 머신별 오류
 		    {
-		        kDumpTitle.textContent = `${Dump.kDumpInfo.sCondition} 덤프 파일: ${Dump.arrDump.length.toLocaleString()}개 (머신 ${Dump.kDumpInfo.nMachine}대) · 조회 시간: ${Dump.kDumpInfo.nMs} ms${Dump.kDumpInfo.arrNotice.length > 0 ? " · " + Dump.kDumpInfo.arrNotice.join(" / ") : ""}`;
+		        kDumpTitle.textContent = `${Dump.kDumpInfo.sCondition} 파일 ${Dump.arrDump.length.toLocaleString()}개 (머신 ${Dump.kDumpInfo.nMachine}대) · 조회 시간: ${Dump.kDumpInfo.nMs} ms${Dump.kDumpInfo.arrNotice.length > 0 ? " · " + Dump.kDumpInfo.arrNotice.join(" / ") : ""}`;
 		    }
 
 		    static RenderDump()	// 덤프 1번 창 그리기 (No.·Machine·File·Date·Size·Folder·Ac., 클릭: kDumpBody 한 곳에서 처리)
@@ -442,7 +442,6 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		            return;
 		        }
 
-		        const	sMachine	= GetMachineText();	// 머신 표시 글자
 		        const	arrMachine	= GetMachines();	// 조회할 머신 (목록 순서)
 
 		        if (arrMachine.length === 0)	// 접속 머신 없음
@@ -455,12 +454,12 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 		        Dump.bDumpLoading		= true;
 		        kDumpButton.disabled	= true;
 		        Dump.arrDump			= [];
-		        Dump.kDumpInfo		= { sCondition: `[${sMachine} : Dump]`, nMachine: arrMachine.length, nMs: 0, arrNotice: [] };
+		        Dump.kDumpInfo		= { sCondition: "덤프", nMachine: arrMachine.length, nMs: 0, arrNotice: [] };	// 제목 앞
 
 		        ShowPanel("dump");
 		        Dump.RenderDump();
 
-		        kDumpTitle.textContent	= `${Dump.kDumpInfo.sCondition} 조회 중: 머신 ${arrMachine.length}대`;
+		        kDumpTitle.textContent	= `${Dump.kDumpInfo.sCondition} 조회 중 (머신 ${arrMachine.length}대)`;
 		        kDumpScroll.scrollTop	= 0;
 
 		        const	nBegin	= performance.now();			// 조회 시작 시각
@@ -758,7 +757,7 @@ class TabDump	// 덤프 탭: 덤프 목록 (여러 머신 동시)·다운 (Serve
 
 		        for (const [nIndex, kDump] of arrTarget.entries())
 		        {
-		            kDumpTitle.textContent = `${Dump.kDumpInfo.sCondition} 삭제 중: ${nIndex + 1} / ${arrTarget.length}`;
+		            kDumpTitle.textContent = `${Dump.kDumpInfo.sCondition} 삭제 중 ${nIndex + 1} / ${arrTarget.length}`;
 
 		            try
 		            {

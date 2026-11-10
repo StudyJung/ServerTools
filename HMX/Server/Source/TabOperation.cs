@@ -416,7 +416,7 @@ class TabOperation	// 운영 탭: 게임 서버 XLO 모니터 점검 (운영·�
 		        const	arrUp		= arrSorted.filter(kServer => kServer.bSuccess);
 		        const	arrDown		= arrSorted.filter(kServer => !kServer.bSuccess);
 
-		        Operation.kServerTitle.textContent	= `서버: 운영 ${kData.nOperating} / 전체 ${kData.listServer.length}`;
+		        Operation.kServerTitle.textContent	= `운영 서버 ${kData.nOperating} / 전체 ${kData.listServer.length}`;
 		        Operation.kPatchTime.textContent	= kData.nPatchTime ? `${kData.sPatchTime.slice(5)} (${kData.nPatchTime})` : "-";	// MM-dd HH:mm:ss (unix)
 		        Operation.kDownCount.textContent	= arrDown.length;
 

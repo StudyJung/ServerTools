@@ -304,8 +304,7 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 			return kStale;
 		}
 
-		string[]	arrField	= kContext.Request.Query["field"].Select(s => s ?? "").ToArray();
-		string[]	arrNewField	= kContext.Request.Query["newfield"].Select(s => s ?? "").ToArray();
+		(string[] arrField, string[] arrNewField) = await GetRenamePair(kContext.Request);
 
 		if (arrField.Length == 0 || arrField.Length != arrNewField.Length || arrField.Contains("") || arrNewField.Contains(""))	// 파라미터 검사 및 조기 반환
 		{
@@ -359,6 +358,18 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 		}
 
 		return Results.Json(new { success = true, field = arrNewField[0], version = nVersion });
+	}
+
+	private static async Task<(string[], string[])> GetRenamePair(HttpRequest kRequest)	// 이름 변경 쌍: POST 본문 JSON {arrField, arrNewField} (키 많음: 쿼리 길이 제한 넘음 → IIS 404) 또는 쿼리 field·newfield (예전 형식)
+	{
+		if (HttpMethods.IsPost(kRequest.Method) && kRequest.HasJsonContentType())
+		{
+			ProcessRenameParam?	kParam	= await kRequest.ReadFromJsonAsync<ProcessRenameParam>(kRequest.HttpContext.RequestAborted);
+
+			return ((kParam?.arrField ?? Array.Empty<string?>()).Select(s => s ?? "").ToArray(), (kParam?.arrNewField ?? Array.Empty<string?>()).Select(s => s ?? "").ToArray());
+		}
+
+		return (kRequest.Query["field"].Select(s => s ?? "").ToArray(), kRequest.Query["newfield"].Select(s => s ?? "").ToArray());
 	}
 
 	private static async Task<IResult> OnDel(HttpContext kContext, bool bVersioned)	// 서버 삭제 (삭제 전 값: 로그)
@@ -502,6 +513,12 @@ class Process	// 반영 탭 API: /api/process?action=... (HMXServer HMXApi 이�
 }
 
 record ProcessLogLine(string sStamp, long nOffset, string sLine);	// 조회한 로그 줄 (커서 = 파일 스탬프 + 줄 시작 오프셋)
+
+class ProcessRenameParam	// 이름 변경 요청 본문 (POST /api/process?action=rename, JSON)
+{
+	public string?[]?	arrField	{ get; set; }	// 기존 키
+	public string?[]?	arrNewField	{ get; set; }	// 새 키 (arrField 와 같은 순서)
+}
 
 static class ProcessVersion	// 설정 버전: 기준 폴더 하위 data\프로젝트명.txt (등록·수정·삭제·이름 변경 성공: +1, 다른 곳 변경 감지)
 {

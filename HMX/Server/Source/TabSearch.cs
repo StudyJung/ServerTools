@@ -294,7 +294,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        return kRow;
 		    }
 
-		    static OnResultClick(kEvent)	// 서치 1번 창 결과 클릭: 2번 창에 그 줄 주변 보기 (표 하나에서 처리 → 큰 페이지 메모리·그리기 절감)
+		    static OnResultClick(kEvent)	// 서치 1번 창 결과 클릭: 2번 창에 그 줄 주변 보기 (이미 보고 있는 줄: 그대로, 표 하나에서 처리 → 큰 페이지 메모리·그리기 절감)
 		    {
 		        const	kRow	= kEvent.target.closest("tr[data-index]");	// 클릭한 줄
 
@@ -305,6 +305,12 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        const	nIndex	= Number(kRow.dataset.index);
 		        const	kItem	= Search.arrResult[nIndex];
+		        const	kView	= Search.kView;	// 2번 창 보는 줄
+
+		        if (kRow.classList.contains("sel") && kView != null && kView.sMachine === kItem.sMachine && kView.sPath === kItem.kLine.sPath && kView.nTarget === kItem.kLine.nLine && kView.sKey === Search.sResultKey)	// 이미 보고 있는 줄 다시 누름 (더블 클릭 포함): 다시 안 읽음
+		        {
+		            return;
+		        }
 
 		        kResultBody.querySelector("tr.sel")?.classList.remove("sel");
 		        kRow.classList.add("sel");
@@ -484,7 +490,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        const sWait			= kRun.nWait > 0 ? ` · 다른 검색 대기 ${kRun.nWait}대` : "";	// 클라가 앞 검색 처리 중인 머신
 
 		        kProgress.textContent	= `${Search.bStopRequested ? "중지하는 중" : "검색 중"} · ${nSec}초\n머신 ${kInfo.nDone}/${kInfo.nCount} 완료 · 파일 ${nFileDone.toLocaleString()} / ${nFileTotal.toLocaleString()}${sWait}\n찾은 줄: ${(kInfo.nFound + kRun.nFound).toLocaleString()}건`;
-		        kSearchButton.textContent	= `${nSec}초`;	// 서치 실행 버튼: 진행 초 (끝: 실행)
+		        kSearchButton.textContent	= `${nSec}초`;	// 서치 실행 버튼: 진행 초 (끝: 엔터 아이콘)
 		    }
 
 		    static async ShowProgress()	// 검색 진행 조회 (PROGRESS_MS 마다, 진행 중인 머신 파일·찾은 줄 합)
@@ -585,7 +591,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		        return nSecond >= nFrom && nSecond < nTo;
 		    }
 
-		    static async SearchLog(bChild = false, bReplay = false, bKeepRange = false)	// 로그 검색: 선택 머신 동시 → 끝난 머신 결과 누적 → 끝: 정렬 → 단계 남김 (bChild: 지금 단계 하위, bReplay: ← → 다시 실행, bKeepRange: 명령 창 기간 그대로 (타이머))
+		    static async SearchLog(bChild = false, bReplay = false, bKeepRange = false, bRemember = false)	// 로그 검색: 선택 머신 동시 → 끝난 머신 결과 누적 → 끝: 정렬 → 단계 남김 (bChild: 지금 단계 하위, bReplay: ← → 다시 실행, bKeepRange: 명령 창 기간 그대로 (타이머), bRemember: 실행 버튼 직접 누름·Enter → 네비게이션 기억)
 		    {
 		        if (Search.bSearching)	// 검색 중
 		        {
@@ -623,7 +629,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 		            return;
 		        }
 
-		        if (!bReplay && !bKeepRange)	// 실행 버튼·Enter·Ctrl·Alt 놓기 (하위): 실행 기억 (모래시계, 타이머·← →·모래시계 실행: 안 넣음)
+		        if (bRemember)	// 실행 버튼 직접 누름·Enter 만 실행 기억 (네비게이션, 하위·타이머·저장 서치·옮겨 실행·← →·네비게이션 실행: 안 넣음)
 		        {
 		            Query.PushBack(false);
 		        }
@@ -859,7 +865,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		        Search.bSearching		= false;
 		        kSearchButton.disabled	= false;
-		        kSearchButton.textContent	= "실행";
+		        kSearchButton.textContent	= "";	// 끝: 엔터 아이콘
 		        kSettingButton.disabled	= false;
 		        kStopButton.disabled	= true;
 		        kDumpButton.disabled	= Dump.bDumpLoading;
@@ -1122,7 +1128,7 @@ class TabSearch	// 서치 탭: 로그 검색 (여러 머신 동시)·외부 API 
 
 		                kLine.className	= "line";
 		                kNo.className	= "lno";
-		                kNo.textContent	= String(nLine).padStart(7, " ") + " : ";
+		                kNo.textContent	= String(nLine);	// 줄 번호 (왼쪽 회색 칸, 기본 문서 UI)
 
 		                kLine.append(kNo);
 		                Key.AppendHighlight(kLine, sText, kTarget.sKey);

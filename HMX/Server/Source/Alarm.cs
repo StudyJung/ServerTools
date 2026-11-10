@@ -365,5 +365,5 @@ class AlarmJob	// 발송 작업 1건 (알람 발생 × 채널, 펜딩 pending.js
 	public string	sTitle		{ get; set; } = "";							// 제목
 	public string	sText		{ get; set; } = "";							// 내용
 	public string	sLink		{ get; set; } = "";							// 쿼리 탭 바로 실행 주소 (알람 기록: 안 보임·내용 클릭 쿼리, 메일·훅: sApiLink 없을 때만, 없음: 링크 없음)
-	public string	sApiLink	{ get; set; } = "";							// 외부 API 쿼리 주소 (/api/external/query/키/토큰/?sKey=&nStart=&nEnd=, 관리 계정 키·토큰, 브라우저 열기: 로그인 → 쿼리 탭 바로 실행, 메일·훅 본문 끝 링크, 없음: sLink)
+	public string	sApiLink	{ get; set; } = "";							// 외부 API 쿼리 주소 (/api/external/query/키/토큰/?sType=&nStart=&nEnd=, 관리 계정 키·토큰, 브라우저 열기: 로그인 → 쿼리 탭 바로 실행, 메일·훅 본문 끝 링크, 없음: sLink)
 }

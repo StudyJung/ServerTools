@@ -29,6 +29,7 @@
 #:include TabOperation.cs
 #:include Process.cs
 #:include TabProcess.cs
+#:include TabUtil.cs
 #:include TabQuery.cs
 #:include Alarm.cs
 #:include Stat.cs
@@ -67,14 +68,15 @@ class Main	// 진입점 + 공통·기능 연결 (웹·TCP 수신·타이머 ↔ 
 	public const int	m_nDefaultPort	= 800;				// 기본 웹 포트 (공통 Global.GetDefaultPort)
 	public const string	m_sPeerOff		= "Client Off";		// 상대 (클라) 끊김 표시 (공통 Global.GetErrorText)
 	public const string	m_sSelfError	= "Server Error";	// 그 밖 오류 표시 (공통 Global.GetErrorText)
-	public const string	TAB_QUERY		= "쿼리";			// 탭 이름 (설정 aMenu 값 = 페이지 탭 버튼 이름)
+	public const string	TAB_UTIL		= "유틸";			// 탭 이름 (설정 aMenu 값 = 페이지 탭 버튼 이름)
+	public const string	TAB_QUERY		= "쿼리";
 	public const string	TAB_SEARCH		= "서치";
 	public const string	TAB_FILE		= "파일";
 	public const string	TAB_DUMP		= "덤프";
 	public const string	TAB_MANAGER		= "운영";
 	public const string	TAB_PROCESS		= "반영";
 
-	public static readonly string[]							m_arrTab			= { TAB_QUERY, TAB_SEARCH, TAB_FILE, TAB_DUMP, TAB_MANAGER, TAB_PROCESS };	// 모든 탭 (페이지 순서)
+	public static readonly string[]							m_arrTab			= { TAB_UTIL, TAB_QUERY, TAB_SEARCH, TAB_FILE, TAB_DUMP, TAB_MANAGER, TAB_PROCESS };	// 모든 탭 (페이지 순서, 첫 탭: 최초 입장)
 	public static readonly (string sKey, string sFile)[]	m_arrConfigSplit	= { ("aQuery", "Query.json"), ("aSearch", "Search.json"), ("aAlarm", "Alarm.json"), ("aField", "Field.json"), ("Manager", "Manager.json"), ("aAccount", "Account.json"), ("sKey", "Account.json"), ("sRand", "Account.json"), ("sToken", "Account.json") };	// 따로 관리 설정 (웹에서 고침: 저장 쿼리·저장 서치·알람·필드 → 키별 json, 운영 탭 서버 목록, 계정·관리 계정 외부 API 토큰 sToken·키 sKey: Account.json, 공통 Config)
 
 	private const int	m_nStartFailWaitSec	= 10;	// 시작 실패 시 콘솔 종료 대기 (초, 더블클릭 실행에서 사유 확인)

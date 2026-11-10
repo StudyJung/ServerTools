@@ -178,7 +178,7 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 		return ReadJson(sPath) ?? new JsonObject();
 	}
 
-	public static string FixPathEscape(string sJson)	// 설정 JSON 글의 윈도 경로 문자열 ("X:\…"·"\\…" 시작): \ 하나도 허용 (서버·클라 공통) → \ 는 모두 글자로 보고 \\ 로 (제대로 쓴 \\ 는 \ 하나, 끝 \" 는 뒤가 구분자면 문자열 끝), 그 밖 문자열: 표준 그대로
+	public static string FixPathEscape(string sJson)	// 설정 JSON 글의 윈도 경로 문자열 ("X:\…"·"\\…" 시작): \ 하나도 허용 (서버·클라 공통) → \ 는 모두 글자로 보고 \\ 로 (제대로 쓴 \\ 는 \ 하나, 끝 \" 는 뒤가 구분자면 문자열 끝), 그 밖 문자열: 표준 그대로 (UNC 앞 \\·\\\\: \ 두 개, \" 뒤 구분자 아님: 글자 따옴표)
 	{
 		StringBuilder	kOut	= new StringBuilder(sJson.Length + 64);
 		int				nPos	= 0;
@@ -215,34 +215,45 @@ static class Config	// 설정 파일 로딩 및 값 조회 (키 구분자 ':', �
 				continue;
 			}
 
+			if (sJson[nPos] == '\\')	// UNC "\\서버": 앞 \ 두 개 그대로 (\\\\ 표준·\\ 하나 표기 모두)
+			{
+				nPos += nPos + 3 < sJson.Length && sJson[nPos + 2] == '\\' && sJson[nPos + 3] == '\\' ? 4 : 2;
+
+				kOut.Append("\\\\\\\\");
+			}
+
 			while (nPos < sJson.Length)	// 경로 문자열
 			{
 				cChar = sJson[nPos++];
 
-				if (cChar == '"')
+				if (cChar == '"')	// 끝 (\" 는 아래 \ 에서 처리)
 				{
-					if (sJson[nPos - 2] != '\\' || IsDelimiterAfter(sJson, nPos))	// 끝 (앞 \ 는 글자)
-					{
-						kOut.Append('"');
+					kOut.Append('"');
 
-						break;
+					break;
+				}
+
+				if (cChar == '\\')
+				{
+					if (nPos < sJson.Length && sJson[nPos] == '"' && !IsDelimiterAfter(sJson, nPos + 1))	// \" 뒤가 구분자 아님: 글자 따옴표 (구분자: \ 는 글자·" 는 끝)
+					{
+						kOut.Append("\\\"");
+						++nPos;
+
+						continue;
 					}
 
-					kOut.Append("\\\"");
-				}
-				else if (cChar == '\\')
-				{
 					if (nPos < sJson.Length && sJson[nPos] == '\\')	// \\ 도 \ 하나
 					{
 						++nPos;
 					}
 
 					kOut.Append("\\\\");
+
+					continue;
 				}
-				else
-				{
-					kOut.Append(cChar);
-				}
+
+				kOut.Append(cChar);
 			}
 		}
 

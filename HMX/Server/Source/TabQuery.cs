@@ -217,7 +217,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		return $"{sWhat} 제한 시간 초과 ({nLimitSec}초)";
 	}
 
-	public static async Task<IResult> OnExternalQuery(HttpRequest kRequest)	// 외부 API 쿼리 (/api/external/query/키/토큰/, 쿼리 권한 계정, 브라우저 GET: 키 계정 로그인 → 쿼리 탭 /?… 이동 (그 쿼리·기간 바로 실행), 그 외: JSON): 쿼리 문자열 (있음) 또는 POST 본문 JSON {sKey (없음: *), nStart·nEnd (yyyyMMddHHmm·yyyyMMddHHmmss, 시작 포함·끝 미포함, 끝 없음: 지금), nMinute (시작 없음: 끝 X분 전, 없음: X분), nPage, nOffset, nCount} → /api/query 와 같은 응답
+	public static async Task<IResult> OnExternalQuery(HttpRequest kRequest)	// 외부 API 쿼리 (/api/external/query/키/토큰/, 쿼리 권한 계정, 브라우저 GET: 키 계정 로그인 → 쿼리 탭 /?… 이동 (그 쿼리·기간 바로 실행), 그 외: JSON): 쿼리 문자열 (있음) 또는 POST 본문 JSON {sType (로그 타입 등 쿼리, 없음: *), nStart·nEnd (yyyyMMddHHmm·yyyyMMddHHmmss, 시작 포함·끝 미포함, 끝 없음: 지금), nMinute (시작 없음: 끝 X분 전, 없음: X분), nPage, nOffset, nCount} → /api/query 와 같은 응답
 	{
 		CancellationToken			kStop		= kRequest.HttpContext.RequestAborted;	// 요청 끊김
 		Dictionary<string, string>	hmapParam	= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);	// 입력 (키 대소문자 무시)
@@ -258,7 +258,7 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 		long?	funcLong(string sName)	=> long.TryParse(hmapParam.GetValueOrDefault(sName), NumberStyles.None, CultureInfo.InvariantCulture, out long nValue) ? nValue : null;	// 정수 입력 (없음·형식 오류: null)
 		long	funcStamp(DateTime k)	=> long.Parse(k.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);										// 시각 → yyyyMMddHHmmss
 
-		string	sKey	= hmapParam.GetValueOrDefault("sKey", "").Trim();	// 쿼리 (없음: * 전체)
+		string	sType	= hmapParam.GetValueOrDefault("sType", "").Trim();	// 로그 타입 등 쿼리 (없음: * 전체)
 		int		nMinute	= (int)Math.Clamp(funcLong("nMinute") ?? m_nExternalMinute, 1, m_nQueryDayMax * 1440L);	// 시작 없음: 끝 X분 전
 		long	nEnd	= funcLong("nEnd") ?? funcStamp(GetNow().DateTime);	// 끝 (미포함, 없음: 지금)
 		long	nStart	= funcLong("nStart") ?? (DateTime.TryParseExact(nEnd.ToString(CultureInfo.InvariantCulture), m_arrRangeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime kEnd) ? funcStamp(kEnd.AddMinutes(-nMinute)) : 0);	// 시작 (포함, 없음: 끝 X분 전, 끝 형식 오류: 0 → 기간 오류)
@@ -272,10 +272,10 @@ class TabQuery	// 쿼리 탭: 클라 로그 감시 줄 → 레코드 원문 저�
 				return Results.Json(new { sError = "로그인할 수 없는 계정 (접근 탭 없음)" }, statusCode: StatusCodes.Status403Forbidden);
 			}
 
-			return Results.Redirect(Web.GetQueryPath(sKey, kFrom, kTo));
+			return Results.Redirect(Web.GetQueryPath(sType, kFrom, kTo));
 		}
 
-		return await OnQuery(sKey == "" ? "*" : sKey, nStart, nEnd, (int?)funcLong("nPage"), (int?)funcLong("nOffset"), (int?)funcLong("nCount"), (int?)funcLong("nLimit"), kRequest.HttpContext);
+		return await OnQuery(sType == "" ? "*" : sType, nStart, nEnd, (int?)funcLong("nPage"), (int?)funcLong("nOffset"), (int?)funcLong("nCount"), (int?)funcLong("nLimit"), kRequest.HttpContext);
 	}
 
 	private static async Task<IResult> OnLens(string? sKey, long? nStart, long? nEnd, int? nSec, int? nLimit, HttpContext kContext)	// 렌즈 초·분봉: 쿼리·기간 맞는 줄 → 칸 (nSec 1: 초, 그 외: 분) 마다 건수 (기간 첫 칸 정각부터 모든 칸 0 포함, m_nLensBarMax 칸 넘음: 오류, 원문 안 읽음, 보관 안 함, 부하 제한: OnQuery 와 같음)
@@ -4074,8 +4074,10 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static	bChunkLoading		= false;							// 이어 읽는 중
 		    static	nTotal				= 0;								// 전체 건수
 		    static	bQuerying			= false;							// 쿼리 중 (중복 요청 막음)
-		    static	bResetting			= false;							// 리셋·모래시계 중 (다시 누름 무시)
-		    static	arrBackQuery		= [];								// 쿼리 실행 기억 (모래시계, 최근 X회, 브라우저 메모리만, 맨 뒤: 지금 실행)
+		    static	bResetting			= false;							// 리셋·네비게이션 중 (다시 누름 무시)
+		    static	arrBackQuery		= [];								// 쿼리 실행 기억 (네비게이션, 최근 X회, 브라우저 메모리만, 맨 뒤: 지금 실행)
+		    static	nBackQuery			= -1;								// 쿼리 네비게이션 지금 위치 (arrBackQuery 번호, 없음: -1)
+		    static	nBackSearch			= -1;								// 서치 네비게이션 지금 위치
 		    static	arrBackSearch		= [];								// 서치 실행 기억 (위와 같음)
 		    static	bWordAdded			= false;							// Ctrl·Alt 누른 채 단어를 쿼리칸·검색어에 더함 (키 뗄 때 쿼리·서치)
 		    static	kWordInput			= null;								// 단어를 더한 칸 (쿼리칸: 쿼리, 검색어: 서치)
@@ -4088,6 +4090,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static	kQueryTask			= null;								// 진행 중인 쿼리 (LoadPage, ← → 가 중단하고 끝나길 기다림)
 		    static	mapStepResult		= new WeakMap();					// 단계 → 마지막 본 결과 { kPage: 페이지 응답 (처음 CHUNK 줄), arrField: 필드 통계 } (← →·새 창 복사: 다시 쿼리 안 함, 버린 단계: 같이 없어짐)
 		    static	bEntered			= false;							// 쿼리 탭 들어온 적 있음 (처음만 D 1일)
+		    static	bAutoRun			= false;							// 쿼리 탭 처음 누름: 전체 쿼리 자동 실행 (첫 탭이 쿼리 아님: 페이지 시작 때 켬, 1번만)
 		    static	arrSaved			= [];								// 저장 쿼리 { sKey, sQuery, nMinute } (쿼리 설정)
 		    static	WORD_REGEX			= /[\p{L}\p{Nd}_-]+/gu;				// 단어 (서버 SplitTerm 과 같음: 글자·숫자·-·_ 이어진 것)
 		    static	sMarkKey			= null;								// 강조 단어를 만든 쿼리 (같은 쿼리면 다시 안 만듦)
@@ -4128,7 +4131,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		    static	RANGE_PAD			= 1;								// D 기간 여유 (초, E: 기준 + X초 → 지금 초 줄 포함, S: E - D (같은 초), 서치·쿼리 공통)
 		    static	RESET_WAIT_MS		= 50;								// 리셋: 쿼리·서치 끝 확인 간격 (ms)
 		    static	RESET_STOP_MS		= 1000;								// 리셋: 서치 중지 다시 요청 간격 (ms, 막 시작한 검색: 중지 안 됨 → 다시)
-		    static	BACK_MAX			= 10;								// 모래시계 실행 기억 (탭마다 최근 X회)
+		    static	BACK_MAX			= 10;								// 네비게이션 기억 (탭마다 최근 X회)
 		    static	FIELD_PAGE			= 100;								// 필드 새 창 한 페이지 값 수
 		    static	FIELD_SPLIT_MIN		= 120;								// 쿼리 2번 창 왼쪽 필드·오른쪽 로그 최소 폭 (px, 세로선 드래그)
 		    static	sFieldName			= "";								// 필드 새 창 필드
@@ -4154,9 +4157,16 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            Query.LoadSaved();	// 쿼리 설정 저장 쿼리 목록
 		            Query.LoadField();	// 왼쪽 필드 이름 (통계 실패 대비)
 		        }
+
+		        if (Query.bAutoRun)	// 첫 탭이 쿼리 아님 (기본: 유틸) → 쿼리 탭 처음 누름: 전체 쿼리 자동 실행 (처음 입장과 같음)
+		        {
+		            Query.bAutoRun = false;
+
+		            Query.RunQuery();
+		        }
 		    }
 
-		    static RunQuery()	// 쿼리 버튼·Enter: 입력한 쿼리 (없음: *)·명령 창 기간 (S 포함 ~ E 미포함, D: 지금 기준) 첫 페이지
+		    static RunQuery(bRemember = false)	// 쿼리 버튼·Enter: 입력한 쿼리 (없음: *)·명령 창 기간 (S 포함 ~ E 미포함, D: 지금 기준) 첫 페이지 (bRemember: 실행 버튼 직접 누름·Enter → 네비게이션 기억)
 		    {
 		        if (Query.bQuerying)	// 쿼리 중 (쿼리칸 Enter 등): 무시
 		        {
@@ -4170,7 +4180,10 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            Query.SetRecent();
 		        }
 
-		        Query.PushBack(true);	// 실행 기억 (모래시계)
+		        if (bRemember)	// 실행 버튼 직접 누름·Enter 만 실행 기억 (처음 입장·F5·저장 쿼리·옮겨 실행·막대 누름: 안 넣음)
+		        {
+		            Query.PushBack(true);
+		        }
 
 		        const	kFrom	= Query.GetPicker(kStart, kStartHour, kStartMinute);	// 시작 (포함)
 		        const	kTo		= Query.GetPicker(kEnd, kEndHour, kEndMinute);			// 끝 (미포함)
@@ -4310,74 +4323,16 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        kQueryDepth.textContent	= String(Math.max(0, kOwner.nHistory));
 		    }
 
-		    static EditHistory()	// 가운데 단계 누름: 숫자 입력 → Enter: 그 단계로 (넘음: 끝 단계), Esc·밖 누름: 취소 (단계 1개뿐·검색 중: 안 함)
+		    static EditHistory()	// 가운데 단계 누름: 숫자 입력 → Enter: 그 단계로 (넘음: 끝 단계), Esc·밖 누름: 취소 (단계 1개뿐·검색 중: 안 함, 공통 EditDepth)
 		    {
 		        const	kOwner	= kResultPanel.classList.contains("query") ? Query : Search;	// 보는 1번 창 단계
 
-		        if (kOwner.arrHistory.length <= 1 || Search.bSearching || document.getElementById("QueryDepthInput") != null)
+		        if (Search.bSearching)
 		        {
 		            return;
 		        }
 
-		        const	kInput	= document.createElement("input");	// 단계 입력 (단계 버튼 자리, 같은 크기)
-		        let		bDone	= false;	// 끝냄 (Enter·Esc·밖 누름 중 한 번만)
-
-		        kInput.type			= "text";
-		        kInput.inputMode	= "numeric";
-		        kInput.id			= "QueryDepthInput";
-		        kInput.value		= kQueryDepth.textContent;
-		        kInput.style.width	= `${Math.max(kQueryDepth.offsetWidth, 44)}px`;
-		        kInput.style.height	= `${kQueryDepth.offsetHeight}px`;
-
-		        const funcClose = (bGo) =>	// 입력 닫고 단계 버튼 다시 (bGo: 그 단계로)
-		        {
-		            if (bDone)
-		            {
-		                return;
-		            }
-
-		            bDone = true;
-
-		            const	nTarget	= Number.parseInt(kInput.value, 10);	// 입력한 단계
-
-		            kInput.remove();
-
-		            kQueryDepth.style.display = "";
-
-		            if (bGo && Number.isFinite(nTarget))
-		            {
-		                const	nIndex	= Math.min(Math.max(nTarget, 0), kOwner.arrHistory.length - 1);	// 갈 단계 (넘음: 끝)
-
-		                if (nIndex !== kOwner.nHistory)
-		                {
-		                    kOwner.GoHistory(nIndex - kOwner.nHistory);
-		                }
-		            }
-		        };
-
-		        kInput.addEventListener("keydown", (kEvent) =>	// Enter: 그 단계로, Esc: 취소
-		        {
-		            if (kEvent.key === "Enter" && !kEvent.isComposing)
-		            {
-		                kEvent.preventDefault();
-
-		                funcClose(true);
-		            }
-		            else if (kEvent.key === "Escape")
-		            {
-		                kEvent.preventDefault();
-
-		                funcClose(false);
-		            }
-		        });
-
-		        kInput.addEventListener("blur", () => funcClose(false));	// 밖 누름: 취소
-
-		        kQueryDepth.style.display = "none";
-		        kQueryDepth.before(kInput);
-
-		        kInput.focus();
-		        kInput.select();
+		        EditDepth(kQueryDepth, kOwner.arrHistory.length, kOwner.nHistory, (nStep) => kOwner.GoHistory(nStep));
 		    }
 
 		    static async GoHistory(nDirection)	// ← (-1)·→ (1): 들어온 단계 오가며 그 조건 (쿼리·S·E·D)·마지막 본 결과 그대로 (결과 없음: 다시 쿼리, 쿼리 중: 중단 후)
@@ -4529,7 +4484,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        Query.SetPadRange(kTo, Number(kQueryRange.value));	// D 값: 분
 		    }
 
-		    static async StopRun(bQuery)	// 지금 탭 실행 중: 중단 뒤 끝날 때까지 (리셋·모래시계)
+		    static async StopRun(bQuery)	// 지금 탭 실행 중: 중단 뒤 끝날 때까지 (리셋·네비게이션)
 		    {
 		        if (bQuery)	// 쿼리 중: 중단 (앞 결과 상태로 돌아감) 뒤 끝날 때까지 (페이지 버튼 쿼리 포함, 그 사이 새 쿼리: 다시 중단)
 		        {
@@ -4563,7 +4518,24 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        return bQuery ? Query.arrBackQuery : Query.arrBackSearch;
 		    }
 
-		    static PushBack(bQuery)	// 실행 버튼·Enter·Ctrl·Alt 놓기·필드 값 클릭 (자동 입력·실행): 지금 M·D·S·E·입력칸 기억 (앞 기억과 같음: 안 넣음, 최근 X회 넘음: 오래된 것 지움)
+		    static GetBackPos(bQuery)	// 그 탭 네비게이션 지금 위치 (없음: -1)
+		    {
+		        return bQuery ? Query.nBackQuery : Query.nBackSearch;
+		    }
+
+		    static SetBackPos(bQuery, nPos)	// 그 탭 네비게이션 위치 바꿈
+		    {
+		        if (bQuery)
+		        {
+		            Query.nBackQuery = nPos;
+		        }
+		        else
+		        {
+		            Query.nBackSearch = nPos;
+		        }
+		    }
+
+		    static PushBack(bQuery)	// 실행 버튼 직접 누름·Enter 만 (자동 실행·막대 누름: 안 넣음): 지금 M·D·S·E·입력칸 기억 (앞 기억과 같음: 안 넣음, 최근 X회 넘음: 오래된 것 지움)
 		    {
 		        const	arrBack	= Query.GetBack(bQuery);
 		        const kState	= {
@@ -4580,47 +4552,66 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            sEndSecond:		kEndSecond.value,
 		        };
 
-		        if (arrBack.length === 0 || JSON.stringify(arrBack.at(-1)) !== JSON.stringify(kState))
+		        const	nPos	= Query.GetBackPos(bQuery);	// 지금 위치 (네비게이션으로 돌아가 있음: 그 실행)
+
+		        if (nPos < 0 || JSON.stringify(arrBack[nPos]) !== JSON.stringify(kState))	// 지금 위치와 같음: 안 넣음
 		        {
+		            arrBack.length = nPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
 		            arrBack.push(kState);
 
 		            if (arrBack.length > Query.BACK_MAX)
 		            {
 		                arrBack.shift();
 		            }
+
+		            Query.SetBackPos(bQuery, arrBack.length - 1);
 		        }
 
 		        Query.ShowBack();
 		    }
 
-		    static ShowBack()	// 모래시계 버튼: 지금 탭 돌아갈 실행 있음 → 켬 (없음: 꺼짐)
+		    static ShowBack()	// 네비게이션 ← N →: 지금 탭 이전·다음 실행 있음 → 켬 (없음: 꺼짐), 가운데 지금 위치 (0: 마지막 실행, 과거: -1·-2…, 없음: 0)
 		    {
-		        const	nBack	= Query.GetBack(IsQueryMode()).length - 1;	// 돌아갈 수 있는 횟수 (지금 실행 뺌)
-		        const	kButton	= document.getElementById("ResetButton");
+		        const	bQuery	= IsQueryMode();
+		        const	nPos	= Query.GetBackPos(bQuery);
+		        const	kPrev	= document.getElementById("RunPrev");
+		        const	nLast	= Query.GetBack(bQuery).length - 1;	// 마지막 실행 위치
 
-		        kButton.disabled	= nBack <= 0;
-		        kButton.title		= `이전 실행(최대 ${Query.BACK_MAX}회)`;
+		        kPrev.disabled										= nPos <= 0;
+		        kPrev.title											= `네비게이션: 뒤로(이전 실행, 최대 ${Query.BACK_MAX}회)`;
+		        document.getElementById("RunNext").disabled		= nPos < 0 || nPos >= nLast;
+		        document.getElementById("RunDepth").textContent	= String(nPos - nLast);
 		    }
 
-		    static async GoBack()	// 모래시계 버튼: 이전 실행으로 → 지금 실행 기억 지움 (돌아간 뒤 기억 지움) → 앞 기억 M·D·S·E·입력칸 그대로 → 그 S·E 그대로 실행 (D 다시 계산 안 함, 기억 안 넣음)
-		    //   실행 중: 중단 뒤, 지금 탭 타이머: 끔, 돌아갈 기억 없음·누르는 중 다시 누름: 무시
+		    static EditRun()	// 네비게이션 가운데 위치 누름: 숫자 입력 → Enter: 그 실행으로 (넘음: 끝), Esc·밖 누름: 취소 (기억 1개 이하·옮기는 중: 안 함, 공통 EditDepth)
+		    {
+		        const	bQuery	= IsQueryMode();
+
+		        if (Query.bResetting)
+		        {
+		            return;
+		        }
+
+		        const	nCount	= Query.GetBack(bQuery).length;
+
+		        EditDepth(document.getElementById("RunDepth"), nCount, Query.GetBackPos(bQuery), (nStep) => Query.GoRun(nStep), 1 - nCount);	// 숫자: 마지막 0·과거 -1…
+		    }
+
+		    static async GoRun(nStep)	// 네비게이션 ← (nStep -1: 과거)·→ (+1: 미래)·가운데 숫자 (그 위치까지): 그 실행 M·D·S·E·입력칸 그대로 → 그 S·E 그대로 실행 (D 다시 계산 안 함, 기억 지우지 않음: 위치만)
+		    //   실행 중: 중단 뒤, 지금 탭 타이머: 끔, 끝 (더 갈 실행 없음)·누르는 중 다시 누름: 무시
 		    {
 		        const	bQuery	= IsQueryMode();	// 쿼리 탭 (아님: 서치 탭)
 		        const	arrBack	= Query.GetBack(bQuery);
+		        const	nPos	= Query.GetBackPos(bQuery) + nStep;	// 갈 위치
 
-		        if (Query.bResetting || arrBack.length < 2)
+		        if (Query.bResetting || nPos < 0 || nPos >= arrBack.length)
 		        {
 		            return;
 		        }
 
 		        const	kItem	= GetTimer();	// 지금 탭 타이머
-		        const	kButton	= document.getElementById("ResetButton");	// 모래시계 뒤집기
 
 		        Query.bResetting = true;
-
-		        kButton.classList.remove("flip");
-		        void kButton.offsetWidth;	// 뒤집기 처음부터 다시 (애니메이션 재시작)
-		        kButton.classList.add("flip");
 
 		        try
 		        {
@@ -4632,9 +4623,9 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		            await Query.StopRun(bQuery);
 
-		            arrBack.pop();	// 지금 실행 기억 지움
+		            Query.SetBackPos(bQuery, nPos);
 
-		            const	kState	= arrBack.at(-1);	// 돌아갈 실행
+		            const	kState	= arrBack[nPos];	// 갈 실행
 
 		            kStart.value				= kState.sStart;
 		            kStartHour.value			= kState.sStartHour;
@@ -4849,7 +4840,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            const	nSec	= Math.floor((performance.now() - nBegin) / 1000);	// 쿼리 시간 (초)
 
 		            kQueryTitle.textContent		= `${Query.FormatSpan(Query.nStart, Query.nEnd)} - 쿼리 중 · ${nSec}초`;
-		            kQueryRunButton.textContent	= `${nSec}초`;	// 쿼리 실행 버튼: 진행 초 (끝: 실행)
+		            kQueryRunButton.textContent	= `${nSec}초`;	// 쿼리 실행 버튼: 진행 초 (끝: 엔터 아이콘)
 		            kQueryProgress.textContent	= `쿼리 중 · ${nSec}초\n"${Query.sQueryKey}"\n${Query.FormatMinute(Query.nStart)} ~ ${Query.FormatMinute(Query.nEnd)}`;
 		        };
 
@@ -4905,7 +4896,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		            Query.bQuerying			= false;
 		            Query.kQueryAbort			= null;
 		            kQueryRunButton.disabled	= false;
-		            kQueryRunButton.textContent	= "실행";
+		            kQueryRunButton.textContent	= "";	// 끝: 엔터 아이콘
 		            kQueryStopButton.disabled	= Query.kStatAbort == null;	// 통계 아직 가져오는 중: 중단 가능
 		            kQueryProgress.hidden		= true;
 		        }
@@ -7057,7 +7048,6 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        kQueryKey.value				= sKey;
 
 		        Query.OnQueryInput();	// 선택한 저장 쿼리와 달라지면 선택 해제
-		        Query.PushBack(true);	// 실행 기억 (모래시계, Ctrl·Alt 놓기·필드 값 클릭 자동 실행)
 		        Query.Query(sKey, kStep.kFrom, kStep.kTo, true);
 
 		        return true;

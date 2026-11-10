@@ -307,14 +307,14 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		return $"/?{string.Join("&", hmapParam.Select(kPair => $"{kPair.Key}={Uri.EscapeDataString(kPair.Value)}"))}";
 	}
 
-	public static string GetApiQueryLink(string sQuery, DateTimeOffset kStart, DateTimeOffset kEnd, string sPath)	// 외부 API 쿼리 주소 /api/external/query/키/토큰/?sKey=&nStart=&nEnd= (sPath: "키/토큰" (Auth.GetMainPath: 관리 계정), 기간 yyyyMMddHHmmss: 시작 포함·끝 미포함, 웹·경로 없음: "")
+	public static string GetApiQueryLink(string sQuery, DateTimeOffset kStart, DateTimeOffset kEnd, string sPath)	// 외부 API 쿼리 주소 /api/external/query/키/토큰/?sType=&nStart=&nEnd= (sPath: "키/토큰" (Auth.GetMainPath: 관리 계정), 기간 yyyyMMddHHmmss: 시작 포함·끝 미포함, 웹·경로 없음: "")
 	{
 		if (m_sLinkUrl == "" || sPath == "")
 		{
 			return "";
 		}
 
-		return $"{m_sLinkUrl}{API.QUERY_PATH}{sPath}/?sKey={Uri.EscapeDataString(sQuery)}&nStart={kStart.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)}&nEnd={kEnd.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)}";	// 토큰: URL 용 base64 (-·_, = 없음)
+		return $"{m_sLinkUrl}{API.QUERY_PATH}{sPath}/?sType={Uri.EscapeDataString(sQuery)}&nStart={kStart.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)}&nEnd={kEnd.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)}";	// 토큰: URL 용 base64 (-·_, = 없음)
 	}
 
 	public static string GetTitle()	// 제목: 설정 sTitle (없음: HMX) + 설정 sZone (예: HMX Alpha, sZone 없음: 이름만)
@@ -368,7 +368,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 	private static string IndexHtml()    // 기본 페이지 HTML (데이터: textContent 로만 표시)
 	{
-		return string.Join("\r\n\r\n", IndexHead(), TabSearch.SearchHTML(), TabDump.DumpHTML(), TabFile.FileHTML(), TabOperation.ManagerHTML(), TabProcess.ProcessHTML(), QueryPage.QueryHTML(), IndexTail());	// 공통 앞 → 탭 스크립트 (서치·덤프·파일·운영·반영·쿼리) → 공통 뒤
+		return string.Join("\r\n\r\n", IndexHead(), TabSearch.SearchHTML(), TabDump.DumpHTML(), TabFile.FileHTML(), TabOperation.ManagerHTML(), TabProcess.ProcessHTML(), TabUtil.UtilHTML(), QueryPage.QueryHTML(), IndexTail());	// 공통 앞 → 탭 스크립트 (서치·덤프·파일·운영·반영·쿼리) → 공통 뒤
 	}
 
 	private static string IndexHead()	// 기본 페이지 공통 앞: 머리·스타일·본문·공통 스크립트 (Key 까지)
@@ -378,7 +378,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<html lang="ko">
 		<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>__TITLE__</title><link rel="icon" href="__FAVICON__">
 		<style>
-		:root{--bgColor-default:#ffffff;--bgColor-muted:#f6f8fa;--bgColor-accent-muted:#ddf4ff;--bgColor-accent-emphasis:#0969da;--fgColor-default:#1f2328;--fgColor-muted:#59636e;--fgColor-accent:#0969da;--fgColor-success:#1a7f37;--fgColor-danger:#d1242f;--fgColor-disabled:#818b98;--bgColor-emphasis:#25292e;--bgColor-neutral-emphasis:#59636e;--borderColor-emphasis:#818b98;--chart-barColor:#afb8c1;--fgColor-onEmphasis:#ffffff;
+		:root{--bgColor-default:#ffffff;--bgColor-muted:#f6f8fa;--bgColor-neutral-muted:#818b981f;--bgColor-success-muted:#dafbe1;--bgColor-success-emphasis:#1f883d;--bgColor-accent-muted:#ddf4ff;--bgColor-danger-muted:#ffebe9;--bgColor-accent-emphasis:#0969da;--fgColor-default:#1f2328;--fgColor-muted:#59636e;--fgColor-accent:#0969da;--fgColor-success:#1a7f37;--fgColor-danger:#d1242f;--fgColor-disabled:#818b98;--bgColor-emphasis:#25292e;--bgColor-neutral-emphasis:#59636e;--borderColor-emphasis:#818b98;--chart-barColor:#afb8c1;--fgColor-onEmphasis:#ffffff;
 		--borderColor-default:#d1d9e0;--borderColor-disabled:#818b981a;--borderColor-accent-emphasis:#0969da;--button-default-fgColor-rest:#25292e;--button-default-bgColor-rest:#f6f8fa;--button-default-bgColor-hover:#eff2f5;--button-default-bgColor-active:#e6eaef;--button-default-bgColor-selected:#e6eaef;--button-default-bgColor-disabled:#eff2f5;--button-default-shadow-resting:0 1px 0 0 #1f23280a;
 		--button-primary-fgColor-rest:var(--zone-primary-fg,var(--button-default-fgColor-rest));--button-primary-fgColor-disabled:var(--zone-primary-fg-disabled,var(--fgColor-disabled));--zone-primary-hover:color-mix(in srgb,var(--zone) 90%,#000);--zone-primary-active:color-mix(in srgb,var(--zone) 80%,#000);--zone-primary-disabled:color-mix(in srgb,var(--zone) 45%,#fff);--zone-primary-fg:color-mix(in srgb,var(--zone) 0%,#fff);--zone-primary-fg-disabled:color-mix(in srgb,var(--zone) 0%,#ffffffcc);--zone-primary-border:color-mix(in srgb,var(--zone) 0%,#1f232826);--button-primary-bgColor-rest:var(--zone,var(--button-default-bgColor-rest));--button-primary-bgColor-hover:var(--zone-primary-hover,var(--button-default-bgColor-hover));--button-primary-bgColor-active:var(--zone-primary-active,var(--button-default-bgColor-active));--button-primary-bgColor-disabled:var(--zone-primary-disabled,var(--button-default-bgColor-disabled));--button-primary-borderColor-rest:var(--zone-primary-border,var(--borderColor-default));--button-primary-shadow-selected:inset 0 1px 0 0 #002d114d;
 		--button-danger-fgColor-rest:var(--zone,#d1242f);--button-danger-fgColor-hover:#ffffff;--button-danger-fgColor-disabled:color-mix(in srgb,var(--zone,#d1242f) 50%,transparent);--button-danger-bgColor-hover:var(--zone,#cf222e);--borderColor-muted:#d1d9e0b3;--control-transparent-bgColor-hover:#818b981a;--control-transparent-bgColor-selected:#818b9826;--treeViewItem-leadingVisual-iconColor-rest:#54aeff;--highlight-neutral-bgColor:#fff8c5;
@@ -387,7 +387,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		body{box-sizing:border-box;margin:0;padding:16px;min-width:400px;background:var(--bgColor-default);color:var(--fgColor-default);font:400 0.875rem/1.5 var(--fontStack-sansSerif)}
 		h1{margin:0 0 16px;padding:8px 16px;border:1px solid var(--zone,var(--borderColor-default));border-radius:var(--borderRadius-medium);background:var(--bgColor-default);font-size:1.25rem;font-weight:600}.panel{padding:16px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:var(--bgColor-default)}
 		p{margin:12px 0 0;color:var(--fgColor-muted)}
-		#ResultPanel.query #ResultTitle,#ResultPanel.query #ResultPager,#ResultPanel.query .scrollwrap,#ResultPanel:not(.query) #QueryTitle,#ResultPanel:not(.query) #QueryChart{display:none}#QueryScroll{height:480px;container-type:inline-size}#QueryPrev,#QueryNext,#QueryDepth,#ViewPrev,#ViewNext,#ViewShift,#FilePrev,#FileNext,#FileShift{width:28px;padding:0}#QueryDepth,#ViewShift,#FileShift{width:auto;min-width:28px;padding:0 6px}#ViewPrev,#ViewNext,#FilePrev,#FileNext{font-size:16px;line-height:1}#ResultTitle .count,#QueryTitle .count{color:var(--zone)}#QueryDepth,#ViewShift,#FileShift{font-variant-numeric:tabular-nums}#QueryDepth{cursor:text}#QueryDepthInput,#ViewShiftInput,#FileShiftInput{box-sizing:border-box;padding:0 4px;text-align:center;font-variant-numeric:tabular-nums}#QueryPrev:focus-visible,#QueryNext:focus-visible,#QueryDepth:focus-visible,#ViewPrev:focus-visible,#ViewNext:focus-visible,#ViewShift:focus-visible,#FilePrev:focus-visible,#FileNext:focus-visible,#FileShift:focus-visible{outline:none;box-shadow:var(--shadow-resting-small)}.chartbars.click>div{cursor:pointer}#FilterPanel:not(.query) .queryonly,#FilterPanel.query .searchonly{display:none}#ResultPanel{position:relative}#QueryRange{min-width:0;width:64px}input[type="date"]{width:calc(10ch + 36px);padding-right:6px}#QueryTable col:not(:last-child){width:1px}#QueryTable th{white-space:nowrap}#QueryBody tr.row>td:not(.log){cursor:pointer}td.fileact{white-space:nowrap}.qdown{display:inline-flex;vertical-align:-3px;cursor:pointer}.qdel{flex:none;display:inline-flex;vertical-align:-3px;width:16px;height:16px;margin-left:4px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--button-danger-fgColor-rest);font-size:0;cursor:pointer;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z'/%3E%3C/svg%3E")}.qdel::before{content:"";flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--icon) center/16px no-repeat;mask:var(--icon) center/16px no-repeat}.qdel:hover:not(:disabled){background:var(--button-danger-bgColor-hover);color:var(--button-danger-fgColor-hover)}.qdown.nozip{color:var(--fgColor-muted)}.qdown:disabled,.qdel:disabled{opacity:0.4;cursor:default}#DumpPanel{position:relative}#QueryBody tr.open{background:var(--bgColor-accent-muted)}#QueryBody tr.detail{cursor:default;background:var(--bgColor-muted)}#QueryBody tr.detail>td{overflow:visible;white-space:normal}#QueryBody tr.detail>td>div{position:sticky;left:9px;box-sizing:border-box;width:calc(100cqw - 18px)}.querymeta,.querytext{font-family:var(--fontStack-monospace);word-break:break-all}.querymeta{padding:4px 0 0;color:var(--fgColor-muted)}.queryfield{display:flex;flex-wrap:wrap;column-gap:6px}.queryfield>span{min-width:0}.queryfield>span:not(:last-child)::after{content:" ·"}.querytext{padding:4px 0;white-space:pre-wrap}
+		#ResultPanel.query #ResultTitle,#ResultPanel.query #ResultPager,#ResultPanel.query .scrollwrap,#ResultPanel:not(.query) #QueryTitle,#ResultPanel:not(.query) #QueryChart{display:none}#QueryScroll{height:480px;container-type:inline-size}#QueryPrev,#QueryNext,#QueryDepth,#RunPrev,#RunNext,#RunDepth,#UtilDiffRunPrev,#UtilDiffRunNext,#UtilDiffRunDepth,#UtilSortRunPrev,#UtilSortRunNext,#UtilSortRunDepth,#ViewPrev,#ViewNext,#ViewShift,#FilePrev,#FileNext,#FileShift{width:28px;padding:0}#QueryDepth,#RunDepth,#UtilDiffRunDepth,#UtilSortRunDepth,#ViewShift,#FileShift{width:auto;min-width:28px;padding:0 6px}#ViewPrev,#ViewNext,#FilePrev,#FileNext{font-size:16px;line-height:1}#ResultTitle .count,#QueryTitle .count{color:var(--zone)}#QueryDepth,#RunDepth,#UtilDiffRunDepth,#UtilSortRunDepth,#ViewShift,#FileShift{font-variant-numeric:tabular-nums}#QueryDepth{cursor:text}#QueryDepthInput,#RunDepthInput,#UtilDiffRunDepthInput,#UtilSortRunDepthInput,#ViewShiftInput,#FileShiftInput{box-sizing:border-box;padding:0 4px;text-align:center;font-variant-numeric:tabular-nums}#QueryPrev:focus-visible,#RunPrev:focus-visible,#RunNext:focus-visible,#RunDepth:focus-visible,#UtilDiffRunPrev:focus-visible,#UtilDiffRunNext:focus-visible,#UtilDiffRunDepth:focus-visible,#UtilSortRunPrev:focus-visible,#UtilSortRunNext:focus-visible,#UtilSortRunDepth:focus-visible,#QueryNext:focus-visible,#QueryDepth:focus-visible,#ViewPrev:focus-visible,#ViewNext:focus-visible,#ViewShift:focus-visible,#FilePrev:focus-visible,#FileNext:focus-visible,#FileShift:focus-visible{outline:none;box-shadow:var(--shadow-resting-small)}.chartbars.click>div{cursor:pointer}#FilterPanel:not(.query) .queryonly,#FilterPanel.query .searchonly{display:none}#ResultPanel{position:relative}#QueryRange{min-width:0;width:64px}input[type="date"]{width:calc(10ch + 36px);padding-right:6px}#QueryTable col:not(:last-child){width:1px}#QueryTable th{white-space:nowrap}#QueryBody tr.row>td:not(.log){cursor:pointer}td.fileact{white-space:nowrap}.qdown{display:inline-flex;vertical-align:-3px;cursor:pointer}.qdel{flex:none;display:inline-flex;vertical-align:-3px;width:16px;height:16px;margin-left:4px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--button-danger-fgColor-rest);font-size:0;cursor:pointer;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z'/%3E%3C/svg%3E")}.qdel::before{content:"";flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--icon) center/16px no-repeat;mask:var(--icon) center/16px no-repeat}.qdel:hover:not(:disabled){background:var(--button-danger-bgColor-hover);color:var(--button-danger-fgColor-hover)}.qdown.nozip{color:var(--fgColor-muted)}.qdown:disabled,.qdel:disabled{opacity:0.4;cursor:default}#DumpPanel{position:relative}#QueryBody tr.open{background:var(--bgColor-accent-muted)}#QueryBody tr.detail{cursor:default;background:var(--bgColor-muted)}#QueryBody tr.detail>td{overflow:visible;white-space:normal}#QueryBody tr.detail>td>div{position:sticky;left:9px;box-sizing:border-box;width:calc(100cqw - 18px)}.querymeta,.querytext{font-family:var(--fontStack-monospace);word-break:break-all}.querymeta{padding:4px 0 0;color:var(--fgColor-muted)}.queryfield{display:flex;flex-wrap:wrap;column-gap:6px}.queryfield>span{min-width:0}.queryfield>span:not(:last-child)::after{content:" ·"}.querytext{padding:4px 0;white-space:pre-wrap}
 		#QueryChart{position:relative;display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:8px;margin-top:8px;color:var(--fgColor-muted);font-size:0.75rem;line-height:1}.charty{position:relative;height:var(--chartHeight,120px);min-width:24px}.charty span{position:absolute;right:0;transform:translateY(50%);white-space:nowrap}.chartplot{position:relative;height:var(--chartHeight,120px);border-bottom:1px solid var(--borderColor-default)}.chartgrid{position:absolute;left:0;right:0;border-top:1px solid var(--borderColor-muted)}
 		.chartbars,.chartx{display:flex;gap:2px}.chartbars{position:absolute;inset:0;align-items:flex-end}.chartbars>div{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end}.chartbars>div:hover{background:var(--control-transparent-bgColor-hover)}.chartbars>div>div{width:100%;border-radius:4px 4px 0 0;background:color-mix(in srgb,var(--zone,var(--chart-barColor)) 50%,#fff)}.chartx{grid-column:3;height:12px;margin-top:4px;overflow:hidden}.chartx span{display:flex;justify-content:center;flex:1;min-width:0;white-space:nowrap}.chartx span.month{color:var(--zone,var(--fgColor-default));font-weight:600}
 		.chartlens{display:flex;flex-direction:column;align-self:center}.chartlens>*{box-sizing:border-box;width:28px;height:20px;padding:0;border-radius:0}.chartlens>:first-child{border-radius:var(--borderRadius-medium) var(--borderRadius-medium) 0 0}.chartlens>:last-child{border-radius:0 0 var(--borderRadius-medium) var(--borderRadius-medium)}#LensStep{display:flex;align-items:center;justify-content:center;border:solid var(--borderColor-default);border-width:0 1px;background:var(--button-default-bgColor-rest);color:var(--button-default-fgColor-rest);font-weight:500;font-variant-numeric:tabular-nums;cursor:default}#LensUp:focus-visible,#LensDown:focus-visible{outline:none;box-shadow:var(--shadow-resting-small)}
@@ -398,7 +398,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		h1{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}#OffText{position:relative;top:3px;color:var(--fgColor-danger);font-size:0.75rem;font-weight:400}#TabBar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-left:auto}body:not([data-mode="main"]) #TabBar{display:none}#TabRefresh{width:28px;padding:0}#TabRefresh:not(:disabled){color:var(--fgColor-muted)}#TabRefresh svg{fill:currentColor}#TabRefresh.turn svg{animation:ManagerTurn .6s ease-in-out}body:not([data-mode="main"]) #TabRefresh{display:none}
 		.panel+.panel{margin-top:16px}.filter{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}.filter label{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 		select,input{box-sizing:border-box;height:28px;padding:0 8px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background-color:var(--bgColor-default);box-shadow:var(--shadow-inset);color:var(--fgColor-default);font:inherit;font-size:0.75rem}select{min-width:160px;padding-right:24px;background:var(--bgColor-default) url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0iIzU4NjA2OSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNC40MjcgOS40MjdsMy4zOTYgMy4zOTZhLjI1MS4yNTEgMCAwMC4zNTQgMGwzLjM5Ni0zLjM5NkEuMjUuMjUgMCAwMDExLjM5NiA5SDQuNjA0YS4yNS4yNSAwIDAwLS4xNzcuNDI3ek00LjQyMyA2LjQ3TDcuODIgMy4wNzJhLjI1LjI1IDAgMDEuMzU0IDBMMTEuNTcgNi40N2EuMjUuMjUgMCAwMS0uMTc3LjQyN0g0LjZhLjI1LjI1IDAgMDEtLjE3Ny0uNDI3eiIgLz48L3N2Zz4=") no-repeat right 4px center/16px;appearance:none}select.hour{min-width:0}.pickwrap{display:flex;align-items:center;gap:8px}#MachinePick{position:relative}#MachineBox{display:block;width:64px;overflow:hidden;text-overflow:ellipsis;line-height:26px;text-align:left;padding:0 24px 0 8px;background:var(--bgColor-default) url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0iIzU4NjA2OSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNC40MjcgOS40MjdsMy4zOTYgMy4zOTZhLjI1MS4yNTEgMCAwMC4zNTQgMGwzLjM5Ni0zLjM5NkEuMjUuMjUgMCAwMDExLjM5NiA5SDQuNjA0YS4yNS4yNSAwIDAwLS4xNzcuNDI3ek00LjQyMyA2LjQ3TDcuODIgMy4wNzJhLjI1LjI1IDAgMDEuMzU0IDBMMTEuNTcgNi40N2EuMjUuMjUgMCAwMS0uMTc3LjQyN0g0LjZhLjI1LjI1IDAgMDEtLjE3Ny0uNDI3eiIgLz48L3N2Zz4=") no-repeat right 4px center/16px;box-shadow:var(--shadow-inset);color:var(--fgColor-default);font-weight:400}#MachineMenu{position:absolute;top:calc(100% + 4px);left:0;z-index:20;width:max-content;min-width:100%;max-height:min(480px,70vh);overflow:auto;padding:4px 0;border-radius:var(--borderRadius-large);background:var(--overlay-bgColor);box-shadow:var(--shadow-floating-small)}#MachineMenu label{display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:0.75rem;white-space:nowrap;cursor:pointer}#MachineMenu label:hover{background:var(--control-transparent-bgColor-hover)}#MachineMenu label.all{border-bottom:1px solid var(--borderColor-muted);font-weight:600}#MachineMenu input{flex:none;width:auto;height:auto;margin:0;padding:0;box-shadow:none}
-		select:focus,input:focus{border-color:var(--focus-outlineColor);outline:none;box-shadow:inset 0 0 0 1px var(--focus-outlineColor)}:focus-visible{outline:2px solid var(--focus-outlineColor);outline-offset:-2px}.octicon{flex:none;fill:var(--fgColor-muted)}#ResetButton{width:28px;padding:0}#ResetButton .octicon{fill:var(--zone,var(--fgColor-muted))}#ResetButton:disabled .octicon{fill:var(--fgColor-disabled)}#ResetButton.flip .octicon{animation:ResetFlip .5s ease-in-out}@keyframes ResetFlip{from{transform:rotate(0)}to{transform:rotate(180deg)}}.rangeop{color:var(--fgColor-muted);white-space:nowrap}select.hour option{color:var(--fgColor-default)}select.hour option:disabled{color:color-mix(in srgb,var(--fgColor-disabled) 50%,#fff)}#TimerButton{min-width:calc(4ch + 18px);font-variant-numeric:tabular-nums}#TimerButton.on,#TimerButton.on:hover:not(:disabled){color:var(--zone,var(--fgColor-default))}#TimerButton.flash{animation:TimerFlash .8s ease-out}@keyframes TimerFlash{from{border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));color:var(--fgColor-onEmphasis)}}
+		select:focus,input:focus{border-color:var(--focus-outlineColor);outline:none;box-shadow:inset 0 0 0 1px var(--focus-outlineColor)}:focus-visible{outline:2px solid var(--focus-outlineColor);outline-offset:-2px}.octicon{flex:none;fill:var(--fgColor-muted)}.rangeop{color:var(--fgColor-muted);white-space:nowrap}select.hour option{color:var(--fgColor-default)}select.hour option:disabled{color:color-mix(in srgb,var(--fgColor-disabled) 50%,#fff)}#TimerButton{min-width:calc(4ch + 18px);font-variant-numeric:tabular-nums}#TimerButton.on,#TimerButton.on:hover:not(:disabled){color:var(--zone,var(--fgColor-default))}#TimerButton.flash{animation:TimerFlash .8s ease-out}@keyframes TimerFlash{from{border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));color:var(--fgColor-onEmphasis)}}
 		button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:28px;padding:0 8px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:var(--button-default-bgColor-rest);box-shadow:var(--button-default-shadow-resting);color:var(--button-default-fgColor-rest);font:500 0.75rem/1 var(--fontStack-sansSerif);white-space:nowrap;cursor:pointer;user-select:none}
 		button:hover:not(:disabled){background:var(--button-default-bgColor-hover)}button:active:not(:disabled){background:var(--button-default-bgColor-active)}button:disabled{border-color:var(--borderColor-disabled);background:var(--button-default-bgColor-disabled);box-shadow:none;color:var(--fgColor-disabled);cursor:not-allowed}.filter+.filter{margin-top:10px}#SearchKey,#QueryKey{flex:1;min-width:135px}.searchbox{display:flex;align-items:center;gap:8px;flex:1 0 100%}
 		button.primary{color:var(--zone,var(--button-default-fgColor-rest))}
@@ -412,18 +412,18 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		.scroll::-webkit-scrollbar-button:single-button:horizontal:decrement,.hscroll::-webkit-scrollbar-button:single-button:horizontal:decrement{background-position:4px 4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 7'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M.5 3.5l4-3v6z'/%3E%3C/svg%3E")}.scroll::-webkit-scrollbar-button:single-button:horizontal:increment,.hscroll::-webkit-scrollbar-button:single-button:horizontal:increment{background-position:4px 4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 7'%3E%3Cpath fill='%23818b98' stroke='%23818b98' stroke-linejoin='round' d='M.5 .5l4 3-4 3z'/%3E%3C/svg%3E")}
 		.panel>.resulthead:first-child,#ViewPanel>.filter:first-child{margin:-16px -16px 8px;padding:8px 16px;border-bottom:1px solid var(--borderColor-default);border-radius:calc(var(--borderRadius-medium) - 1px) calc(var(--borderRadius-medium) - 1px) 0 0;background:var(--bgColor-muted)}.resulthead .toolright button,#ViewPanel>.filter .toolright button{height:28px;padding:0 8px;gap:4px;font-size:0.75rem}.filter .toolright.row{flex:0 0 100%;justify-content:flex-end}.filter{position:relative}.filter .toolright.fix{position:absolute;top:0;right:0;margin:0}.filter.tight{column-gap:6px}.filter.tight label{gap:6px}
 		.splitter{display:flex;align-items:center;height:14px;cursor:ns-resize;touch-action:none}.splitter::before{content:"";flex:1;height:4px;border-radius:2px;background:var(--borderColor-default)}.splitter:hover::before,.splitter.drag::before{background:var(--split)}.splitter+.panel{margin-top:0}
-		body[data-mode="view"] #FilterPanel,body[data-mode="view"] #FilterSplitter,body[data-mode="view"] #ResultPanel,body[data-mode="view"] #Splitter{display:none}body[data-mode="view"] #ViewPanel{margin-top:0}body[data-mode="view"] #ViewScroll{height:calc(100vh - 161px)}
+		body[data-mode="view"] #FilterPanel,body[data-mode="view"] #FilterSplitter,body[data-mode="view"] #ResultPanel,body[data-mode="view"] #Splitter{display:none}body[data-mode="view"] #ViewPanel{margin-top:0}body[data-mode="view"] #ViewScroll{height:calc(100vh - 135px)}
 		table{border-collapse:collapse;width:100%;font-size:0.75rem}.scroll>table{border-style:hidden hidden none hidden}.scroll>table th{border-bottom-style:hidden}th,td{border:1px solid var(--borderColor-default);padding:4px 8px;text-align:left;vertical-align:top}th{position:sticky;top:0;z-index:1;background:var(--bgColor-muted);box-shadow:inset 0 -1px 0 var(--borderColor-default);color:var(--fgColor-muted);font-weight:600}
 		td.num{text-align:right;white-space:nowrap}td.nowrap{white-space:nowrap}td.log{font-family:var(--fontStack-monospace);white-space:nowrap}
 		.colgrip{position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;touch-action:none}th.foldhead{cursor:pointer}.colgrip::after{content:"";position:absolute;top:0;right:0;bottom:0;width:2px}.colgrip:hover::after,.colgrip.drag::after{background:var(--split)}.colguide{position:fixed;z-index:10;width:2px;margin-left:-1px;background:var(--split);pointer-events:none}
 		table.fixed{table-layout:fixed}table.fixed th,table.fixed td{overflow:hidden;white-space:nowrap}table.fixed td.log{text-overflow:ellipsis}
 		html{overflow-y:scroll}#TabBar button.cur,#TabBar button.cur:hover:not(:disabled),#ProcessPanel button.chip.cur,#ProcessPanel button.chip.cur:hover:not(:disabled),#ProcessSummaryButton.cur,#ProcessSummaryButton.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#AccountButton,#AccountButton:hover:not(:disabled),#HelpButton,#HelpButton:hover:not(:disabled){color:var(--zone,var(--fgColor-default))}#DumpScroll{height:calc(100vh - 286px);min-height:200px}
-		#ViewBody,#FileViewBody,#ViewBody .lno,#FileViewBody .lno{color:#000}#ViewScroll{overflow-anchor:none}
+		#ViewBody,#FileViewBody{color:#000}#ViewBody,#FileViewBody{padding:4px 8px 4px 0}#ViewBody .lno,#FileViewBody .lno{position:sticky;left:0;display:inline-block;box-sizing:border-box;width:calc(7ch + 16px);margin-right:8px;padding-right:8px;border-right:1px solid var(--borderColor-default);background:var(--bgColor-muted);color:var(--fgColor-muted);text-align:right}#ViewScroll{overflow-anchor:none;margin:0;border:0;border-radius:0}#ViewPanel{padding:0;overflow:hidden}#ViewPanel>.filter:first-child{margin:0}
 		body[data-mode="field"] #FilterPanel,body[data-mode="field"] #FilterSplitter,body[data-mode="field"] #ResultPanel,body[data-mode="field"] #Splitter,body[data-mode="field"] #ViewPanel{display:none}body[data-mode="field"] #QueryFieldPanel{margin-top:0}body[data-mode="field"] #QueryFieldScroll{max-height:calc(100vh - 197px)}
 		body[data-ui="account"]>:not(h1):not(dialog),body[data-ui="account"] #TabBar button:not(#AccountButton),body[data-ui="user"] #AccountButton{display:none!important}#QueryFieldTable col:not(:last-child){width:1px}#QueryFieldTable th{white-space:nowrap;cursor:pointer;user-select:none}#QueryFieldTable .sortmark:not(:empty){margin-left:4px;font-size:0.625rem}#QueryFieldTable td.log{white-space:nowrap}#QueryFieldBody tr.row{cursor:pointer}#QueryFieldPager,#ResultPager,#QueryPager,#QueryFieldPager{justify-content:center;margin-top:8px}#ResultPager,#QueryPager,#QueryFieldPager{gap:2px;margin:1px 0 -15px}#ResultPager button,#QueryPager button,#QueryFieldPager button{height:20px;min-width:20px;padding:0 6px;font-size:0.75rem}
-		#FilterPanel[hidden]~#DumpPanel #DumpScroll,#FilterPanel[hidden]~#FilePanel .filesplit{height:calc(100vh - 161px)}
-		.filesplit{display:flex;margin-top:8px;height:calc(100vh - 286px);min-height:200px}#FileScroll{flex:none;width:26%;min-width:120px;margin-top:0}.fileview{flex:1;min-width:120px;display:flex;flex-direction:column}#FileViewScroll{flex:1;margin-top:0;overflow-anchor:none}
-		#FileTitle{flex:none;width:calc(26% + 2px)}#FileViewTitle{flex:1;min-width:0}
+		#FilterPanel[hidden]~#DumpPanel #DumpScroll{height:calc(100vh - 161px)}#FilterPanel[hidden]~#FilePanel>.filesplit{height:calc(100vh - 90px)}#FilePanel .resulthead{min-height:28px}
+		.filesplit{display:grid;grid-template-columns:minmax(0,var(--fileWidth,26%)) 14px minmax(0,1fr);margin-top:16px;height:calc(100vh - 199px);min-height:271px}#FileScroll{flex:1;min-height:0;margin-top:0}.filesplit>.panel{display:flex;flex-direction:column;min-width:0;min-height:0;margin-top:0;padding:0;overflow:hidden}.filesplit>.panel>.resulthead:first-child{margin:0}#FileScroll,#FileViewScroll{border:0;border-radius:0}#FileViewScroll{flex:1;min-height:0;margin-top:0;overflow-anchor:none}
+		#FileTitle{flex:1;min-width:0}#FileViewTitle{flex:1;min-width:0}
 		.vsplitter{flex:none;display:flex;justify-content:center;width:14px;cursor:ew-resize;touch-action:none}.vsplitter::before{content:"";width:4px;border-radius:2px;background:var(--borderColor-default)}.vsplitter:hover::before,.vsplitter.drag::before{background:var(--split)}
 		.tree{margin:0;padding:8px;list-style:none}.tree ul{margin:0;padding-left:16px;list-style:none}.tree .node{position:relative;display:flex;align-items:center;gap:4px;min-height:2rem;padding:0 8px;border-radius:var(--borderRadius-medium);cursor:pointer;white-space:nowrap}.tree .node[data-kind="file"]{cursor:default}.tree .node.view{cursor:pointer}
 		.tree .node:hover{background:var(--control-transparent-bgColor-hover)}.tree .node.sel{background:var(--control-transparent-bgColor-selected)}.tree .node.sel::after{content:"";position:absolute;top:calc(50% - 12px);left:-8px;width:4px;height:24px;border-radius:var(--borderRadius-medium);background:var(--borderColor-accent-emphasis)}
@@ -433,22 +433,22 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		.tree .ticon{color:var(--treeViewItem-leadingVisual-iconColor-rest);--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z'/%3E%3C/svg%3E")}
 		
 		.qdown{flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--fgColor-accent);font-size:0;--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z'/%3E%3Cpath d='M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06l1.97 1.969Z'/%3E%3C/svg%3E")}.qdown::before{content:""}.qdown:hover:not(:disabled){background:var(--control-transparent-bgColor-hover)}
-		#ResultTable col:not(:last-child),#DumpTable col:not(:last-child){width:1px}#DumpTable tr>:last-child{position:sticky;right:0;background:var(--bgColor-default);box-shadow:inset 1px 0 0 var(--borderColor-default)}#DumpTable tbody tr:hover>:last-child{background:var(--bgColor-muted)}#DumpTable th:last-child{z-index:2;background:var(--bgColor-muted);box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable th,#DumpTable th{white-space:nowrap}#ResultTable th,#ResultTable td,#QueryTable th,#QueryTable td{border-left:0;border-right:0;box-shadow:inset 1px 0 0 var(--borderColor-default)}#ResultTable th,#QueryTable th{box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable td:first-child,#QueryTable td:first-child{box-shadow:none}#ResultTable th:first-child,#QueryTable th:first-child{box-shadow:inset 0 -1px 0 var(--borderColor-default)}#DumpBody tr{cursor:default}td.act{white-space:nowrap}td.act button{height:20px;padding:0 8px;font-size:0.75rem}td.act button+button{margin-left:4px}
+		#ResultTable col:not(:last-child),#DumpTable col:not(:last-child){width:1px}#DumpTable tr>:last-child,#UtilTimeTable tr>:last-child{position:sticky;right:0;background:var(--bgColor-default);box-shadow:inset 1px 0 0 var(--borderColor-default)}#DumpTable tbody tr:hover>:last-child,#UtilTimeTable tbody tr:hover>:last-child{background:var(--bgColor-muted)}#DumpTable th:last-child,#UtilTimeTable th:last-child{z-index:2;background:var(--bgColor-muted);box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable th,#DumpTable th{white-space:nowrap}#ResultTable th,#ResultTable td,#QueryTable th,#QueryTable td{border-left:0;border-right:0;box-shadow:inset 1px 0 0 var(--borderColor-default)}#ResultTable th,#QueryTable th{box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -1px 0 var(--borderColor-default)}#ResultTable td:first-child,#QueryTable td:first-child{box-shadow:none}#ResultTable th:first-child,#QueryTable th:first-child{box-shadow:inset 0 -1px 0 var(--borderColor-default)}#DumpBody tr{cursor:default}td.act{white-space:nowrap}td.act button{height:20px;padding:0 8px;font-size:0.75rem}td.act button+button{margin-left:4px}
 		dialog{top:30%;bottom:auto;margin:0 auto;transform:translateY(-30%);padding:16px;border:0;border-radius:var(--borderRadius-large);background:var(--overlay-bgColor);color:var(--fgColor-default);box-shadow:var(--shadow-floating-small)}dialog::backdrop{background:var(--overlay-backdrop-bgColor)}
 		.setting{display:grid;grid-template-columns:auto 110px auto;align-items:center;gap:8px 12px;margin:16px 0}.setting select{width:100%;min-width:0}.hint{color:var(--fgColor-muted)}#SettingDialog{width:max-content}#SettingDialog .setting{grid-template-columns:max-content 110px max-content}#SettingDialog .setting input,#SettingDialog .setting select{box-sizing:border-box;width:110px}#SettingDialog .toolright{justify-content:flex-end}#SettingDialog.query .srow,#SettingDialog:not(.query) .qrow{display:none}#QuerySettingDialog{width:400px}#QuerySettingDialog[open]{display:flex;flex-direction:column}#QueryEditScroll{flex:0 1 600px;min-height:0;max-height:none}#QuerySettingDialog .toolright{justify-content:flex-end}#AlarmHistoryDialog{width:400px}#AlarmHistoryDialog[open]{display:flex;flex-direction:column}#AlarmHistoryScroll{flex:0 1 600px;min-height:0;max-height:none}#AlarmHistoryTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle;white-space:nowrap}#AlarmHistoryTable td.key{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#AlarmHistoryTable td.key:hover{text-decoration:underline}#AlarmHistoryTable td.fail{color:var(--fgColor-danger)}#AlarmHistoryTable td.empty{color:var(--fgColor-muted);text-align:center}#AlarmHistoryDialog .toolright,#AlarmHistoryViewDialog .toolright{justify-content:flex-end}#AlarmHistoryViewDialog{width:600px}#AlarmHistoryViewInfo{margin:4px 0 0}#AlarmHistoryViewBody.link{cursor:pointer}#AlarmHistoryViewBody hr{margin:4px 0;border:0;border-top:1px solid var(--borderColor-default)}#AlarmHistoryViewBody{max-height:60vh;overflow:auto;margin:12px 0 16px;padding:8px;border:1px solid var(--borderColor-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}#DownDialog{min-width:320px;max-width:600px}#AccountDialog{box-sizing:border-box;width:400px;height:550px}#AccountDialog[open]{display:flex;flex-direction:column}#AccountEditDialog{width:480px}#DownDialog .toolright,#AccountDialog .toolright,#AccountEditDialog .toolright{justify-content:flex-end}#AccountTable td{border:0;border-bottom:1px solid var(--borderColor-muted);padding:6px 4px;vertical-align:middle}#AccountDialog .savedlist{flex:0 1 auto;min-height:0;max-height:none;margin-bottom:8px}#AccountPager{flex:none;height:28px;margin:0 0 12px}#AccountDialog .toolright{margin-top:auto}#AccountTable td:first-child{width:100%}#AccountTable td.act{width:1px;color:var(--fgColor-muted);white-space:nowrap}#AccountEditDialog .setting{grid-template-columns:max-content minmax(0,1fr)}#AccountEditDialog .setting input:not([type="checkbox"]){width:100%}#AccountEditMenu,#AccountEditApi{display:flex;flex-wrap:wrap;gap:4px 12px;line-height:28px}#AccountEditMenu label,#AccountEditApi label{display:inline-flex;align-items:center;gap:4px}#AccountEditMenu input,#AccountEditApi input{margin:0}#AccountEditDialog.delete .editrow{display:none}#AccountEditDialog:not(.edit) .keyrow{display:none}#AccountEditDialog .keybox{display:flex;align-items:center;justify-content:space-between;gap:8px;line-height:28px}#AccountEditKey,#AccountEditToken{font-family:var(--fontStack-monospace);word-break:break-all;line-height:28px}#AccountEditKey.pending{color:var(--fgColor-accent);font-weight:600}#AccountEditDialog .adminbox{display:flex;align-items:center;gap:8px}#AccountEditDialog .adminbox input{flex:1;min-width:0}#DownName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DownPath{margin:0 0 16px;word-break:break-all}#DeleteDialog{min-width:320px;max-width:600px}#DeleteDialog .toolright{justify-content:flex-end}#DeleteText{margin:12px 0 16px;color:var(--fgColor-default);word-break:break-all}#DeleteName{margin:12px 0 4px;color:var(--fgColor-default);font-weight:600;word-break:break-all}#DeleteName:empty{display:none}#DeleteName:not(:empty)+#DeleteText{margin-top:0}#HelpDialog{box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px)}#HelpScroll{overflow-y:auto;margin-bottom:12px}#HelpTable{width:100%;margin-bottom:0;border-collapse:collapse;font-size:0.875rem}#HelpTable tbody th{position:static}#HelpTable td:first-child{font-weight:600;white-space:nowrap}#HelpTable tr.group th{text-align:left}#HelpTabs{margin-bottom:8px}#HelpTabs button.cur,#HelpTabs button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}#HelpTable[data-help="common"] tr:not([data-help="common"]),#HelpTable[data-help="rule"] tr:not([data-help="rule"]),#HelpTable[data-help="query"] tr:not([data-help="query"]),#HelpTable[data-help="search"] tr:not([data-help="search"]),#HelpTable[data-help="manager"] tr:not([data-help="manager"]),#HelpTable[data-help="process"] tr:not([data-help="process"]){display:none}#HelpTable tr.sep td{border-top:2px solid var(--borderColor-default)}#HelpDialog .toolright{justify-content:flex-end}
 		tbody tr{cursor:pointer}tbody tr:hover{background:var(--bgColor-muted)}tbody tr.sel{background:var(--bgColor-accent-muted)}mark{background:var(--highlight-neutral-bgColor);color:inherit;padding:0}
 		[hidden]{display:none!important}.resulthead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.toolright{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-left:auto}.pager{display:flex;flex-wrap:wrap;align-items:center;gap:4px}.pager button{min-width:28px;padding:0 8px;border-color:transparent;background:transparent;box-shadow:none;color:var(--fgColor-default);font-weight:400}.pager button:hover:not(:disabled){border-color:var(--borderColor-default);background:transparent}
 		.pager button.cur,.pager button.cur:hover:not(:disabled){border-color:transparent;background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis)}
 		pre{margin:0;padding:8px;font:400 0.8125rem/1.5 var(--fontStack-monospace)}.line{display:block;white-space:pre}.line.target{background:var(--bgColor-accent-muted)}.lno{color:var(--fgColor-muted);user-select:none}
-		#ManagerPanel{display:grid;grid-template-columns:var(--managerWidth,max-content) 14px minmax(0,1fr);align-items:start;margin-top:16px;--zone-dev:#1b7a3b;--zone-dev-bg:#e2f4e7;--zone-alpha:#2f6fde;--zone-alpha-bg:#e7effc;--zone-real:#c42b2b;--zone-real-bg:#fce6e6}#ManagerPanel>.panel{position:relative;min-width:0;margin-top:0}#ManagerPanel>.vsplitter{align-self:stretch;width:auto}@media (max-width:1100px){#ManagerPanel{grid-template-columns:minmax(0,1fr);row-gap:16px}#ManagerPanel>.vsplitter{display:none}}
-		#ManagerSideTab{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:48px;margin:-16px -16px 16px;padding:0 8px;box-shadow:inset 0 -1px 0 var(--borderColor-muted)}#ManagerSideTab button:not(.iconbtn){height:32px;padding:0 8px;border-color:transparent;background:transparent;box-shadow:none;color:var(--fgColor-default);font-size:0.875rem;font-weight:400}#ManagerSideTab button:not(.iconbtn):hover:not(:disabled){border-color:transparent;background:var(--control-transparent-bgColor-hover);box-shadow:none}#ManagerSideTab button.cur,#ManagerSideTab button.cur:hover:not(:disabled){border-color:var(--zone,var(--bgColor-emphasis));background:var(--zone,var(--bgColor-emphasis));color:var(--fgColor-onEmphasis);font-weight:600}#ManagerSidePanel>div>.resulthead:first-child{margin:0;padding:0;border:0;border-radius:0;background:none}
+		#ManagerPanel{display:grid;grid-template-columns:minmax(0,var(--managerWidth,max-content)) 14px minmax(120px,1fr);align-items:start;margin-top:16px;--zone-dev:#1b7a3b;--zone-dev-bg:#e2f4e7;--zone-alpha:#2f6fde;--zone-alpha-bg:#e7effc;--zone-real:#c42b2b;--zone-real-bg:#fce6e6}#ManagerPanel>.panel{position:relative;min-width:0;margin-top:0}#ManagerPanel>.vsplitter{align-self:stretch;width:auto}
+		#ManagerSideTab{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:-16px -16px 16px;padding:8px 16px;border-bottom:1px solid var(--borderColor-default);border-radius:calc(var(--borderRadius-medium) - 1px) calc(var(--borderRadius-medium) - 1px) 0 0;background:var(--bgColor-muted)}#ManagerCcuRefresh{margin-left:auto}#ManagerSideTab button:not(.iconbtn){height:28px;min-width:28px;padding:0 8px;border-color:var(--borderColor-default);background:var(--button-default-bgColor-rest);box-shadow:var(--button-default-shadow-resting);color:var(--fgColor-default);font-size:0.75rem;font-weight:500}#ManagerSideTab button:not(.iconbtn):hover:not(:disabled){background:var(--button-default-bgColor-hover)}#ManagerSideTab button.cur,#ManagerSideTab button.cur:hover:not(:disabled){border-color:transparent;background:var(--zone,var(--bgColor-emphasis));box-shadow:none;color:var(--fgColor-onEmphasis);font-weight:500}#ManagerSidePanel>div>.resulthead:first-child{margin:0;padding:0;border:0;border-radius:0;background:none}
 		#ManagerPanel .chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border:1px solid var(--borderColor-default);border-radius:624.9375rem;font-size:0.75rem;font-weight:500;line-height:1;white-space:nowrap}#ManagerPanel .chip.zone-dev{border-color:transparent;background:var(--zone-dev-bg);color:var(--zone-dev)}#ManagerPanel .chip.zone-alpha{border-color:transparent;background:var(--zone-alpha-bg);color:var(--zone-alpha)}#ManagerPanel .chip.zone-real{border-color:transparent;background:var(--zone-real-bg);color:var(--zone-real)}#ManagerPanel .chip.off{color:var(--fgColor-muted)}#ManagerPanel .chip.before{border-color:#cf222e;color:var(--fgColor-danger)}#ManagerPanel .chip.after,#ManagerPanel .chip.cds{border-color:#1a7f37;color:var(--fgColor-success)}
 		#ManagerPanel .tag{margin-left:4px;font-size:0.75rem}#ManagerPanel a,#ManagerPanel a:visited,#ProcessPanel a,#ProcessPanel a:visited{color:var(--fgColor-accent);text-decoration:none}#ManagerPanel a:hover,#ProcessPanel a:hover{text-decoration:underline}#ManagerPanel .mono,#ProcessPanel .mono{font-family:var(--fontStack-monospace)}#ManagerPanel .error,#ProcessPanel .error{box-sizing:border-box;width:0;min-width:100%;margin-top:8px;padding:8px 16px;border:1px solid #ff818266;border-radius:var(--borderRadius-medium);background:#ffebe9;word-break:break-all}#ManagerPanel .subtitle{margin-top:16px}#ManagerPanel td{vertical-align:middle}#ManagerPanel td.num{font-variant-numeric:tabular-nums}#ManagerPanel td.empty{text-align:center;color:var(--fgColor-muted)}#ManagerPanel tr.down td{color:var(--fgColor-muted)}#ManagerPanel tr.spacer td{height:12px;padding:0}#ManagerPanel tbody tr.spacer:hover{background:transparent}#ManagerPanel details{margin-top:16px}#ManagerPanel summary{cursor:pointer;font-weight:600}#ManagerPanel .scroll.tall{max-height:90vh}#ManagerPanel .scroll.tall.vbar{scrollbar-gutter:stable}
-		#ManagerPanel button.iconbtn{width:28px;padding:0}#ManagerPanel button.iconbtn:not(:disabled){color:var(--fgColor-muted)}#ManagerPanel button.iconbtn svg{fill:currentColor}#ManagerPanel button.iconbtn.turn svg{animation:ManagerTurn .6s ease-in-out}@keyframes ManagerTurn{from{transform:rotate(0)}to{transform:rotate(360deg)}}#ManagerChartBox{position:relative;height:630px;margin-top:8px}#ManagerMonitorFrame{display:block;width:100%;height:105vh;margin-top:8px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:#fff}#ManagerPatchDialog{min-width:320px;max-width:600px}#ManagerPatchDialog .managerpatch{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 12px;margin:16px 0}#ManagerPatchInput{width:100%}
+		#ManagerPanel button.iconbtn,#UtilPanel button.iconbtn{width:28px;padding:0}#ManagerPanel button.iconbtn:not(:disabled),#UtilPanel button.iconbtn:not(:disabled){color:var(--fgColor-muted)}#ManagerPanel button.iconbtn svg,#UtilPanel button.iconbtn svg{fill:currentColor}#ManagerPanel button.iconbtn.turn svg,#UtilPanel button.iconbtn.turn svg{animation:ManagerTurn .6s ease-in-out}@keyframes ManagerTurn{from{transform:rotate(0)}to{transform:rotate(360deg)}}#ManagerChartBox{position:relative;height:630px;margin-top:8px}#ManagerMonitorFrame{display:block;width:100%;height:105vh;margin-top:8px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:#fff}#ManagerPatchDialog{min-width:320px;max-width:600px}#ManagerPatchDialog .managerpatch{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 12px;margin:16px 0}#ManagerPatchInput{width:100%}
 		#ProcessPanel,#ProcessToasts,#HelpTable{--bgColor-neutral-muted:#818b981f;--bgColor-success-emphasis:#1f883d;--bgColor-danger-muted:#ffebe9;--bgColor-danger-emphasis:#cf222e;--bgColor-attention-muted:#fff8c5;--bgColor-severe-muted:#fff1e5;--bgColor-done-muted:#fbefff;--fgColor-attention:#9a6700;--fgColor-severe:#bc4c00;--fgColor-done:#8250df;--borderColor-translucent:#1f232826;--borderColor-success-emphasis:#1a7f37;--borderColor-danger-emphasis:#cf222e;--borderColor-danger-muted:#ff818266;--borderColor-attention-emphasis:#9a6700;--borderColor-attention-muted:#d4a72c66;--borderColor-severe-emphasis:#bc4c00;--borderColor-done-emphasis:#8250df;--button-default-borderColor-rest:#d1d9e0;--buttonCounter-default-bgColor-rest:#818b981f;--controlTrack-bgColor-rest:#e6eaef;--controlTrack-borderColor-rest:#d1d9e0;--controlKnob-bgColor-rest:#ffffff;--controlKnob-borderColor-rest:#d1d9e0;--borderRadius-full:624.9375rem;--l1-bg:color-mix(in srgb,var(--zone,var(--bgColor-emphasis)) 50%,#fff);--l1-hover:color-mix(in srgb,var(--l1-bg) 90%,#000);--l1-line:color-mix(in srgb,var(--l1-bg) 80%,#000)}
-		#ProcessPanel{margin-top:16px}#ProcessPanel .muted{color:var(--fgColor-muted)}#ProcessPanel .spacer{flex:1}#ProcessVersion{color:var(--fgColor-muted);font-size:0.75rem}#ProcessTest{display:inline-flex;gap:4px}#ProcessStale{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:8px 16px;border:1px solid var(--borderColor-attention-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-attention-muted);font-size:0.875rem}#ProcessStale button{margin-left:auto}#ProcessSummary{margin-bottom:16px}#ProcessCards{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto}#ProcessSearch{width:240px}#ProcessPanel button.card{display:block;flex:1 1 0;min-width:150px;height:auto;padding:8px 12px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:var(--bgColor-default);box-shadow:none;color:var(--fgColor-default);font:400 0.875rem/1.5 var(--fontStack-sansSerif);text-align:left;white-space:normal}#ProcessPanel button.card:hover:not(:disabled),#ProcessPanel button.card:active:not(:disabled){border-color:var(--zone,var(--borderColor-emphasis));background:var(--bgColor-default)}#ProcessPanel .card>span{display:block}#ProcessPanel .card .c-name{margin-bottom:4px;font-weight:600}#ProcessPanel .c-num{font-size:1.25rem;font-weight:600}#ProcessPanel .c-num small{color:var(--fgColor-muted);font-size:0.75rem;font-weight:400}#ProcessPanel .card .c-tags{display:flex;flex-wrap:wrap;gap:4px;min-height:20px;margin-top:4px}
+		#ProcessPanel{margin-top:16px}#ProcessPanel .muted{color:var(--fgColor-muted)}#ProcessPanel .spacer{flex:1}#ProcessVersion{color:var(--fgColor-muted);font-size:0.75rem}#ProcessPager,#UtilTabs{gap:4px}#ProcessPager button,#UtilTabs button{height:28px;min-width:28px;padding:0 8px;font-size:0.75rem;font-weight:500}#ProcessPager button:not(.cur),#UtilTabs button:not(.cur){border-color:var(--borderColor-default);background:var(--button-default-bgColor-rest);box-shadow:var(--button-default-shadow-resting)}#ProcessPager button:not(.cur):hover:not(:disabled),#UtilTabs button:not(.cur):hover:not(:disabled){background:var(--button-default-bgColor-hover)}#UtilPanel .utilbox>.panel{margin-top:16px}#UtilTabPanel{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}#UtilTabPanel>.utilbox{flex:1 1 auto;min-width:0}#UtilDiffTool,#UtilSortTool{display:flex;align-items:center;gap:8px;margin-top:0}#UtilDiffTool .toolright button,#UtilSortTool .toolright button{height:28px;gap:4px}.jsonview{position:relative;margin:0;padding:4px 0;border:0;border-radius:0;font:400 0.8125rem/1.5 var(--fontStack-monospace)}.jsonview .jl{display:flex;width:max-content;min-width:100%;white-space:pre}.jsonview .jn{position:sticky;left:0;z-index:1;flex:none;box-sizing:border-box;width:4.5em;padding-right:8px;border-right:1px solid var(--borderColor-default);background:var(--bgColor-muted);color:var(--fgColor-muted);text-align:right;user-select:none}.jsonview .jf{position:sticky;left:4.5em;z-index:1;flex:none;width:18px;background:var(--bgColor-default);color:var(--fgColor-muted);text-align:center;user-select:none}.jsonview .jf:not(:empty){cursor:pointer}.jsonview .jf:not(:empty):hover{color:var(--zone,var(--fgColor-default))}.jsonview .jt{padding-right:8px}.jsonview .jl.err,.jsonview .jl.err .jf{background:var(--bgColor-danger-muted)}.jsonview .jdots{margin:0 2px;padding:0 4px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-small,3px);background:var(--bgColor-muted);color:var(--fgColor-muted);cursor:pointer}#UtilDiffPrev,#UtilDiffNext,#UtilSortUnfold,#UtilSortFold{width:28px;padding:0}#UtilTimeInput{display:flex;flex-wrap:wrap;align-items:center;gap:10px 8px;margin-top:0}#UtilTimeInput .filter{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;margin-top:0}#UtilTimeInput label{flex-wrap:nowrap}#UtilNowRow{margin-left:auto}#UtilUnix{flex:none}#UtilNowRow label{min-height:28px}#UtilNow{font-variant-numeric:tabular-nums}.utilsplit{display:grid;grid-template-columns:minmax(0,var(--splitWidth,1fr)) 14px minmax(0,1fr);align-items:start;margin-top:16px}.utilsplit>.vsplitter{align-self:stretch}.utilsplit>.panel{margin-top:0;min-width:0;padding:0;overflow:hidden}.utilsplit>.panel>.resulthead:first-child{margin:0}.utilsplit .resulthead{min-height:28px}.utilsplit .scroll{min-height:200px}.utilsplit .diffedit{position:relative;overflow:hidden;margin:0;border:0;border-radius:0}.utilsplit .diffedit>textarea,.utilsplit .diffback{position:absolute;inset:0 0 0 4.5em;box-sizing:border-box;width:100%;height:100%;margin:0;padding:4px 8px;border:0;border-radius:0;font:400 0.8125rem/1.5 var(--fontStack-monospace);white-space:pre;tab-size:4}.utilsplit .diffedit>textarea{resize:none;overflow:auto;background:transparent;color:var(--fgColor-default);box-shadow:none;outline:none}.utilsplit .diffback{overflow:hidden;padding-right:0;padding-bottom:48px;padding-left:0;color:transparent;pointer-events:none;user-select:none}.utilsplit .diffback>div{width:max-content;min-width:100%;min-height:1.5em;padding:0 8px}.utilsplit .diffback>div.chg{background:var(--bgColor-accent-muted)}.utilsplit .diffback>div.gap{background:var(--bgColor-neutral-muted)}.utilsplit .diffback>div.edit{background:var(--bgColor-success-muted)}.utilsplit .diffback mark{padding:0;background:var(--highlight-neutral-bgColor,#fff8c5);color:transparent}.utilsplit .diffback>.selbar{position:absolute;left:8px;width:1ch;height:1.5em;background:var(--bgColor-accent-emphasis)}.utilsplit .diffedit:not(:focus-within) .selbar{display:none}.utilsplit .diffedit>textarea::selection{background:var(--bgColor-accent-emphasis);color:var(--fgColor-onEmphasis)}.utilsplit .diffln>div{margin-right:-8px;padding-right:8px}.utilsplit .diffln>div{min-height:1.5em}.utilsplit .diffln>div.cur{background:var(--bgColor-accent-emphasis);color:var(--fgColor-onEmphasis)}.utilsplit .diffln>div.edit{background:var(--bgColor-success-emphasis);color:var(--fgColor-onEmphasis)}.utilsplit .diffln{position:absolute;top:0;bottom:0;left:0;box-sizing:border-box;width:4.5em;overflow:hidden;padding:4px 8px 48px 0;border-right:1px solid var(--borderColor-default);background:var(--bgColor-muted);color:var(--fgColor-muted);font:400 0.8125rem/1.5 var(--fontStack-monospace);white-space:pre;text-align:right;pointer-events:none;user-select:none}.utilsplit .diffedit.drop{box-shadow:inset 0 0 0 2px var(--zone,var(--bgColor-emphasis))}#UtilUnix{width:calc(10ch + 18px);font-variant-numeric:tabular-nums}#UtilTimeScroll{min-height:200px}#UtilTimeTable col:not(:last-child){width:1px}#UtilTimeTable th{white-space:nowrap}#UtilTimeTable tr.drag{opacity:.5}#UtilTimeTable tr.dropbefore td{box-shadow:inset 0 2px 0 var(--zone,var(--bgColor-emphasis))}#UtilTimeTable tr.dropafter td{box-shadow:inset 0 -2px 0 var(--zone,var(--bgColor-emphasis))}#UtilTimeTable tr.dropbefore>td:last-child{box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 2px 0 var(--zone,var(--bgColor-emphasis))}#UtilTimeTable tr.dropafter>td:last-child{box-shadow:inset 1px 0 0 var(--borderColor-default),inset 0 -2px 0 var(--zone,var(--bgColor-emphasis))}#ProcessTest{display:inline-flex;gap:4px}#ProcessStale{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:8px 16px;border:1px solid var(--borderColor-attention-muted);border-radius:var(--borderRadius-medium);background:var(--bgColor-attention-muted);font-size:0.875rem}#ProcessStale button{margin-left:auto}#ProcessSummary{margin-bottom:16px}#ProcessCards{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto}#ProcessSearch{width:240px}#ProcessPanel button.card{display:block;flex:1 1 0;min-width:150px;height:auto;padding:8px 12px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:var(--bgColor-default);box-shadow:none;color:var(--fgColor-default);font:400 0.875rem/1.5 var(--fontStack-sansSerif);text-align:left;white-space:normal}#ProcessPanel button.card:hover:not(:disabled),#ProcessPanel button.card:active:not(:disabled){border-color:var(--zone,var(--borderColor-emphasis));background:var(--bgColor-default)}#ProcessPanel .card>span{display:block}#ProcessPanel .card .c-name{margin-bottom:4px;font-weight:600}#ProcessPanel .c-num{font-size:1.25rem;font-weight:600}#ProcessPanel .c-num small{color:var(--fgColor-muted);font-size:0.75rem;font-weight:400}#ProcessPanel .card .c-tags{display:flex;flex-wrap:wrap;gap:4px;min-height:20px;margin-top:4px}
 		#ProcessPanel .tag{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-full);background:var(--bgColor-default);font-size:0.75rem;font-weight:500;line-height:1;white-space:nowrap}#ProcessPanel .tag.fail{border-color:var(--borderColor-danger-emphasis);color:var(--fgColor-danger)}#ProcessPanel .tag.warn{border-color:var(--borderColor-attention-emphasis);color:var(--fgColor-attention)}#ProcessPanel .tag.run{border-color:var(--borderColor-success-emphasis);color:var(--fgColor-success)}#ProcessPanel .tag.start{border-color:var(--borderColor-accent-emphasis);color:var(--fgColor-accent)}#ProcessPanel .tag.off{color:var(--fgColor-muted)}#ProcessPanel .spin{display:inline-block;width:10px;height:10px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:ProcessSpin .7s linear infinite}@keyframes ProcessSpin{to{transform:rotate(360deg)}}#ProcessPanel .chips{display:flex;flex-wrap:wrap;gap:4px}#ProcessPanel button.chip .n{display:inline-block;min-width:20px;padding:0 6px;border:1px solid transparent;border-radius:var(--borderRadius-full);background:var(--buttonCounter-default-bgColor-rest);color:var(--fgColor-default);font-size:0.75rem;font-weight:500;line-height:18px;text-align:center}#ProcessPanel button.chip.cur .n{background:color-mix(in srgb,var(--zone,var(--bgColor-emphasis)) 70%,#000);color:inherit}
-		#ProcessTables .scroll{margin-top:0}#ProcessTables .scroll>table{min-width:860px;border-bottom-style:hidden}#ProcessTables td{height:22px;padding-top:0;padding-bottom:0;vertical-align:middle;text-overflow:ellipsis}#ProcessTables tr.sec-row td{height:26px}#ProcessTables .sec-block{margin-bottom:50px}#ProcessTables .sec-block:last-child{margin-bottom:0}#ProcessTables .sec-block.tier-gap{margin-top:150px}#ProcessTables .c-btn{width:80px;padding-right:4px}#ProcessTables .c-state{width:110px;text-align:center}#ProcessTables .c-machine{width:130px}#ProcessTables .c-pid{width:64px}#ProcessTables .c-commit{width:96px}#ProcessTables .c-act{width:72px;text-align:right;white-space:nowrap}#ProcessTables button.th-help{height:auto;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit}#ProcessTables button.th-help:hover:not(:disabled),#ProcessTables button.th-help:active:not(:disabled){background:none;color:var(--fgColor-accent)}#ProcessPanel .empty{padding:40px;color:var(--fgColor-muted);text-align:center;white-space:normal}
+		#ProcessTables .scroll{margin-top:0}#ProcessTables .scroll>table{min-width:860px;border-bottom-style:hidden}#ProcessTables td{height:22px;padding-top:0;padding-bottom:0;vertical-align:middle;text-overflow:ellipsis}#ProcessTables tr.sec-row td{height:26px}#ProcessTables .sec-block{margin-bottom:50px}#ProcessTables .sec-block:last-child{margin-bottom:0}#ProcessTables .c-btn{width:80px;padding-right:4px}#ProcessTables .c-state{width:110px;text-align:center}#ProcessTables .c-machine{width:130px}#ProcessTables .c-pid{width:64px}#ProcessTables .c-commit{width:96px}#ProcessTables .c-act{width:72px;text-align:right;white-space:nowrap}#ProcessTables button.th-help{height:auto;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit}#ProcessTables button.th-help:hover:not(:disabled),#ProcessTables button.th-help:active:not(:disabled){background:none;color:var(--fgColor-accent)}#ProcessPanel .empty{padding:40px;color:var(--fgColor-muted);text-align:center;white-space:normal}
 		#ProcessTables .row-head{display:flex;align-items:center;gap:10px}#ProcessTables .row-head .acts{display:flex;align-items:center;gap:4px;margin-left:auto}#ProcessTables .chev{display:inline-block;transition:transform .12s}#ProcessTables .open>td .chev{transform:rotate(90deg)}#ProcessTables .sec-name{font-size:0.875rem;font-weight:600}#ProcessTables .grp-name{font-weight:600}#ProcessTables tr.sec-row td{border-bottom-color:var(--l1-line);background:var(--l1-bg);color:var(--fgColor-default);cursor:pointer}#ProcessTables tr.sec-row:hover td{background:var(--l1-hover)}#ProcessTables tr.sec-row.gray{--l1-bg:color-mix(in srgb,var(--bgColor-neutral-emphasis) 80%,#fff);--l1-hover:color-mix(in srgb,var(--l1-bg) 90%,#000);--l1-line:color-mix(in srgb,var(--l1-bg) 80%,#000)}#ProcessTables tr.sec-row.gray td,#ProcessTables tr.sec-row.gray .muted,#ProcessTables tr.sec-row.gray .chev,#ProcessTables tr.sec-row.gray button.kebab{color:var(--fgColor-onEmphasis)}#ProcessTables tr.grp-row td{background:var(--bgColor-neutral-muted);color:var(--fgColor-default);cursor:pointer}#ProcessTables tr.grp-row:hover td{background:linear-gradient(var(--control-transparent-bgColor-hover),var(--control-transparent-bgColor-hover)) var(--bgColor-neutral-muted)}
 		#ProcessTables tr.grp-row .pair{margin-left:14px}#ProcessTables tr.srv-row td.c-btn .pair{margin-left:28px}#ProcessTables tr.sec-row .muted,#ProcessTables tr.sec-row .chev,#ProcessTables tr.sec-row button.kebab,#ProcessTables tr.grp-row button.kebab{color:var(--fgColor-default)}#ProcessTables tr.grp-row .muted,#ProcessTables tr.grp-row .chev{color:var(--fgColor-muted)}#ProcessTables tr.sec-row .pbtn:not(.lit):not(.part):not(.pend):not(.fail),#ProcessTables tr.grp-row .pbtn:not(.lit):not(.part):not(.pend):not(.fail){border-color:var(--borderColor-translucent);background:var(--button-default-bgColor-rest);color:var(--fgColor-default)}#ProcessTables tr.sec-row .pbtn.on.part,#ProcessTables tr.grp-row .pbtn.on.part{background:linear-gradient(var(--bgColor-attention-muted),var(--bgColor-attention-muted)) var(--bgColor-default);color:var(--fgColor-attention)}#ProcessTables tr.srv-row.active td{box-shadow:inset 3px 0 0 var(--borderColor-accent-emphasis)}#ProcessTables tr.srv-row td.c-name{padding-left:34px;font-weight:500}#ProcessTables tr.srv-row.failed td.c-name{color:var(--fgColor-danger)}#ProcessTables tr.flash td{animation:ProcessFlash 1.6s ease-out}@keyframes ProcessFlash{from{background:var(--bgColor-accent-muted)}}
 		#ProcessPanel button.kebab{width:22px;height:18px;padding:0;border-color:transparent;background:transparent;box-shadow:none;color:var(--fgColor-muted)}#ProcessPanel button.kebab:hover:not(:disabled),#ProcessPanel button.kebab:active:not(:disabled){background:var(--control-transparent-bgColor-hover)}:is(#ProcessPanel,#HelpTable) .pair{display:inline-flex;flex:none;gap:4px}:is(#ProcessPanel,#HelpTable) .pbtn{display:inline-flex;align-items:center;justify-content:center;gap:0;width:18px;height:18px;padding:0;border:1px solid var(--button-default-borderColor-rest);border-radius:var(--borderRadius-medium);background:var(--button-default-bgColor-rest);box-shadow:none;color:var(--fgColor-default);font-size:0.75rem;font-weight:600;line-height:1;vertical-align:middle;cursor:pointer}:is(#ProcessPanel,#HelpTable) .pbtn:hover:not(.lit):not(:disabled){background:var(--button-default-bgColor-hover)}:is(#ProcessPanel,#HelpTable) .pbtn.on,:is(#ProcessPanel,#HelpTable) .pbtn.off{border-color:var(--borderColor-emphasis)!important;font-size:0}:is(#ProcessPanel,#HelpTable) .pbtn.on::before{content:"";color:var(--fgColor-default);--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath transform='matrix(1.797 0 0 1.097 -5.78 -0.777)' d='m6.427 4.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 6 11.396V4.604a.25.25 0 0 1 .427-.177Z'/%3E%3C/svg%3E")}:is(#ProcessPanel,#HelpTable) .pbtn.off::before{content:"";color:var(--fgColor-default);--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5.75 4h4.5c.966 0 1.75.784 1.75 1.75v4.5A1.75 1.75 0 0 1 10.25 12h-4.5A1.75 1.75 0 0 1 4 10.25v-4.5C4 4.784 4.784 4 5.75 4Z'/%3E%3C/svg%3E")}
@@ -466,13 +466,97 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		#ProcessLogKey,#ProcessErrKey{flex:1;min-width:135px}#ProcessLogCount,#ProcessErrCount{margin-right:auto;font-size:0.75rem}#ProcessDialog table.log tbody tr{cursor:default}#ProcessDialog table.log th.c-time{width:170px}#ProcessDialog table.log th.c-level{width:70px}#ProcessDialog table.log th.c-type{width:84px}#ProcessDialog table.log td.t{color:var(--fgColor-muted);font-family:var(--fontStack-monospace);white-space:nowrap}#ProcessDialog table.log td.msg{word-break:break-all}#ProcessDialog .ltype{display:inline-flex;align-items:center;height:20px;padding:0 7px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-full);font-size:0.75rem;font-weight:500;line-height:1;white-space:nowrap}#ProcessDialog .ltype.action{border-color:var(--borderColor-accent-emphasis);color:var(--fgColor-accent)}#ProcessDialog .ltype.edit{border-color:var(--borderColor-attention-emphasis);color:var(--fgColor-attention)}#ProcessDialog .ltype.login{color:var(--fgColor-muted)}#ProcessDialog .ltype.system{border-color:var(--borderColor-done-emphasis);color:var(--fgColor-done)}#ProcessDialog .ltype.error{border-color:var(--borderColor-danger-emphasis);color:var(--fgColor-danger)}
 		#ProcessErrBody{padding:8px}#ProcessDialog .eg{margin-bottom:8px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-medium);background:var(--bgColor-default)}#ProcessDialog .eg:last-child{margin-bottom:0}#ProcessDialog .eg-head{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer}#ProcessDialog .eg-head:hover{background:var(--bgColor-muted)}#ProcessDialog .eg-head button{height:20px;padding:0 8px}#ProcessDialog .eg-head .lv{display:inline-flex;align-items:center;height:20px;padding:0 7px;border:1px solid var(--borderColor-default);border-radius:var(--borderRadius-full);font-size:0.75rem;font-weight:500;line-height:1}#ProcessDialog .lv.ERROR{border-color:var(--borderColor-danger-emphasis);color:var(--fgColor-danger)}#ProcessDialog .lv.FATAL{border-color:transparent;background:var(--bgColor-danger-emphasis);color:var(--fgColor-onEmphasis)}#ProcessDialog .lv.WARN{border-color:var(--borderColor-attention-emphasis);color:var(--fgColor-attention)}#ProcessDialog .eg-title{flex:1;min-width:0}#ProcessDialog .eg-title b{display:block}#ProcessDialog .eg-title .mono{color:var(--fgColor-muted);font-size:0.75rem;word-break:break-all}#ProcessDialog .eg-meta{color:var(--fgColor-muted);font-size:0.75rem;text-align:right;white-space:nowrap}#ProcessDialog .eg-count{color:var(--fgColor-default);font-size:0.875rem;font-weight:600}#ProcessDialog .eg-raw{display:none;max-height:220px;overflow:auto;padding:8px 12px;border-top:1px solid var(--borderColor-default);border-radius:0 0 var(--borderRadius-medium) var(--borderRadius-medium);background:var(--bgColor-muted);font-family:var(--fontStack-monospace);font-size:0.75rem;white-space:pre-wrap;word-break:break-all}#ProcessDialog .eg.open .eg-raw{display:block}
 		#ProcessToasts{position:fixed;inset:auto;top:60px;right:20px;z-index:70;display:flex;flex-direction:column;gap:8px;width:auto;height:auto;margin:0;padding:0;overflow:visible;border:0;background:transparent;color:var(--fgColor-default)}#ProcessToasts .toast{min-width:260px;max-width:400px;padding:12px 16px;border-left:4px solid var(--borderColor-accent-emphasis);border-radius:var(--borderRadius-medium);background:var(--overlay-bgColor);box-shadow:var(--shadow-floating-small);font-size:0.875rem;white-space:pre-line;animation:ProcessToastIn .2s ease-out}#ProcessToasts .toast.ok{border-left-color:var(--borderColor-success-emphasis)}#ProcessToasts .toast.fail{border-left-color:var(--borderColor-danger-emphasis)}#ProcessToasts .toast.warn{border-left-color:var(--borderColor-severe-emphasis)}@keyframes ProcessToastIn{from{opacity:0;transform:translateY(-6px)}}
+		/* 공통: 실행 ↵·중단 □·찾기 (폴더)·저장 (다운) 아이콘 (실행·중단: 존 색, 찾기·저장: 트리 폴더 색 (저장 꺼짐: 회색), 글자 있음: 글자만), 시·분·초 직접 입력 (InitHourInput) */button.enterbtn:empty,button.stopbtn:empty{width:28px;min-width:28px;padding:0}button.enterbtn:empty::before,button.stopbtn:empty::before{content:"";display:inline-block;flex:none;width:16px;height:16px;vertical-align:middle;background:currentColor;-webkit-mask:var(--icon) center/16px no-repeat;mask:var(--icon) center/16px no-repeat}button.enterbtn{--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 3v5a2 2 0 0 1-2 2H3'/%3E%3Cpath d='M6 7 3 10l3 3'/%3E%3C/svg%3E")}button.stopbtn{--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5'%3E%3Crect x='3.5' y='3.5' width='9' height='9' rx='1.5'/%3E%3C/svg%3E")}.hourwrap{position:relative;display:inline-flex}.hourwrap>input.hourtext{position:absolute;top:2px;bottom:2px;left:2px;width:calc(100% - 26px);height:auto;min-width:0;padding:0 0 0 7px;border:0;border-radius:var(--borderRadius-medium) 0 0 var(--borderRadius-medium);background:var(--bgColor-default);box-shadow:none;color:var(--fgColor-default);font:inherit;font-size:0.75rem}.hourwrap>input.hourtext:focus{border:0;box-shadow:none;outline:none}.hourwrap:focus-within>select{border-color:var(--focus-outlineColor);box-shadow:inset 0 0 0 1px var(--focus-outlineColor)}button.openbtn:empty{width:28px;min-width:28px;padding:0}button.openbtn:empty::before{content:"";display:inline-block;flex:none;width:16px;height:16px;vertical-align:middle;background:var(--treeViewItem-leadingVisual-iconColor-rest,#54aeff);-webkit-mask:var(--icon) center/16px no-repeat;mask:var(--icon) center/16px no-repeat}button.openbtn{--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z'/%3E%3C/svg%3E")}button.savebtn:empty{width:28px;min-width:28px;padding:0}button.savebtn:empty::before{content:"";display:inline-block;flex:none;width:16px;height:16px;vertical-align:middle;background:var(--treeViewItem-leadingVisual-iconColor-rest,#54aeff);-webkit-mask:var(--icon) center/16px no-repeat;mask:var(--icon) center/16px no-repeat}button.savebtn:disabled:empty::before{background:currentColor}button.savebtn{--icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z'/%3E%3Cpath d='M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06l1.97 1.969Z'/%3E%3C/svg%3E")}
+		/* 공통: 끌기 줄 (draggable) 칸 글자도 고를 수 있게 (더블 클릭 칸 선택·Ctrl+C, 끌기: 그대로) */tr[draggable="true"] td{-webkit-user-select:text;user-select:text}
 		</style>
 		</head>
 		<body data-mode="__MODE__" data-ui="__UI__">
-		<h1 style="color:__ZONE_COLOR__"><button type="button" id="TabRefresh" class="iconbtn" title="새로 고침(지금 탭 리셋, F5)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button><span id="TitleText">__TITLE__</span><span id="OffText" hidden></span><span id="TabBar"><button type="button" id="QueryButton" class="cur">쿼리</button><button type="button" id="LogButton">서치</button><button type="button" id="FileButton">파일</button><button type="button" id="DumpButton">덤프</button><button type="button" id="ManagerButton" data-zone="__MANAGER_ZONE__" data-zonecolor="__MANAGER_ZONE_COLOR__">운영</button><button type="button" id="ProcessButton">반영</button><button type="button" id="AccountButton" title="계정 (목록·로그아웃)">계정</button><button type="button" id="HelpButton" title="단축키">힌트</button></span></h1>
+		<h1 style="color:__ZONE_COLOR__"><button type="button" id="TabRefresh" class="iconbtn" title="새로 고침(지금 탭 리셋, F5)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button><span id="TitleText">__TITLE__</span><span id="OffText" hidden></span><span id="TabBar"><button type="button" id="UtilButton" class="cur">유틸</button><button type="button" id="QueryButton">쿼리</button><button type="button" id="LogButton">서치</button><button type="button" id="FileButton">파일</button><button type="button" id="DumpButton">덤프</button><button type="button" id="ManagerButton" data-zone="__MANAGER_ZONE__" data-zonecolor="__MANAGER_ZONE_COLOR__">운영</button><button type="button" id="ProcessButton">반영</button><button type="button" id="AccountButton" title="계정 (목록·로그아웃)">계정</button><button type="button" id="HelpButton" title="단축키">힌트</button></span></h1>
+		<section id="UtilPanel" hidden>
+		<section class="panel" id="UtilTabPanel">
+		<div class="pager" id="UtilTabs">
+		<button type="button" class="cur" data-util="time" title="시간">타임</button>
+		<button type="button" data-util="diff" title="비교">디프</button>
+		<button type="button" data-util="sort" title="정렬">소트</button>
+		</div>
+		<div class="utilbox" id="UtilTimeInput" data-util="time">
+		<div class="filter" id="UtilNowRow">
+		<label title="현재 시간(KST, 1초마다)"><span class="rangeop">Time</span><span id="UtilNow"></span></label>
+		</div>
+		<div class="filter" id="UtilKstRow">
+		<button type="button" id="UtilNowFill" class="iconbtn" title="새로 고침(KST, Unix 현재 시간)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button>
+		<label title="KST 시간(날짜, 시, 분, 초, 처음: 현재 시간, Enter: 변환)"><span class="rangeop">KST</span><input type="date" id="UtilDate" min="1970-01-01" max="2286-11-20"><select id="UtilHour" class="hour"></select><select id="UtilMinute" class="hour"></select><select id="UtilSecond" class="hour"></select></label>
+		</div>
+		<div class="filter" id="UtilUnixRow">
+		<label title="UnixTime(초, 숫자 10자리, 처음: 현재 시간)"><span class="rangeop">Unix</span><input type="text" id="UtilUnix" inputmode="numeric" maxlength="10" autocomplete="off" spellcheck="false"></label>
+		<button type="button" id="UtilUnixRun" class="primary enterbtn" title="UnixTime 변환(Enter)" aria-label="실행"></button>
+		</div>
+		</div>
+		<div class="utilbox" id="UtilDiffTool" data-util="diff" hidden>
+		<div class="title" id="UtilDiffInfo"></div>
+		<div class="toolright">
+		<span class="btngroup"><button type="button" id="UtilDiffRunPrev" title="네비게이션: 뒤로(이전 실행, 최대 10회)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="UtilDiffRunDepth" tabindex="-1" title="네비게이션: 실행 입력(0: 마지막, 과거: -1…)" aria-label="실행">0</button><button type="button" id="UtilDiffRunNext" title="네비게이션: 앞으로(다음 실행)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
+		<button type="button" id="UtilDiffPrev" title="이전 차이(Alt+↑)" aria-label="이전 차이" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.22 10.53a.749.749 0 0 1 0-1.06l4.25-4.25a.749.749 0 0 1 1.06 0l4.25 4.25a.749.749 0 1 1-1.06 1.06L8 6.811 4.28 10.53a.749.749 0 0 1-1.06 0Z"/></svg></button>
+		<button type="button" id="UtilDiffNext" title="다음 차이(Alt+↓)" aria-label="다음 차이" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button>
+		<button type="button" id="UtilDiffRun" class="primary enterbtn" title="비교 실행(좌·우 문서)" aria-label="실행"></button>
+		</div>
+		</div>
+		<div class="utilbox" id="UtilSortTool" data-util="sort" hidden>
+		<div class="toolright">
+		<span class="btngroup"><button type="button" id="UtilSortRunPrev" title="네비게이션: 뒤로(이전 실행, 최대 10회)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="UtilSortRunDepth" tabindex="-1" title="네비게이션: 실행 입력(0: 마지막, 과거: -1…)" aria-label="실행">0</button><button type="button" id="UtilSortRunNext" title="네비게이션: 앞으로(다음 실행)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
+		<button type="button" id="UtilSortUnfold" title="펴기(모두 펼침)" aria-label="펴기" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.53 5.78L8.53 2.78A0.75 0.75 0 0 0 7.47 1.72L4.47 4.72A0.75 0.75 0 0 0 5.53 5.78Z"/><path d="M7.47 2.78L10.47 5.78A0.75 0.75 0 0 0 11.53 4.72L8.53 1.72A0.75 0.75 0 0 0 7.47 2.78Z"/><path d="M4.47 11.28L7.47 14.28A0.75 0.75 0 0 0 8.53 13.22L5.53 10.22A0.75 0.75 0 0 0 4.47 11.28Z"/><path d="M8.53 14.28L11.53 11.28A0.75 0.75 0 0 0 10.47 10.22L7.47 13.22A0.75 0.75 0 0 0 8.53 14.28Z"/><path d="M3.5 8.75L12.5 8.75A0.75 0.75 0 0 0 12.5 7.25L3.5 7.25A0.75 0.75 0 0 0 3.5 8.75Z"/></svg></button>
+		<button type="button" id="UtilSortFold" title="접기(최상위 빼고 모두 접음)" aria-label="접기" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.47 2.28L7.47 5.28A0.75 0.75 0 0 0 8.53 4.22L5.53 1.22A0.75 0.75 0 0 0 4.47 2.28Z"/><path d="M8.53 5.28L11.53 2.28A0.75 0.75 0 0 0 10.47 1.22L7.47 4.22A0.75 0.75 0 0 0 8.53 5.28Z"/><path d="M5.53 14.78L8.53 11.78A0.75 0.75 0 0 0 7.47 10.72L4.47 13.72A0.75 0.75 0 0 0 5.53 14.78Z"/><path d="M7.47 11.78L10.47 14.78A0.75 0.75 0 0 0 11.53 13.72L8.53 10.72A0.75 0.75 0 0 0 7.47 11.78Z"/><path d="M3.5 8.75L12.5 8.75A0.75 0.75 0 0 0 12.5 7.25L3.5 7.25A0.75 0.75 0 0 0 3.5 8.75Z"/></svg></button>
+		<button type="button" id="UtilSortRun" class="primary enterbtn" title="펼치기 실행(JSON → 비주얼 스튜디오 기본 형식)" aria-label="실행"></button>
+		</div>
+		</div>
+		</section>
+		<div class="utilbox" data-util="time">
+		<section class="panel" id="UtilTimeResult">
+		<div class="resulthead">
+		<div class="title" id="UtilTimeTitle"></div>
+		</div>
+		<div class="scroll" id="UtilTimeScroll">
+		<table id="UtilTimeTable">
+		<colgroup><col><col><col><col><col><col><col></colgroup>
+		<thead><tr><th>No.</th><th>KST</th><th>Unix</th><th>ISO 8601</th><th>UTC</th><th title="요일(KST)">Day</th><th title="삭제">Ac.</th></tr></thead>
+		<tbody id="UtilTimeBody"></tbody>
+		</table>
+		</div>
+		</section>
+		</div>
+		<div class="utilbox" data-util="diff" hidden>
+		<div class="utilsplit" id="UtilDiffSplit">
+		<section class="panel" id="UtilDiffLeft">
+		<div class="resulthead"><div class="title" id="UtilDiffLeftTitle"></div><div class="toolright"><button type="button" id="UtilDiffLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffLeftSave" class="savebtn" title="저장(연 파일: 덮어쓰기, 파일 없음: 저장할 폴더·이름 고름 → 다시 비교)" aria-label="저장" disabled></button></div></div>
+		<input type="file" id="UtilDiffLeftFile" hidden>
+		<div class="scroll diffedit" id="UtilDiffLeftBody"><div class="diffln" id="UtilDiffLeftLn"></div><div class="diffback" id="UtilDiffLeftBack"></div><textarea id="UtilDiffLeftText" spellcheck="false" wrap="off" autocomplete="off" aria-label="좌 문서"></textarea></div>
+		</section>
+		<div class="vsplitter" id="UtilDiffSplitter" title="좌우 폭 조절"></div>
+		<section class="panel" id="UtilDiffRight">
+		<div class="resulthead"><div class="title" id="UtilDiffRightTitle"></div><div class="toolright"><button type="button" id="UtilDiffRightOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilDiffRightSave" class="savebtn" title="저장(연 파일: 덮어쓰기, 파일 없음: 저장할 폴더·이름 고름 → 다시 비교)" aria-label="저장" disabled></button></div></div>
+		<input type="file" id="UtilDiffRightFile" hidden>
+		<div class="scroll diffedit" id="UtilDiffRightBody"><div class="diffln" id="UtilDiffRightLn"></div><div class="diffback" id="UtilDiffRightBack"></div><textarea id="UtilDiffRightText" spellcheck="false" wrap="off" autocomplete="off" aria-label="우 문서"></textarea></div>
+		</section>
+		</div>
+		</div>
+		<div class="utilbox" data-util="sort" hidden>
+		<div class="utilsplit" id="UtilSortSplit">
+		<section class="panel" id="UtilSortLeft">
+		<div class="resulthead"><div class="title" id="UtilSortLeftTitle"></div><div class="toolright"><button type="button" id="UtilSortLeftOpen" class="openbtn" title="파일 찾기" aria-label="찾기"></button><button type="button" id="UtilSortLeftSave" class="savebtn" title="저장(연 파일: 덮어쓰기, 파일 없음: 저장할 폴더·이름 고름)" aria-label="저장" disabled></button></div></div>
+		<input type="file" id="UtilSortLeftFile" hidden>
+		<div class="scroll diffedit" id="UtilSortLeftBody"><div class="diffln" id="UtilSortLeftLn"></div><div class="diffback" id="UtilSortLeftBack"></div><textarea id="UtilSortLeftText" spellcheck="false" wrap="off" autocomplete="off" aria-label="JSON 입력"></textarea></div>
+		</section>
+		<div class="vsplitter" id="UtilSortSplitter" title="좌우 폭 조절"></div>
+		<section class="panel" id="UtilSortRight">
+		<div class="resulthead"><div class="title" id="UtilSortRightTitle"></div></div>
+		<div class="scroll jsonview" id="UtilSortRightBody"></div>
+		</section>
+		</div>
+		</div>
+		</section>
 		<section class="panel" id="FilterPanel">
 		<div class="filter">
-		<button type="button" id="ResetButton" title="이전 실행(최대 10회)" aria-label="이전 실행" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2.75 1h10.5a.75.75 0 0 1 0 1.5h-.75v1.25a4.75 4.75 0 0 1-1.9 3.8l-.333.25a.25.25 0 0 0 0 .4l.333.25a4.75 4.75 0 0 1 1.9 3.8v1.25h.75a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5h.75v-1.25a4.75 4.75 0 0 1 1.9-3.8l.333-.25a.25.25 0 0 0 0-.4L5.4 7.55a4.75 4.75 0 0 1-1.9-3.8V2.5h-.75a.75.75 0 0 1 0-1.5ZM11 2.5H5v1.25c0 1.023.482 1.986 1.3 2.6l.333.25c.934.7.934 2.1 0 2.8l-.333.25a3.251 3.251 0 0 0-1.3 2.6v1.25h6v-1.25a3.251 3.251 0 0 0-1.3-2.6l-.333-.25a1.748 1.748 0 0 1 0-2.8l.333-.25a3.251 3.251 0 0 0 1.3-2.6Z"/></svg></button>
+		<span class="btngroup" id="RunNavi"><button type="button" id="RunPrev" title="네비게이션: 뒤로(이전 실행, 최대 10회)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button><button type="button" id="RunDepth" tabindex="-1" title="네비게이션: 실행 입력(0: 마지막, 과거: -1…)" aria-label="실행">0</button><button type="button" id="RunNext" title="네비게이션: 앞으로(다음 실행)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button></span>
 		<span class="pickwrap" title="Machine"><span id="MachinePick"><button type="button" id="MachineBox" title="대상 머신(전체, 체크)" aria-haspopup="true" aria-expanded="false">전체</button><div id="MachineMenu" hidden><label class="all"><input type="checkbox" id="MachineAll" checked><span>전체</span></label><div id="MachineList"></div></div></span></span>
 		<label title="Duration(최근 기간)"><select id="QueryRange"><option value="" hidden>기타</option><option value="10">10분</option><option value="30">30분</option><option value="60" selected>60분</option><option value="180">3시간</option><option value="360">6시간</option><option value="540">9시간</option><option value="1440">1일</option><option value="4320">3일</option><option value="10080">7일</option><option value="21600">15일</option><option value="43200">30일</option><option value="86400">60일</option></select></label>
 		<label title="Start(날짜, 시, 분, 초, 포함, 쿼리: E 기준 최대 3년)"><input type="date" id="StartDate" value="__YESTERDAY__"><select id="StartHour" class="hour"></select><select id="StartMinute" class="hour"></select><select id="StartSecond" class="hour"></select><span class="rangeop">이상</span></label>
@@ -481,10 +565,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="searchbox" id="SearchBox">
 		<input type="text" id="SearchKey" class="searchonly" title="검색어(AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
 		<input type="text" id="QueryKey" class="queryonly" title="쿼리(단어, 필드:값, AND, OR, NOT, 괄호)" autocomplete="off" spellcheck="false" autocapitalize="off">
-		<button type="button" id="SearchButton" class="primary searchonly" title="서치 실행(Enter)">실행</button>
-		<button type="button" id="QueryRunButton" class="primary queryonly" title="쿼리 실행(Enter)">실행</button>
-		<button type="button" id="QueryStopButton" class="danger queryonly" title="쿼리 중단" disabled>중단</button>
-		<button type="button" id="StopButton" class="danger searchonly" title="검색 중단" disabled>중단</button>
+		<button type="button" id="SearchButton" class="primary searchonly enterbtn" title="서치 실행(Enter)" aria-label="실행"></button>
+		<button type="button" id="QueryRunButton" class="primary queryonly enterbtn" title="쿼리 실행(Enter)" aria-label="실행"></button>
+		<button type="button" id="QueryStopButton" class="primary queryonly stopbtn" title="쿼리 중단" disabled aria-label="중단"></button>
+		<button type="button" id="StopButton" class="primary searchonly stopbtn" title="검색 중단" disabled aria-label="중단"></button>
 		</div>
 		</div>
 		</section>
@@ -495,9 +579,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="title" id="QueryTitle"></div>
 		<div class="toolright">
 		<div class="btngroup">
-		<button type="button" id="QueryPrev" title="뒤로(이전 단계)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/></svg></button>
+		<button type="button" id="QueryPrev" title="뒤로(이전 단계)" aria-label="뒤로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.89 14.12A5.75 5.75 0 1 0 4.52 3.59L5.27 4.88A4.25 4.25 0 1 1 8.5 12.67Z"/><path d="M4.52 3.59L3.23 4.34A0.75 0.75 0 0 0 3.98 5.63L5.27 4.88A0.75 0.75 0 0 0 4.52 3.59Z"/><path d="M8.5 12.67L6.57 13.19A0.75 0.75 0 0 0 6.96 14.64L8.89 14.12A0.75 0.75 0 0 0 8.5 12.67Z"/><path d="M4.32 5.18L5.1 2.28A0.75 0.75 0 0 0 3.65 1.89L2.88 4.79A0.75 0.75 0 0 0 4.32 5.18Z"/><path d="M3.41 5.71L6.3 6.49A0.75 0.75 0 0 0 6.69 5.04L3.79 4.26A0.75 0.75 0 0 0 3.41 5.71Z"/></svg></button>
 		<button type="button" id="QueryDepth" tabindex="-1" title="단계 입력" aria-label="단계">0</button>
-		<button type="button" id="QueryNext" title="앞으로(다음 단계)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/></svg></button>
+		<button type="button" id="QueryNext" title="앞으로(다음 단계)" aria-label="앞으로" disabled><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><g transform="matrix(-1 0 0 1 16 0)"><path d="M8.89 14.12A5.75 5.75 0 1 0 4.52 3.59L5.27 4.88A4.25 4.25 0 1 1 8.5 12.67Z"/><path d="M4.52 3.59L3.23 4.34A0.75 0.75 0 0 0 3.98 5.63L5.27 4.88A0.75 0.75 0 0 0 4.52 3.59Z"/><path d="M8.5 12.67L6.57 13.19A0.75 0.75 0 0 0 6.96 14.64L8.89 14.12A0.75 0.75 0 0 0 8.5 12.67Z"/><path d="M4.32 5.18L5.1 2.28A0.75 0.75 0 0 0 3.65 1.89L2.88 4.79A0.75 0.75 0 0 0 4.32 5.18Z"/><path d="M3.41 5.71L6.3 6.49A0.75 0.75 0 0 0 6.69 5.04L3.79 4.26A0.75 0.75 0 0 0 3.41 5.71Z"/></g></svg></button>
 		</div>
 		</div>
 		</div>
@@ -586,9 +670,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		<div class="progress" id="DumpProgress" hidden></div>
 		</section>
-		<section class="panel" id="FilePanel" hidden>
+		<section id="FilePanel" hidden>
+		<div class="filesplit">
+		<section class="panel" id="FileTreePanel">
+		<div class="resulthead"><div class="title" id="FileTitle"></div></div>
+		<div class="scroll" id="FileScroll"><ul class="tree" id="FileTree"></ul></div>
+		</section>
+		<div class="vsplitter" id="FileSplitter" title="좌우 폭 조절"></div>
+		<section class="panel" id="FileViewPanel">
 		<div class="resulthead">
-		<div class="title" id="FileTitle"></div>
 		<div class="title" id="FileViewTitle">*.log·*.txt·*.json·*.ini·*.bat·*.xml·*.config·*.md·*.lua</div>
 		<div class="toolright">
 		<div class="btngroup">
@@ -598,12 +688,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		</div>
 		</div>
-		<div class="filesplit">
-		<div class="scroll" id="FileScroll"><ul class="tree" id="FileTree"></ul></div>
-		<div class="vsplitter" id="FileSplitter" title="좌우 폭 조절"></div>
-		<div class="fileview">
 		<div class="scroll" id="FileViewScroll"><pre id="FileViewBody"></pre></div>
-		</div>
+		</section>
 		</div>
 		</section>
 		<section id="ManagerPanel" hidden>
@@ -638,7 +724,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</section>
 		<div class="vsplitter" id="ManagerSplitter" title="좌우 폭 조절"></div>
 		<section class="panel" id="ManagerSidePanel">
-		<nav id="ManagerSideTab"><button type="button" id="ManagerCcuButton" class="cur">동접</button><button type="button" id="ManagerChartButton">차트</button><button type="button" id="ManagerCcuRefresh" class="iconbtn" title="새로 고침(동접 조회)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button><button type="button" id="ManagerMonitorButton">모니터</button></nav>
+		<nav id="ManagerSideTab"><button type="button" id="ManagerCcuButton" class="cur">동접</button><button type="button" id="ManagerChartButton">차트</button><button type="button" id="ManagerMonitorButton">모니터</button><button type="button" id="ManagerCcuRefresh" class="iconbtn" title="새로 고침(동접 조회)" aria-label="새로 고침"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"/></svg></button></nav>
 		<div id="ManagerCcuPanel">
 		<div class="resulthead">
 		<div class="title">Peak Concurrent Users</div>
@@ -694,10 +780,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		</div>
 		<section class="panel" id="ProcessListPanel">
 		<div class="resulthead">
-		<div class="title">서버 목록</div>
-		<span id="ProcessVersion" title="설정 버전(Data\Server.txt)"></span>
+		<div class="pager" id="ProcessPager" hidden></div>
 		<div class="toolright">
 		<span id="ProcessTest" hidden><button type="button" id="ProcessTestOn" class="needs-conn" title="모든 서버 바로 On,True(테스트)">TestOn</button><button type="button" id="ProcessTestOff" class="needs-conn" title="모든 서버 바로 Off,True,0(테스트)">TestOff</button></span>
+		<span id="ProcessVersion" title="설정 버전(Data\Server.txt)"></span>
 		<button type="button" id="ProcessSummaryButton" title="현황·필터">현황</button>
 		<button type="button" id="ProcessLogButton" title="작업 로그">로그</button>
 		<button type="button" id="ProcessErrButton" title="에러 로그(Redis)">에러</button>
@@ -1262,6 +1348,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const	kFilePrev				= document.getElementById("FilePrev");																												// 파일 보기 포지션 « (위로, 위에 쌓임)
 		const	kFileShift				= document.getElementById("FileShift");																												// 파일 보기 포지션 (0: 파일 맨 아래)
 		const	kFileNext				= document.getElementById("FileNext");																												// 파일 보기 포지션 » (아래로)
+		const	kUtilButton				= document.getElementById("UtilButton");																											// 유틸 탭 버튼
+		const	kUtilPanel				= document.getElementById("UtilPanel");																												// 유틸 창: 1번 하위 탭 타임·디프·소트 + 타임 입력, 타임 2번 결과
 		const	kQueryButton			= document.getElementById("QueryButton");																											// 쿼리 탭 버튼
 		const	kHelpDialog				= document.getElementById("HelpDialog");																											// 힌트 팝업
 		const	kAccountDialog			= document.getElementById("AccountDialog");																											// 계정 팝업
@@ -1298,7 +1386,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		const	OPEN_STATE_INPUT		= ["QueryRange", "StartDate", "StartHour", "StartMinute", "StartSecond", "EndDate", "EndHour", "EndMinute", "EndSecond", "SearchKey", "QueryKey"];	// 새 창에 넘길 입력칸
 		let		sOpenMode				= "";																																				// OpenWindow 방식 ("": 크기 지정 새 창, browser: 같은 크기·자리 새 창 (Ctrl), tab: 새 탭 (Alt))
 		const	OPEN_TITLE				= ".panel .resulthead, #ViewPanel > .filter";																										// Ctrl·Alt+클릭 하위 창 제목란
-		let		kSelectTable			= null;																																				// 마지막 누른 표 (Ctrl+A 대상, 없음: 맨 위 표)
+		let		kSelectTable			= null;																																				// 마지막 누른 표·문서·코드 보기 (Ctrl+A 대상, 없음: 맨 위 표)
 		const	SHIFT_QUERY_WORD		= "#QueryBody td.log, #QueryBody .querytext";																										// Shift+클릭 쿼리 단어 칸 (→ 서치)
 		let		bShiftClick				= false;																																			// Shift+누름 실행함: 뒤따르는 클릭 막음
 
@@ -2549,10 +2637,31 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    return "/view?" + new URLSearchParams({ sMachine: kTarget.dataset.machine, sPath: kTarget.dataset.path, nTarget: kTarget.dataset.line ?? "0", sKey: kTarget.dataset.key ?? "" });
 		}
 
+		function GetSubTab(sTab)	// 탭 안 하위 탭 (Ctrl·Alt+클릭 새 창: 보던 하위 탭 유지, 공통): 유틸 타임·디프·소트, 운영 동접·차트·모니터, 반영 페이지 (없음: "")
+		{
+		    if (sTab === "UtilButton")
+		    {
+		        return Util.sCur;
+		    }
+
+		    if (sTab === "ManagerButton")
+		    {
+		        return document.querySelector("#ManagerSideTab button.cur")?.id ?? "";
+		    }
+
+		    if (sTab === "ProcessButton")
+		    {
+		        return Process.sPage ?? "";
+		    }
+
+		    return "";
+		}
+
 		function GetStateUrl(kTarget)	// 지금 상태 첫 화면 주소 (탭·머신 체크·입력칸·쿼리 결과 + 누른 UI id → 새 창 RestoreState)
 		{
 		    const	kControl	= kTarget.matches("label") ? kTarget.control : kTarget;	// 라벨: 그 입력칸
-		    const	kParam		= new URLSearchParams({ sTab: document.querySelector("#TabBar button.cur")?.id ?? kQueryButton.id, sMachine: [...setMachineCheck].join(","), bQuery: Query.sQueryKey !== "" ? "1" : "0", sClick: kControl?.id ?? "" });
+		    const	sTab		= document.querySelector("#TabBar button.cur")?.id ?? kQueryButton.id;	// 보는 탭
+		    const	kParam		= new URLSearchParams({ sTab, sSub: GetSubTab(sTab), sMachine: [...setMachineCheck].join(","), bQuery: Query.sQueryKey !== "" ? "1" : "0", sClick: kControl?.id ?? "" });
 
 		    for (const sId of OPEN_STATE_INPUT)
 		    {
@@ -2573,7 +2682,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		            return null;
 		        }
 
-		        return structuredClone({ kOtherRange: kOpener.Query.kOtherRange, arrQueryHistory: kOpener.Query.arrHistory, arrQueryResult: kOpener.Query.arrHistory.map(kStep => kOpener.Query.mapStepResult?.get(kStep) ?? null), nQueryHistory: kOpener.Query.nHistory, arrSearchHistory: kOpener.Search.arrHistory, arrSearchResult: kOpener.Search.arrHistory.map(kStep => kOpener.Search.mapStepResult?.get(kStep) ?? null), nSearchHistory: kOpener.Search.nHistory });
+		        return structuredClone({ kOtherRange: kOpener.Query.kOtherRange, arrQueryHistory: kOpener.Query.arrHistory, arrQueryResult: kOpener.Query.arrHistory.map(kStep => kOpener.Query.mapStepResult?.get(kStep) ?? null), nQueryHistory: kOpener.Query.nHistory, arrSearchHistory: kOpener.Search.arrHistory, arrSearchResult: kOpener.Search.arrHistory.map(kStep => kOpener.Search.mapStepResult?.get(kStep) ?? null), nSearchHistory: kOpener.Search.nHistory, kUtil: kOpener.Util?.GetSnapshot() ?? null });
 		    }
 		    catch (kError)	// 연 창 접근 불가
 		    {
@@ -2620,9 +2729,25 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    ShowMachine();
 
+		    const	sSub	= kParam.get("sSub") ?? "";	// 보던 하위 탭 (공통 유지, 없음: 그 탭 기본)
+
+		    if (sTab === "UtilButton" && Util.kTabs.querySelector(`button[data-util="${CSS.escape(sSub)}"]`) != null)	// 유틸 하위 탭: 탭 열 때 그 하위 탭
+		    {
+		        Util.sCur = sSub;
+		    }
+		    else if (sTab === "ProcessButton" && sSub !== "")	// 반영 페이지: 목록 그릴 때 그 페이지 (없음: 첫 페이지)
+		    {
+		        Process.SetPage(sSub);
+		    }
+
 		    if (sTab !== kQueryButton.id && document.querySelector(`#TabBar #${CSS.escape(sTab)}:not([hidden])`) != null)	// 쿼리 외 보이는 탭 (쿼리: 처음부터 보는 탭, 숨은 탭: 계정 메뉴·aMenu 밖 → 안 엶)
 		    {
 		        document.getElementById(sTab).click();
+		    }
+
+		    if (sTab === "ManagerButton" && sSub !== "")	// 운영 하위 탭 (동접·차트·모니터): 탭 연 뒤 그 하위 탭
+		    {
+		        document.querySelector(`#ManagerSideTab #${CSS.escape(sSub)}`)?.click();
 		    }
 
 		    for (const sId of OPEN_STATE_INPUT)	// 탭 바꾼 뒤 (서치·쿼리 기간 따로 보관 → 바꿀 때 바뀜)
@@ -2634,6 +2759,11 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 
 		    const	kOpener	= GetOpenerState();	// 연 창 다른 탭 기간·← 단계 → (못 가져옴: null → 입력칸만)
+
+		    if (sTab === "UtilButton" && kOpener?.kUtil != null)	// 유틸: 연 창 스냅샷 그대로 (타임 입력·디프 글·비교·네비게이션)
+		    {
+		        Util.SetSnapshot(kOpener.kUtil);
+		    }
 
 		    if (kOpener != null)
 		    {
@@ -2911,6 +3041,10 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    {
 		        Process.ResetState();
 		    }
+		    else if (sTab === kUtilButton.id)	// 유틸: 하위 탭 타임
+		    {
+		        Util.ResetState();
+		    }
 		}
 
 		function OnTabRefresh()	// 제목란 새로 고침 버튼: 지금 탭 리셋 (F5 와 같음, 화살표 1바퀴)
@@ -2933,6 +3067,308 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kEvent.preventDefault();
 		    ShowHelp();
+		}
+
+		function EditDepth(kDepth, nCount, nPos, funcGo, nBase = 0)	// 스텝 버튼 가운데 숫자 누름 (공통): 숫자 입력 → Enter: 그 위치로 funcGo(옮길 수) (숫자 = 위치 + nBase, 네비게이션: 마지막 0·과거 -1…, 넘음: 끝, 같은 위치: 안 함), Esc·밖 누름: 취소 (1개 이하: 안 함)
+		{
+		    const	sId	= `${kDepth.id}Input`;	// 입력칸 id (CSS 같은 크기)
+
+		    if (nCount <= 1 || document.getElementById(sId) != null)
+		    {
+		        return;
+		    }
+
+		    const	kInput	= document.createElement("input");	// 위치 입력 (가운데 숫자 자리, 같은 크기)
+		    let		bDone	= false;	// 끝냄 (Enter·Esc·밖 누름 중 한 번만)
+
+		    kInput.type			= "text";
+		    kInput.inputMode	= "numeric";
+		    kInput.id			= sId;
+		    kInput.value		= kDepth.textContent;
+		    kInput.style.width	= `${Math.max(kDepth.offsetWidth, 44)}px`;
+		    kInput.style.height	= `${kDepth.offsetHeight}px`;
+
+		    const funcClose = (bGo) =>	// 입력 닫고 가운데 숫자 다시 (bGo: 그 위치로)
+		    {
+		        if (bDone)
+		        {
+		            return;
+		        }
+
+		        bDone = true;
+
+		        const	nTarget	= Number.parseInt(kInput.value, 10);	// 입력한 위치
+
+		        kInput.remove();
+
+		        kDepth.style.display = "";
+
+		        if (bGo && Number.isFinite(nTarget))
+		        {
+		            const	nIndex	= Math.min(Math.max(nTarget - nBase, 0), nCount - 1);	// 갈 위치 (넘음: 끝)
+
+		            if (nIndex !== nPos)
+		            {
+		                funcGo(nIndex - nPos);
+		            }
+		        }
+		    };
+
+		    kInput.addEventListener("keydown", (kEvent) =>	// Enter: 그 위치로, Esc: 취소
+		    {
+		        if (kEvent.key === "Enter" && !kEvent.isComposing)
+		        {
+		            kEvent.preventDefault();
+
+		            funcClose(true);
+		        }
+		        else if (kEvent.key === "Escape")
+		        {
+		            kEvent.preventDefault();
+
+		            funcClose(false);
+		        }
+		    });
+
+		    kInput.addEventListener("blur", () => funcClose(false));	// 밖 누름: 취소
+
+		    kDepth.style.display = "none";
+		    kDepth.before(kInput);
+
+		    kInput.focus();
+		    kInput.select();
+		}
+
+		const	DATE_TEXT	= /\d{4}([-\/.])\d{2}\1\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})?)?)?/g;	// 날짜 형식 (yyyy-MM-dd·yyyy/MM/dd·yyyy.MM.dd + 시:분[:초[.소수][Z·±HH:MM]], ISO 8601 포함, 공통 OnDateDblClick)
+		const	IP_TEXT		= /\b\d{1,3}(?:\.\d{1,3}){3}(?::\d{1,5})?\b/g;	// IP 형식 (IPv4 + :포트, 예: 155.193.37.233:11207, 더블 클릭: 한 단어)
+
+		function OnLineCopy(kEvent)	// 줄 번호 표 (table.lines: 디프 줄 맞춤 보기 등) 복사 (공통): 고른 줄 글만 원래대로 (줄 번호·반대쪽에만 있는 회색 빈 줄 (tr.gap)·␍ 표시: 뺌, 빈 줄: 그대로), 그 외: 브라우저 그대로
+		{
+		    const	kSelect	= window.getSelection();
+
+		    if (kSelect == null || kSelect.rangeCount === 0 || kSelect.isCollapsed)
+		    {
+		        return;
+		    }
+
+		    const	kRange	= kSelect.getRangeAt(0);
+		    const	kNode	= kRange.commonAncestorContainer;
+		    const	kTable	= (kNode.nodeType === Node.ELEMENT_NODE ? kNode : kNode.parentElement)?.closest("table.lines");	// 고른 곳 줄 번호 표
+
+		    if (kTable == null || kTable.tBodies[0] == null)
+		    {
+		        return;
+		    }
+
+		    const	arrLine	= [];	// 고른 줄 글
+
+		    for (const kRow of kTable.tBodies[0].rows)
+		    {
+		        if (!kRange.intersectsNode(kRow) || kRow.classList.contains("gap"))
+		        {
+		            continue;
+		        }
+
+		        const	kCell	= kRow.cells[kRow.cells.length - 1];	// 글 칸
+		        const	kPart	= document.createRange();	// 그 줄 고른 부분 (처음·끝 줄: 고른 데까지)
+
+		        kPart.selectNodeContents(kCell);
+
+		        if (kCell.contains(kRange.startContainer))
+		        {
+		            kPart.setStart(kRange.startContainer, kRange.startOffset);
+		        }
+
+		        if (kCell.contains(kRange.endContainer))
+		        {
+		            kPart.setEnd(kRange.endContainer, kRange.endOffset);
+		        }
+
+		        const	kFragment	= kPart.cloneContents();
+
+		        kFragment.querySelectorAll(".Ws").forEach(kItem => kItem.remove());	// ␍ 표시
+		        arrLine.push(kFragment.textContent);
+		    }
+
+		    kEvent.preventDefault();
+		    kEvent.clipboardData.setData("text/plain", arrLine.join("\n"));
+		}
+
+		function OnDateDblClick(kEvent)	// 더블 클릭 (공통): 표 칸 (합친 칸·하위 줄 아님) → 그 칸 첫 글자 ~ 끝 글자 고름 (Ctrl+C 복사), 그 외: 단어 (브라우저 기본), 날짜 형식·IP (포트 포함) → 한 단어로 고름 + 복사 → 날짜·시각 전체 고름 + 복사 (예: 2026-11-10 06:06:59 → 한 번에, 입력칸·날짜 아님: 브라우저 그대로)
+		{
+		    if (kEvent.target.closest?.("td")?.colSpan === 1 && kEvent.target.closest?.("input, textarea, select, button") == null)	// 표 칸: 그 칸 첫 글자 ~ 끝 글자 고름 (Ctrl+C 복사, 줄 끌기 표도, 합친 칸·하위 줄: 아래 단어)
+		    {
+		        const	kRange	= document.createRange();
+
+		        kRange.selectNodeContents(kEvent.target.closest("td"));
+		        window.getSelection().removeAllRanges();
+		        window.getSelection().addRange(kRange);
+
+		        return;
+		    }
+
+		    const	kSelect	= window.getSelection();
+		    const	kNode	= kSelect?.anchorNode;	// 더블 클릭이 고른 단어 글 (예: 2026)
+
+		    if (kNode?.nodeType !== Node.TEXT_NODE || kEvent.target.closest?.("input, textarea, select") != null)
+		    {
+		        return;
+		    }
+
+		    const	nPos	= kSelect.focusNode === kNode ? Math.min(kSelect.anchorOffset, kSelect.focusOffset) : kSelect.anchorOffset;	// 고른 단어 시작
+		    const	kMatch	= [...kNode.textContent.matchAll(DATE_TEXT), ...kNode.textContent.matchAll(IP_TEXT)].find(kItem => kItem.index <= nPos && nPos < kItem.index + kItem[0].length);	// 그 위치 날짜·IP
+
+		    if (kMatch === undefined)
+		    {
+		        return;
+		    }
+
+		    const	kRange	= document.createRange();
+
+		    kRange.setStart(kNode, kMatch.index);
+		    kRange.setEnd(kNode, kMatch.index + kMatch[0].length);
+		    kSelect.removeAllRanges();
+		    kSelect.addRange(kRange);
+
+		    try
+		    {
+		        document.execCommand("copy");	// 고른 글 복사 (http 주소: clipboard API 막힘 → execCommand)
+		    }
+		    catch (kError)	// 복사 막힘: 고른 채로 (Ctrl+C)
+		    {
+		    }
+		}
+
+		function InitHourInput()	// 시·분·초 선택 직접 입력 (공통, 모든 select.hour, 페이지 시작 1번): 선택 위 숫자 칸 → 쓰고 지움 (없는·막힌 값이 되는 숫자: 입력 안 됨, 두 자리 맞음: 바로 반영, Enter·포커스 나감: 한 자리 0 붙임·없는·막힌 값: 되돌림), ↑↓: 앞뒤 값, Esc: 되돌림, 오른쪽 화살표 누름·Alt+↓: 목록, 값 읽기·막힌 값·input·change: 선택 그대로
+		{
+		    const	kValue	= Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");			// 선택 값 원래 접근자
+		    const	kIndex	= Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "selectedIndex");	// 선택 위치 원래 접근자
+
+		    for (const kSelect of document.querySelectorAll("select.hour"))
+		    {
+		        const	kWrap	= document.createElement("span");	// 선택 + 숫자 칸 묶음
+		        const	kInput	= document.createElement("input");	// 숫자 칸 (선택 글자 자리 덮음, 오른쪽 화살표 자리: 선택)
+		        let		bEdit	= false;							// 포커스 뒤 고침 (고치는 중: 선택 값 안 덮음)
+		        let		sLast	= "";								// 숫자 칸 마지막 맞는 글자 (없는 값이 되는 입력: 되돌림)
+
+		        const	funcFind	= (sValue) => [...kSelect.options].find(kOption => kOption.value === sValue && !kOption.disabled && !kOption.hidden);	// 고를 수 있는 값
+		        const	funcShow	= () =>	// 선택 → 숫자 칸 (고치는 중: 그대로)
+		        {
+		            if (!bEdit)
+		            {
+		                kInput.value	= kValue.get.call(kSelect);
+		                sLast			= kInput.value;
+		            }
+
+		            kInput.disabled = kSelect.disabled;
+		        };
+		        const	funcSet		= (sValue) =>	// 숫자 칸 → 선택 (바뀜만, 직접 고른 것과 같게 input·change)
+		        {
+		            if (sValue === kValue.get.call(kSelect))
+		            {
+		                return;
+		            }
+
+		            kValue.set.call(kSelect, sValue);
+		            kSelect.dispatchEvent(new Event("input", { bubbles: true }));
+		            kSelect.dispatchEvent(new Event("change", { bubbles: true }));
+		        };
+		        const	funcCommit	= () =>	// 입력 끝 (Enter·포커스 나감): 한 자리 0 붙임, 맞음: 반영, 없는·막힌 값: 되돌림
+		        {
+		            const	sValue	= kInput.value.padStart(2, "0");
+
+		            if (bEdit && kInput.value !== "" && funcFind(sValue) != null)
+		            {
+		                funcSet(sValue);
+		            }
+
+		            bEdit = false;
+
+		            funcShow();
+		        };
+
+		        kWrap.className		= "hourwrap";
+		        kInput.type			= "text";
+		        kInput.className	= "hourtext";
+		        kInput.inputMode	= "numeric";
+		        kInput.maxLength	= 2;
+		        kInput.autocomplete	= "off";
+		        kInput.spellcheck	= false;
+		        kSelect.tabIndex	= -1;	// 키보드: 숫자 칸만 (목록: 화살표 누름·Alt+↓)
+
+		        kSelect.before(kWrap);
+		        kWrap.append(kSelect, kInput);
+
+		        Object.defineProperty(kSelect, "value", { configurable: true, get() { return kValue.get.call(this); }, set(sValue) { kValue.set.call(this, sValue); funcShow(); } });	// 코드가 값 바꿈: 숫자 칸도
+		        Object.defineProperty(kSelect, "selectedIndex", { configurable: true, get() { return kIndex.get.call(this); }, set(nIndex) { kIndex.set.call(this, nIndex); funcShow(); } });
+
+		        new MutationObserver(funcShow).observe(kSelect, { childList: true, subtree: true, attributes: true, attributeFilter: ["disabled"] });	// 목록·꺼짐 바뀜
+
+		        kSelect.addEventListener("change", funcShow);	// 목록에서 고름
+
+		        kInput.addEventListener("focus", () =>	// 들어옴: 지금 값 전체 고름 (바로 덮어쓰기)
+		        {
+		            bEdit = false;
+
+		            funcShow();
+		            kInput.select();
+		        });
+
+		        kInput.addEventListener("input", () =>	// 숫자만 두 자리, 없는·막힌 값이 되는 입력: 안 됨 (앞 글자 그대로, 예: 시 30·분 60), 두 자리 맞음: 바로 반영
+		        {
+		            const	sNew	= kInput.value.replace(/\D/g, "").slice(0, 2);	// 숫자만 두 자리
+		            const	bOk		= sNew === "" || (sNew.length === 2 ? funcFind(sNew) != null : funcFind(sNew.padStart(2, "0")) != null || [...kSelect.options].some(kOption => kOption.value.startsWith(sNew) && !kOption.disabled && !kOption.hidden));	// 될 수 있는 값
+
+		            kInput.value	= bOk ? sNew : sLast;
+		            sLast			= kInput.value;
+		            bEdit			= true;
+
+		            if (kInput.value.length === 2)
+		            {
+		                funcSet(kInput.value);
+		            }
+		        });
+
+		        kInput.addEventListener("keydown", (kEvent) =>
+		        {
+		            if (kEvent.key === "Enter" && !kEvent.isComposing)	// 입력 끝 (뒤 Enter 처리: 그대로, 예 실행)
+		            {
+		                funcCommit();
+		            }
+		            else if (kEvent.key === "Escape")	// 되돌림
+		            {
+		                bEdit = false;
+
+		                funcShow();
+		            }
+		            else if ((kEvent.key === "ArrowDown" && kEvent.altKey) || kEvent.key === "F4")	// 목록 열기
+		            {
+		                kEvent.preventDefault();
+		                kSelect.showPicker?.();
+		            }
+		            else if (kEvent.key === "ArrowUp" || kEvent.key === "ArrowDown")	// ↑: 다음 값·↓: 앞 값 (막힌 값 건너뜀, 끝: 그대로)
+		            {
+		                const	arrOption	= [...kSelect.options].filter(kOption => !kOption.disabled && !kOption.hidden);
+		                const	nIndex		= arrOption.findIndex(kOption => kOption.value === kValue.get.call(kSelect));
+		                const	kNext		= arrOption[Math.min(arrOption.length - 1, Math.max(0, nIndex + (kEvent.key === "ArrowUp" ? 1 : -1)))];
+
+		                kEvent.preventDefault();
+
+		                if (kNext != null)
+		                {
+		                    bEdit = false;
+
+		                    funcSet(kNext.value);
+		                    funcShow();
+		                    kInput.select();
+		                }
+		            }
+		        });
+
+		        kInput.addEventListener("blur", funcCommit);
+
+		        funcShow();
+		    }
 		}
 
 		const	HELP_WIDTH_PX	= 650;	// 힌트 팝업 너비 (px, 테두리 포함, 모든 탭 같음, 창 좁음: 화면 너비까지)
@@ -3294,7 +3730,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kOk.disabled = false;
 		}
 
-		function OnTableSelectAll(kEvent)	// Ctrl+A: 누른 표 전체 고름 (없음·안 보임: 맨 위 표, 팝업: 팝업 안 표, 입력칸: 브라우저 기본)
+		function OnTableSelectAll(kEvent)	// Ctrl+A (공통): 누른 영역만 고름 (하위 창 (합친 칸, 예: 펼친 줄 상세): 그 안만, 표: 칸 이름 + 줄, 문서·코드 보기 pre·.jsonview: 그 글만, 누른 곳 없음·안 보임: 맨 위 표, 팝업: 팝업 안, 입력칸: 브라우저 기본 = 그 칸만)
 		{
 		    if (!(kEvent.ctrlKey || kEvent.metaKey) || kEvent.altKey || kEvent.key.toLowerCase() !== "a" || kEvent.target.closest?.("input, textarea, select") != null)
 		    {
@@ -3302,16 +3738,14 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 
 		    const	kDialog		= document.querySelector("dialog[open]");	// 열린 팝업 (있으면 그 안 표만)
-		    const	funcShow	= (kItem) => kItem?.isConnected === true && kItem.tBodies[0] != null && kItem.getClientRects().length > 0 && (kDialog == null || kDialog.contains(kItem));	// 보이는 표
+		    const	funcShow	= (kItem) => kItem?.isConnected === true && (kItem.tagName !== "TABLE" || kItem.tBodies[0] != null) && kItem.getClientRects().length > 0 && (kDialog == null || kDialog.contains(kItem));	// 보이는 영역 (표: 줄 칸 있음)
 		    const	kTable		= funcShow(kSelectTable) ? kSelectTable : [...document.querySelectorAll("table")].filter(kItem => funcShow(kItem) && kItem.tBodies[0].rows.length > 0).sort((kLeft, kRight) => kLeft.getBoundingClientRect().top - kRight.getBoundingClientRect().top)[0];	// 고를 표 (지정 없음: 맨 위)
-		    const	kBody		= kTable?.tBodies[0] ?? null;
-
-		    if (kBody == null)
+		    if (kTable == null)	// 고를 영역 없음: 브라우저 기본
 		    {
 		        return;
 		    }
 
-		    const	kRange	= document.createRange();	// 표 전체 (칸 이름 + 줄)
+		    const	kRange	= document.createRange();	// 그 영역 전체 (표: 칸 이름 + 줄, 문서·코드 보기: 글)
 
 		    kEvent.preventDefault();
 		    kRange.selectNodeContents(kTable);
@@ -3331,12 +3765,12 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		    kFilterPanel.classList.toggle("query", sPanel === "query");	// 쿼리 모드: M (쿼리칸 머신 조건)·D·S·E, 쿼리칸
 
-		    if (bModeChange)	// M 목록: 모드에 맞게 (쿼리: 색인 머신·쿼리칸 머신 조건, 서치: 접속 머신 체크), 모래시계: 그 탭 기억
+		    if (bModeChange)	// M 목록: 모드에 맞게 (쿼리: 색인 머신·쿼리칸 머신 조건, 서치: 접속 머신 체크), 네비게이션: 그 탭 기억
 		    {
 		        RenderMachineMode();
 		        Query.ShowBack();
 		    }
-		    kFilterPanel.hidden	= sPanel === "dump" || sPanel === "file" || sPanel === "manager" || sPanel === "process";
+		    kFilterPanel.hidden	= sPanel === "dump" || sPanel === "file" || sPanel === "manager" || sPanel === "process" || sPanel === "util";
 		    kFilterSplitter.hidden	= kFilterPanel.hidden;	// 명령 창·결과 창 사이 바
 
 		    ShowTimer();	// 타이머 버튼: 지금 탭 타이머 (서치·쿼리 따로)
@@ -3347,6 +3781,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kDumpPanel.hidden	= sPanel !== "dump";
 		    kManagerPanel.hidden	= sPanel !== "manager";
 		    kProcessPanel.hidden	= sPanel !== "process";
+		    kUtilPanel.hidden	= sPanel !== "util";
 		    kQueryPanel.hidden	= sPanel !== "query";	// 쿼리 2번 창
 		    kQuerySplitter.hidden	= sPanel !== "query";	// 쿼리 1·2번 창 사이 바
 		    kResultPanel.classList.toggle("query", sPanel === "query");	// 쿼리 1번 창: 서치 1번 창 틀·← 단계 →·새 창 (검색 결과 내용은 유지)
@@ -3359,6 +3794,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    kDumpButton.classList.toggle("cur", sPanel === "dump");
 		    kManagerButton.classList.toggle("cur", sPanel === "manager");
 		    kProcessButton.classList.toggle("cur", sPanel === "process");
+		    kUtilButton.classList.toggle("cur", sPanel === "util");
 		    kQueryButton.classList.toggle("cur", sPanel === "query");
 		    SetTabZone(document.querySelector("#TabBar button.cur"));	// 탭 존 색 (운영 탭 Manager:sZone 등, 사이트 존과 다름: 제목 색 포함 페이지 전체 존 색만)
 
@@ -3882,6 +4318,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		return """
 		window.Query = Query;	// 필드 새 창에서 호출 (class 전역은 window 속성이 아님)
 		window.Search = Search;	// Ctrl·Alt+클릭 새 창·새 탭이 연 창의 서치 단계 복사 (GetOpenerState)
+		window.Util = Util;		// Ctrl·Alt+클릭 새 창·새 탭이 연 창의 유틸 스냅샷 복사 (GetOpenerState)
 
 		kStart.addEventListener("change", () => FixRange(true));
 		kStartHour.addEventListener("change", () => FixRange(true));
@@ -3900,7 +4337,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 
 		LimitRange();	// 처음 값 기준
 		kQueryRange.addEventListener("change", Query.SetRecent);	// D 고름: S·E 를 지금까지로
-		document.getElementById("ResetButton").addEventListener("click", Query.GoBack);	// 모래시계: 이전 실행으로 (서치·쿼리 따로 최근 X회)
+		document.getElementById("RunPrev").addEventListener("click", () => Query.GoRun(-1));	// 네비게이션 ←: 한 단계 이전 실행 (서치·쿼리 따로 최근 X회)
+		document.getElementById("RunNext").addEventListener("click", () => Query.GoRun(1));	// 네비게이션 →: 한 단계 다음 실행
+		document.getElementById("RunDepth").addEventListener("click", Query.EditRun);	// 가운데 위치 누름: 숫자 입력 → 그 실행으로
 		kTimerButton.addEventListener("click", OnTimerButton);	// 타이머 (서치·쿼리 따로): 초 입력 → 초 줄여 감 → 0: 반짝 + 실행 → 다시 (도는 중 누름: 중지)
 		kQueryPrev.addEventListener("click", () => (kResultPanel.classList.contains("query") ? Query : Search).GoHistory(-1));	// ← 뒤로 (보는 1번 창 들어온 단계)
 		kQueryNext.addEventListener("click", () => (kResultPanel.classList.contains("query") ? Query : Search).GoHistory(1));	// → 앞으로
@@ -3936,10 +4375,13 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		document.addEventListener("click", OnShiftClick, true);			// 옮겨 실행한 뒤 클릭: 막음
 		document.addEventListener("mousedown", OnOpenMouseDown, true);	// Ctrl·Alt+누름 (새 창 대상): 포커스·드롭 박스 막음 (원래 처리보다 먼저)
 		document.addEventListener("click", OnOpenClick, true);			// Ctrl+클릭: 새 창, Alt+클릭: 새 탭 (원래 처리보다 먼저)
-		document.addEventListener("pointerdown", (kEvent) => kSelectTable = kEvent.target.closest?.("table") ?? null, true);	// 누른 표 (표 밖: 없음)
+		document.addEventListener("pointerdown", (kEvent) => kSelectTable = kEvent.target.closest?.("td[colspan], table, pre, .jsonview") ?? null, true);	// 누른 하위 창 (합친 칸)·표·문서·코드 보기 (Ctrl+A 영역, 가장 안쪽, 밖: 없음)
 		document.addEventListener("keydown", OnTableSelectAll);			// Ctrl+A: 누른 표 전체 (지정 없음: 맨 위 표)
 		document.addEventListener("keydown", OnTabKey);					// Tab: 오른쪽 탭 (힌트 제외, 맨 끝: 처음, 힌트 팝업: 힌트 탭)
 		document.addEventListener("keydown", OnHelpKey);				// ?: 힌트 팝업
+		document.addEventListener("copy", OnLineCopy);				// 줄 번호 표 복사: 원래 글 그대로 (공통)
+		document.addEventListener("dblclick", OnDateDblClick);			// 날짜 형식 더블 클릭: 날짜·시각 전체 고름 + 복사 (공통)
+		InitHourInput();											// 시·분·초 선택 직접 입력 (공통)
 		document.addEventListener("keydown", OnResetKey);				// F5: 지금 탭 리셋 (새로 고침 버튼과 같음)
 		document.addEventListener("keyup", Query.OnModifierUp);	// Ctrl·Alt 뗌: MODIFIER_WAIT_MS 뒤 쿼리·서치
 		document.addEventListener("keydown", Query.OnModifierDown);	// Ctrl·Alt 다시 누름: 기다리던 쿼리 취소 (이어서 더함)
@@ -3954,8 +4396,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		kMachineAll.addEventListener("change", OnMachineAll);
 		document.addEventListener("click", OnMachineOutside);
 		document.addEventListener("keydown", OnMachineOutside);
-		kSearchButton.addEventListener("click", () => Search.SearchLog());	// 서치 버튼: 서치만 (쿼리와 별개)
-		kQueryRunButton.addEventListener("click", () => Query.RunQuery());	// 쿼리 버튼: 쿼리만 (서치와 별개)
+		kSearchButton.addEventListener("click", () => Search.SearchLog(false, false, false, true));	// 서치 버튼: 서치만 (쿼리와 별개, 네비게이션 기억)
+		kQueryRunButton.addEventListener("click", () => Query.RunQuery(true));	// 쿼리 버튼: 쿼리만 (서치와 별개, 네비게이션 기억)
 		kQueryStopButton.addEventListener("click", Query.StopQuery);			// 쿼리 중단 버튼: 쿼리·통계 요청 끊음
 		kQueryEditList.addEventListener("click", Query.OnSavedClick);		// 쿼리 설정 줄 버튼: 수정·삭제
 		kQueryEditList.addEventListener("dblclick", Query.OnSavedClick);		// 쿼리 설정 제목 더블클릭: 바로 쿼리
@@ -4058,7 +4500,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    if (kEvent.key === "Enter" && !kEvent.isComposing)
 		    {
-		        Search.SearchLog();
+		        Search.SearchLog(false, false, false, true);	// 서치 버튼과 같음 (네비게이션 기억)
 		    }
 		});
 
@@ -4066,7 +4508,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		{
 		    if (kEvent.key === "Enter" && !kEvent.isComposing)
 		    {
-		        Query.RunQuery();
+		        Query.RunQuery(true);	// 쿼리 버튼과 같음 (네비게이션 기억)
 		    }
 		});
 
@@ -4099,6 +4541,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		Operation.Init();												// 운영 창 이벤트 (새로 고침·패치·하위 탭·모니터·세로선)
 		kProcessButton.addEventListener("click", Process.Open);		// 반영 버튼: 반영 창 (처음: 버전·목록 로딩 + 폴링, 다시 열기: 바로 갱신)
 		Process.Init();												// 반영 창 이벤트 (줄 동작·메뉴·서랍·팝업·Esc·연결 끊김 잠금)
+		kUtilButton.addEventListener("click", Util.Open);				// 유틸 버튼: 유틸 1번 창 (하위 탭 그대로)
+		Util.Init();												// 유틸 창 이벤트 (하위 탭 타임·디프·소트)
 		kFileTree.addEventListener("click", File.OnFileTreeClick);
 		document.getElementById("HelpButton").addEventListener("click", ShowHelp);	// 힌트 버튼: 힌트 팝업 (탭 그대로)
 		document.getElementById("AccountButton").addEventListener("click", ShowAccount);	// 계정 버튼: 계정 팝업 (아이디·로그아웃)
@@ -4171,20 +4615,15 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    SchedulePos(File.FILE_POS);
 		});
 
-		kFileSplitter.addEventListener("pointerdown", (kEvent) =>	// 파일 1번 창 세로선 좌우 드래그: 왼쪽 트리 폭 (최소 File.FILE_SPLIT_MIN)
+		kFileSplitter.addEventListener("pointerdown", (kEvent) =>	// 파일 좌·우 창 사이 세로선 좌우 드래그: 좌 창 (트리) 폭, 우 창: 나머지 (각각 최소 File.FILE_SPLIT_MIN)
 		{
 		    const	nStartX		= kEvent.clientX;	// 드래그 시작 위치
-		    const	nWidthStart	= kFileScroll.getBoundingClientRect().width;	// 왼쪽 시작 폭
-		    const	nWidthMax	= kFileSplitter.parentElement.getBoundingClientRect().width - kFileSplitter.getBoundingClientRect().width - File.FILE_SPLIT_MIN;	// 왼쪽 최대 폭 (오른쪽 최소 남김)
+		    const	nWidthStart	= kFileSplitter.previousElementSibling.getBoundingClientRect().width;	// 좌 창 시작 폭
+		    const	nWidthMax	= kFileSplitter.parentElement.getBoundingClientRect().width - kFileSplitter.getBoundingClientRect().width - File.FILE_SPLIT_MIN;	// 좌 창 최대 폭 (우 창 최소 남김)
 
-		    const	nTitleExtra	= kFileSplitter.getBoundingClientRect().width - parseFloat(getComputedStyle(kFileTitle.parentElement).columnGap);	// 머리줄 왼쪽 제목 칸 폭 (오른쪽 제목 = 오른쪽 상자 위치)
-
-		    const funcMove = (kMove) =>	// 끈 만큼 왼쪽 폭 변경 (머리줄 왼쪽 제목 칸도 같이)
+		    const funcMove = (kMove) =>	// 끈 만큼 좌 창 폭
 		    {
-		        const	nWidth	= Math.min(nWidthMax, Math.max(File.FILE_SPLIT_MIN, nWidthStart + kMove.clientX - nStartX));	// 왼쪽 트리 폭
-
-		        kFileScroll.style.width	= nWidth + "px";
-		        kFileTitle.style.width	= (nWidth + nTitleExtra) + "px";
+		        kFileSplitter.parentElement.style.setProperty("--fileWidth", Math.min(nWidthMax, Math.max(File.FILE_SPLIT_MIN, nWidthStart + kMove.clientX - nStartX)) + "px");
 		    };
 
 		    const funcUp = () =>	// 드래그 끝: 이벤트 해제
@@ -4590,6 +5029,8 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		InitColumnFold(kResultTable);	// 칸 접기: 서치 1번 창
 		InitColumnFold(kDumpTable);		// 덤프 1번 창
 		InitColumnFold(kQueryBody.closest("table"));	// 쿼리 2번 창 (필드 값 목록: 칸 이름 클릭 = 정렬 → 제외)
+		InitColumnGrip(document.getElementById("UtilTimeTable"));	// 유틸 타임 2번 창 (마지막 Ac. 칸이 나머지, 맨 오른쪽 고정)
+		InitColumnFold(document.getElementById("UtilTimeTable"));
 
 		for (const sTable of ["ManagerServerTable", "ManagerDownTable", "ManagerMaxTable", "ManagerCcuTable"])	// 운영 표
 		{
@@ -4640,15 +5081,23 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		    }
 		    else
 		    {
-		        const	kFirst	= document.querySelector("#TabBar button:not([hidden]):not(#AccountButton):not(#HelpButton)");	// 첫 탭: aMenu 첫 번째 (없음: 쿼리)
+		        const	kFirst	= document.querySelector("#TabBar button:not([hidden]):not(#AccountButton):not(#HelpButton)");	// 첫 탭: aMenu 첫 번째 (기본: 유틸, 없음: 쿼리)
 
 		        if (kFirst == null || kFirst === kQueryButton)
 		        {
 		            Query.RunQuery();	// 처음 입장: 전체 쿼리 자동 실행
 		        }
+		        else if (kFirst === kUtilButton)
+		        {
+		            Query.bAutoRun = true;	// 쿼리 탭 처음 누름: 전체 쿼리 자동 실행
+
+		            Util.Open();	// 처음 입장: 유틸 (머신 목록 안 기다림)
+		        }
 		        else
 		        {
-		            kMachineLoad.then(() => kFirst.click());	// 첫 탭 (쿼리 아님: 쿼리 자동 실행 안 함, 머신 목록 받은 뒤 → 덤프·파일 머신 없음 경고 안 남)
+		            Query.bAutoRun = true;	// 쿼리 탭 처음 누름: 전체 쿼리 자동 실행
+
+		            kMachineLoad.then(() => kFirst.click());	// 첫 탭 (쿼리 아님: 시작 때 쿼리 안 함, 머신 목록 받은 뒤 → 덤프·파일 머신 없음 경고 안 남)
 		        }
 		    }
 
