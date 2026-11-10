@@ -27,7 +27,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	UNDO_GROUP_MS	= 1000;		// 이어 친 글자·지운 글자 한 번에 되돌림 (ms 안)
 		    static	mapUndo			= new Map();	// 편집 칸 되돌리기 (창 id → { arrUndo: [{ nPos, sOld, sNew, sType, nTick }], arrRedo, sBefore: 고침 전 실제 글 }) (브라우저 기본 Ctrl+Z·Y 대신: 창마다 따로, 실제 글 (회색 빈 줄 뺌) 바뀐 부분만, 프로그램이 글 바꿈 (파일 열기·네비게이션·리셋): 버림)
 		    static	DIFF_BACK_MAX	= 10;	// 디프 네비게이션 기억 (실행한 좌·우 입력, 넘음: 가장 오래된 것 버림)
-		    static	arrDiffBack		= [];	// 디프 네비게이션 기억 [{ sLeft, sRight, sLeftName, sRightName, bRun: 비교함 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
+		    static	arrDiffBack		= [];	// 디프 네비게이션 기억 [{ sLeft, sRight, sLeftName, sRightName, kLeftFile, kRightFile: 연 파일 (저장: 그 파일에 덮어씀, 없음: null), bRun: 비교함 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
 		    static	nDiffPos		= -1;	// 디프 네비게이션 지금 위치 (없음: -1)
 		    static	bDiffNew		= false;	// 디프 새 입력 (좌·우 리셋 (다 지움·F5) 뒤 입력·파일 열기): 다음 실행에 네비게이션 새 기억 (그 외 실행: 지금 기억 글만 바꿈)
 		    static	arrDiffBlock	= [];	// 디프 차이 [[줄 맞춤 보기 줄 번호, …]] (줄 비교 이어진 바뀜 묶음, DataCompare 와 같음)
@@ -39,7 +39,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	nDragIndex	= -1;	// 2번 창 끄는 줄 (arrTime 번호, 없음: -1)
 		    static	sDateLast	= "";	// KST 날짜 마지막 맞는 값 (범위 밖: 되돌림)
 		    static	SORT_BACK_MAX	= 10;	// 소트 네비게이션 기억 (실행한 입력, 넘음: 가장 오래된 것 버림)
-		    static	arrSortBack	= [];	// 소트 네비게이션 기억 [{ sText, bRun: 펼침 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
+		    static	arrSortBack	= [];	// 소트 네비게이션 기억 [{ sText, sName, kFile: 연 파일 (저장: 그 파일에 덮어씀, 없음: null), bRun: 펼침 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
 		    static	nSortPos	= -1;	// 소트 네비게이션 지금 위치 (없음: -1)
 		    static	bSortRun	= false;	// 소트 우 창 지금 좌 글 펼침 (실행 뒤, 파일 열기·비움: false)
 		    static	bSortNew	= false;	// 소트 새 입력 (리셋 (다 지움·F5) 뒤 입력·파일 열기): 다음 실행에 네비게이션 새 기억 (그 외 실행: 지금 기억 글만 바꿈)
@@ -722,7 +722,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		    static SaveDiffBack()	// 디프 네비게이션 지금 좌·우 글 기억 (실행·← → 떠날 때): 새 입력 (좌·우 리셋 뒤 입력·파일 열기)·처음: 새 기억 (맨 뒤: 과거에서도 앞 기억 그대로 밀림, 지금 기억과 같은 글: 안 넣음, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 좌·우 다 비움: 안 함, bRun: 지금 비교 중 (실행 전 글: false → 돌아와도 비교 안 함)
 		    {
-		        const	kState	= { sLeft: Util.GetDiffText("Left"), sRight: Util.GetDiffText("Right"), sLeftName: Util.mapDiffName.Left, sRightName: Util.mapDiffName.Right, bRun: Util.bDiffView };
+		        const	kState	= { sLeft: Util.GetDiffText("Left"), sRight: Util.GetDiffText("Right"), sLeftName: Util.mapDiffName.Left, sRightName: Util.mapDiffName.Right, kLeftFile: Util.mapDiffFile.Left, kRightFile: Util.mapDiffFile.Right, bRun: Util.bDiffView };	// 연 파일: 돌아와 저장 → 그 파일에 덮어씀
 		        const	kNow	= Util.arrDiffBack[Util.nDiffPos];
 
 		        if (kState.sLeft === "" && kState.sRight === "")
@@ -912,6 +912,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilDiffRightText").value	= kState.sRight;
 		        Util.mapDiffName.Left								= kState.sLeftName;
 		        Util.mapDiffName.Right								= kState.sRightName;
+		        Util.mapDiffFile.Left								= kState.kLeftFile ?? null;	// 연 파일 (저장: 그 파일에 덮어씀)
+		        Util.mapDiffFile.Right								= kState.kRightFile ?? null;
 
 		        Util.ClearUndo(document.getElementById("UtilDiffLeftText"));	// 네비게이션 글: 되돌리기 새로
 		        Util.ClearUndo(document.getElementById("UtilDiffRightText"));
@@ -2749,7 +2751,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		    static SaveSortBack()	// 소트 네비게이션 지금 좌 글 기억 (실행·← → 떠날 때): 새 입력 (리셋 뒤 입력·파일 열기)·처음: 새 기억 (맨 뒤: 과거에서도 앞 기억 그대로 밀림, 지금 기억과 같은 글: 안 넣음, 넘음: 가장 오래된 것 버림), 그 외: 지금 기억 글만 바꿈, 비움: 안 함, bRun: 지금 펼침 (실행 전 글: false → 돌아와도 펼치지 않음)
 		    {
-		        const	kState	= { sText: document.getElementById("UtilSortLeftText").value, bRun: Util.bSortRun };
+		        const	kState	= { sText: document.getElementById("UtilSortLeftText").value, sName: Util.sSortName, kFile: Util.kSortFile, bRun: Util.bSortRun };	// 연 파일: 돌아와 저장 → 그 파일에 덮어씀
 		        const	kNow	= Util.arrSortBack[Util.nSortPos];
 
 		        if (kState.sText === "")
@@ -2795,6 +2797,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.bSortNew = false;	// 기억 글로 감: 새 입력 아님
 
 		        document.getElementById("UtilSortLeftText").value = kState.sText;
+
+		        Util.sSortName	= kState.sName ?? "";	// 이름·연 파일 (저장: 그 파일에 덮어씀)
+		        Util.kSortFile	= kState.kFile ?? null;
 
 		        Util.kSortRightFile = null;	// 다른 글: 우 저장 파일 끊음
 		        Util.ClearUndo(document.getElementById("UtilSortLeftText"));	// 네비게이션 글: 되돌리기 새로
@@ -3033,7 +3038,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static GetSnapshot()	// 지금 상태 스냅샷 (Ctrl·Alt+클릭 새 창·새 탭 복사, 공통): 하위 탭·타임 입력·디프 좌·우 글·이름·비교·지금 차이·스크롤·네비게이션 기억·좌 창 폭·소트 입력·펼침·접은 곳
+		    static GetSnapshot()	// 지금 상태 스냅샷 (Ctrl·Alt+클릭 새 창·새 탭 복사, 공통, 네비게이션 기억 연 파일: 안 옮김 → 저장: 저장 창): 하위 탭·타임 입력·디프 좌·우 글·이름·비교·지금 차이·스크롤·네비게이션 기억·좌 창 폭·소트 입력·펼침·접은 곳
 		    {
 		        const	kLeft	= document.getElementById("UtilDiffLeftText");
 		        const	kRight	= document.getElementById("UtilDiffRightText");
@@ -3043,8 +3048,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            arrKst: [Util.kDate.value, Util.kHour.value, Util.kMinute.value, Util.kSecond.value], sUnix: Util.kUnix.value, bKstAuto: Util.bKstAuto, bUnixAuto: Util.bUnixAuto,
 		            sLeft: Util.GetDiffText("Left"), sRight: Util.GetDiffText("Right"), sLeftName: Util.mapDiffName.Left, sRightName: Util.mapDiffName.Right,
 		            bDiff: Util.sDiffState !== "", nBlock: Util.nDiffBlock, nLeftTop: kLeft.scrollTop, nRightTop: kRight.scrollTop,
-		            arrDiffBack: Util.arrDiffBack, nDiffPos: Util.nDiffPos, sWidth: Util.kDiffSplit.style.getPropertyValue("--splitWidth"),
-		            sSortText: document.getElementById("UtilSortLeftText").value, sSortName: Util.sSortName, bSort: Util.arrSortLine.length > 0, arrSortFold: [...Util.setSortFold], arrSortBack: Util.arrSortBack, nSortPos: Util.nSortPos,
+		            arrDiffBack: Util.arrDiffBack.map(({ kLeftFile, kRightFile, ...kItem }) => kItem), nDiffPos: Util.nDiffPos, sWidth: Util.kDiffSplit.style.getPropertyValue("--splitWidth"),
+		            sSortText: document.getElementById("UtilSortLeftText").value, sSortName: Util.sSortName, bSort: Util.arrSortLine.length > 0, arrSortFold: [...Util.setSortFold], arrSortBack: Util.arrSortBack.map(({ kFile, ...kItem }) => kItem), nSortPos: Util.nSortPos,
 		            sSortWidth: document.getElementById("UtilSortSplit").style.getPropertyValue("--splitWidth"), nSortLeftTop: document.getElementById("UtilSortLeftText").scrollTop, nSortRightTop: document.getElementById("UtilSortRightBody").scrollTop,
 		        };
 		    }
