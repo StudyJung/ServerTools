@@ -38,13 +38,15 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		    static	UNIX_DIGIT	= 10;	// Unix 칸 자릿수 (초, 고정: 넘는 자리 입력 안 됨)
 		    static	nDragIndex	= -1;	// 2번 창 끄는 줄 (arrTime 번호, 없음: -1)
 		    static	sDateLast	= "";	// KST 날짜 마지막 맞는 값 (범위 밖: 되돌림)
-		    static	SORT_FOLD_MAX	= 1000;	// 소트 접힘 한 줄: { }·[ ] 마다 안쪽 최대 글자 (넘음: { ... })
+		    static	SORT_FOLD_MAX	= 1000;	// 소트 접힘 한 줄: { }·[ ] 마다 안쪽 최대 글자 (넘음: {…} 줄임 상자)
+		    static	SORT_FOLD_MARK	= "";	// 접힘 한 줄 안 줄임 자리 (그릴 때: … 상자)
 		    static	SORT_BACK_MAX	= 10;	// 소트 네비게이션 기억 (실행한 입력, 넘음: 가장 오래된 것 버림)
 		    static	arrSortBack	= [];	// 소트 네비게이션 기억 [{ sText, sName, kFile: 연 파일 (저장: 그 파일에 덮어씀, 없음: null), bRun: 펼침 (실행 전 글: false) }] (새 입력마다 1개: 그 입력 마지막 글, 브라우저 메모리만)
 		    static	nSortPos	= -1;	// 소트 네비게이션 지금 위치 (없음: -1)
 		    static	bSortRun	= false;	// 소트 우 창 지금 좌 글 펼침 (실행 뒤, 파일 열기·비움: false)
 		    static	bSortNew	= false;	// 소트 새 입력 (리셋 (다 지움·F5) 뒤 입력·파일 열기): 다음 실행에 네비게이션 새 기억 (그 외 실행: 지금 기억 글만 바꿈)
-		    static	arrSortLine	= [];	// 소트 결과 줄 (비주얼 스튜디오 기본 형식)
+		    static	arrSortLine	= [];	// 소트 결과 줄 (비주얼 스튜디오 기본 형식, 뎁스 한 줄 안쪽 X 자 넘음: 줄임 자리 SORT_FOLD_MARK)
+		    static	sSortText	= "";	// 소트 펼친 좌 글 (우 저장: 줄임 없이 다시 펼침)
 		    static	mapSortFold	= new Map();	// 접을 수 있는 줄 (여는 줄 → 닫는 줄)
 		    static	setSortFold	= new Set();	// 접은 여는 줄
 		    static	arrSortHide	= [];	// 줄마다 접은 바깥 수 (0: 보임)
@@ -2330,7 +2332,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        return setError;
 		    }
 
-		    static FormatJson(sText, nInline = 0)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]), nObjMax (가장 깊은 { 뎁스) } (nInline: 우 뎁스 X → 최하위 뎁스부터 X 단계 { } 한 줄 { "키": 값, … } (뎁스: 위에서 { 수, 최상위 1, 배열: 안 셈, 가장 깊은 뎁스 D → D - X + 1 이상 { 한 줄, 주석 듦: 안 함), 2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만, 쉼표 없이 붙은 값: 한 칸 띄움)
+		    static FormatJson(sText, nInline = 0, nFoldMax = Util.SORT_FOLD_MAX)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]), nObjMax (가장 깊은 { 뎁스) } (nFoldMax: 뎁스 한 줄 { }·[ ] 마다 안쪽 최대 글자 (넘음: {줄임 자리}, 우 저장: 끝 없음), nInline: 우 뎁스 X → 최하위 뎁스부터 X 단계 { } 한 줄 { "키": 값, … } (뎁스: 위에서 { 수, 최상위 1, 배열: 안 셈, 가장 깊은 뎁스 D → D - X + 1 이상 { 한 줄, 주석 듦: 안 함), 2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만, 쉼표 없이 붙은 값: 한 칸 띄움)
 		    {
 		        const	arrToken	= Util.JsonTokens(sText);
 		        const	arrClose	= new Array(arrToken.length).fill(-1);	// 여는 괄호 → 짝 닫는 괄호 토큰 위치
@@ -2390,6 +2392,66 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const funcStart	= () => sLine.trim() === "";	// 줄 처음 (들여쓰기만)
 		        const funcAt	= (nFrom, nTo = nFrom) => arrAt.fill(arrLine.length, nFrom, nTo + 1);	// 그 토큰들: 지금 줄
 		        const funcCol	= (nIndex) => { arrCol[nIndex] = sLine.length; };	// 그 토큰: 지금 줄 끝 자리 (붙이기 전)
+		        const funcInline = (nOpen) =>	// { }·[ ] 블록 → 한 줄 { sText: { "키": 값, … }, arrPos: [[토큰, 자리]] } (안쪽 블록: 그 블록도 한 줄, 블록마다 안쪽 nFoldMax 자 넘음: {줄임 자리}, 쉼표 없이 붙음: 한 칸)
+		        {
+		            const	nClose	= arrClose[nOpen];
+		            const	arrBody	= [];	// 안쪽 토큰 자리 (안쪽 글 기준)
+		            let		sBody	= "";	// 안쪽 글
+
+		            for (let nItem = nOpen + 1; nItem < nClose; ++nItem)
+		            {
+		                const	sText	= arrToken[nItem].sText;
+
+		                if (sText === "," || sText === ":")	// 앞 글에 붙임 + 한 칸
+		                {
+		                    sBody = sBody.trimEnd();
+
+		                    arrBody.push([nItem, sBody.length]);
+
+		                    sBody += sText + " ";
+
+		                    continue;
+		                }
+
+		                if (sBody !== "" && !/[\s\[{]$/.test(sBody))	// 쉼표 없이 붙음 (틀린 JSON): 한 칸
+		                {
+		                    sBody += " ";
+		                }
+
+		                if ((sText === "{" || sText === "[") && arrClose[nItem] > nItem)	// 안쪽 블록
+		                {
+		                    const	kChild	= funcInline(nItem);
+
+		                    arrBody.push(...kChild.arrPos.map(([nToken, nCol]) => [nToken, sBody.length + nCol]));
+
+		                    sBody	+= kChild.sText;
+		                    nItem	= arrClose[nItem];
+
+		                    continue;
+		                }
+
+		                arrBody.push([nItem, sBody.length]);
+
+		                sBody += sText;
+		            }
+
+		            sBody = sBody.trimEnd();
+
+		            const	sOpen	= arrToken[nOpen].sText;
+		            const	sClose	= arrToken[nClose].sText;
+
+		            if (sBody.length > nFoldMax)	// 줄임: {…}
+		            {
+		                return { sText: sOpen + Util.SORT_FOLD_MARK + sClose, arrPos: [[nOpen, 0], [nClose, 2]] };
+		            }
+
+		            if (sBody === "")
+		            {
+		                return { sText: sOpen + sClose, arrPos: [[nOpen, 0], [nClose, 1]] };
+		            }
+
+		            return { sText: `${sOpen} ${sBody} ${sClose}`, arrPos: [[nOpen, 0], ...arrBody.map(([nToken, nCol]) => [nToken, nCol + 2]), [nClose, sBody.length + 3]] };
+		        };
 		        const funcGap	= () => { sLine += !funcStart() && /[^\s\[{]$/.test(sLine) ? " " : ""; };	// 값·여는 괄호 앞 쉼표·: 없이 붙음 (틀린 JSON): 한 칸 띄움
 
 		        for (let nIndex = 0; nIndex < arrToken.length; ++nIndex)
@@ -2448,30 +2510,18 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		                if (sToken === "{" && nClose > 0 && nInline > 0 && arrDepth[nIndex] > 0 && arrDepth[nIndex] >= nObjMax - nInline + 1)	// 뎁스 X: 최하위 뎁스부터 X 단계 { 한 줄 { "키": 값, … } (안쪽 { 같이)
 		                {
+		                    const	kInline	= funcInline(nIndex);	// 한 줄 글 + 토큰 자리 (줄인 안쪽: 자리 없음 → 노랑 안 함)
+
 		                    funcAt(nIndex, nClose);
 		                    funcGap();
 
-		                    for (let nItem = nIndex; nItem <= nClose; ++nItem)
+		                    for (const [nItem, nCol] of kInline.arrPos)
 		                    {
-		                        const	sText	= arrToken[nItem].sText;
-		                        const	bOpen	= sText === "{" || sText === "[";
-		                        const	bClose	= sText === "}" || sText === "]";
-
-		                        if (bClose || sText === "," || sText === ":")	// 앞 글에 붙임 (닫는 괄호: 한 칸 뒤, 빈 {}·[]: 붙임)
-		                        {
-		                            sLine = sLine.trimEnd();
-		                            sLine += bClose && !/[\[{]$/.test(sLine) ? " " : "";
-		                        }
-		                        else if (!funcStart() && !/[\s\[{]$/.test(sLine))	// 쉼표 없이 붙음 (틀린 JSON): 한 칸
-		                        {
-		                            sLine += " ";
-		                        }
-
-		                        arrCol[nItem] = sLine.length;
-		                        sLine += sText + (sText === "," || sText === ":" || (bOpen && arrToken[nItem + 1]?.sText !== (sText === "{" ? "}" : "]")) ? " " : "");
+		                        arrCol[nItem] = sLine.length + nCol;
 		                    }
 
-		                    nIndex = nClose;
+		                    sLine	+= kInline.sText;
+		                    nIndex	= nClose;
 
 		                    continue;
 		                }
@@ -2622,7 +2672,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const	sText	= document.getElementById("UtilSortLeftText").value;
 		        const	kResult	= !bRun || sText.trim() === "" ? { arrLine: [], mapFold: new Map(), sCount: Util.JsonCount([], 0), setError: new Set(), nObjMax: 0 } : Util.FormatJson(sText, Util.nSortDepth);
 
-		        Util.nSortObjMax = kResult.nObjMax ?? 0;
+		        Util.nSortObjMax	= kResult.nObjMax ?? 0;
+		        Util.sSortText		= kResult.arrLine.length > 0 ? sText : "";	// 우 저장: 줄임 없이 다시 펼침
 
 		        if (kResult.arrLine.length > 0 && Util.nSortDepth > Util.nSortObjMax)	// 가장 깊은 뎁스보다 큼: 그 끝
 		        {
@@ -2683,6 +2734,11 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                Util.MarkSortText(kText, sLine, Util.mapSortMark.get(nIndex));
 		            }
 
+		            if (sLine.includes(Util.SORT_FOLD_MARK))	// 뎁스 한 줄 줄임: … 상자
+		            {
+		                Util.BoxFoldMark(kText);
+		            }
+
 		            kRow.append(kNum, kFold, kText);
 		            kFragment.append(kRow);
 		        });
@@ -2691,6 +2747,43 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.RenderSortTitle();
 		        document.getElementById("UtilSortUnfold").disabled			= Util.mapSortFold.size === 0;	// 접을 곳 없음: 펴기·접기 꺼짐
 		        document.getElementById("UtilSortFold").disabled				= Util.mapSortFold.size === 0;
+		    }
+
+		    static BoxFoldMark(kNode)	// 글 안 줄임 자리 (SORT_FOLD_MARK) → … 상자 (.jdots, 접힘 한 줄·뎁스 한 줄 공통)
+		    {
+		        const	kWalker	= document.createTreeWalker(kNode, NodeFilter.SHOW_TEXT);
+		        const	arrText	= [];
+
+		        while (kWalker.nextNode())
+		        {
+		            if (kWalker.currentNode.nodeValue.includes(Util.SORT_FOLD_MARK))
+		            {
+		                arrText.push(kWalker.currentNode);
+		            }
+		        }
+
+		        for (const kText of arrText)
+		        {
+		            const	arrNode	= [];
+
+		            kText.nodeValue.split(Util.SORT_FOLD_MARK).forEach((sPart, nIndex) =>
+		            {
+		                if (nIndex > 0)
+		                {
+		                    const	kDots	= document.createElement("span");
+
+		                    kDots.className		= "jdots";
+		                    kDots.textContent	= "…";
+		                    kDots.title			= "펼치기";
+
+		                    arrNode.push(kDots);
+		                }
+
+		                arrNode.push(sPart);
+		            });
+
+		            kText.replaceWith(...arrNode);
+		        }
 		    }
 
 		    static MarkSortText(kText, sLine, arrMark)	// 소트 줄 글 → 틀린 곳 <mark> 노랑 (겹침: 앞 것만)
@@ -2752,9 +2845,9 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        document.getElementById("UtilSortRightSave").disabled		= Util.arrSortLine.length === 0;
 		    }
 
-		    static OnSortFold(kEvent)	// 우 창 접기 표시 (▾·▸) 누름: 그 { }·[ ] 접기·펴기
+		    static OnSortFold(kEvent)	// 우 창 접기 표시 (▾·▸)·접힌 줄 … 줄임 상자 누름: 그 { }·[ ] 접기·펴기
 		    {
-		        const	kRow	= kEvent.target.closest(".jf")?.closest(".jl");
+		        const	kRow	= kEvent.target.closest(".jf, .jdots")?.closest(".jl");
 
 		        if (kRow != null)
 		        {
@@ -2764,7 +2857,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 		    }
 
-		    static FoldInner(nOpen)	// 접는 블록 안쪽 한 줄 (여는 줄 ~ 닫는 줄 사이 줄, 앞뒤 빈칸 뗌·빈칸 하나로 이음·빈 줄 뺌, 안쪽 여러 줄 블록: 그 블록도 한 줄), 안쪽 X 자 넘음: ... (블록마다 안쪽부터: { "nMinute": { ... } }, 넘으면 나머지 안 봄)
+		    static FoldInner(nOpen)	// 접는 블록 안쪽 한 줄 (여는 줄 ~ 닫는 줄 사이 줄, 앞뒤 빈칸 뗌·빈칸 하나로 이음·빈 줄 뺌, 안쪽 여러 줄 블록: 그 블록도 한 줄), 안쪽 X 자 넘음: 줄임 자리 SORT_FOLD_MARK (블록마다 안쪽부터: { "nMinute": {…} }, 넘으면 나머지 안 봄)
 		    {
 		        const	nClose	= Util.mapSortFold.get(nOpen);
 		        let		sInner	= "";
@@ -2778,7 +2871,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                const	nEnd	= Util.mapSortFold.get(nIndex);
 		                const	sChild	= Util.FoldInner(nIndex);
 
-		                sPart	= `${sPart}${sChild === "" ? "" : ` ${sChild} `}${Util.arrSortLine[nEnd].trim()}`;
+		                sPart	= `${sPart}${sChild === "" || sChild === Util.SORT_FOLD_MARK ? sChild : ` ${sChild} `}${Util.arrSortLine[nEnd].trim()}`;	// 줄임: {…} 붙임
 		                nIndex	= nEnd;
 		            }
 
@@ -2789,14 +2882,14 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		            if (sInner.length > Util.SORT_FOLD_MAX)
 		            {
-		                return "...";
+		                return Util.SORT_FOLD_MARK;
 		            }
 		        }
 
 		        return sInner;
 		    }
 
-		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: 안쪽 글 한 줄 "키": { "a": 1, … }, , { }·[ ] 마다 안쪽 X 자 넘음: { ... })·펴기 (안쪽 접힘: 그대로)
+		    static FoldSort(nStart, bFold)	// 여는 줄 ~ 닫는 줄 접기 (여는 줄: 안쪽 글 한 줄 "키": { "a": 1, … }, , { }·[ ] 마다 안쪽 X 자 넘음: {…} 줄임 상자)·펴기 (안쪽 접힘: 그대로)
 		    {
 		        const	nEnd	= Util.mapSortFold.get(nStart);
 		        const	arrRow	= document.getElementById("UtilSortRightBody").children;
@@ -2825,15 +2918,17 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 
 		        kRow.querySelector(".jtail")?.remove();
 
-		        if (bFold)	// 접힘: 안쪽 글 한 줄 + 닫는 줄 (예: { "sQuery": "INFO" },, 안쪽 { }·[ ] 마다 X 자 넘음: { ... })
+		        if (bFold)	// 접힘: 안쪽 글 한 줄 + 닫는 줄 (예: { "sQuery": "INFO" },, 안쪽 { }·[ ] 마다 X 자 넘음: {…} 줄임 상자, 누름: 펼침)
 		        {
 		            const	kTail	= document.createElement("span");
-		            const	sInner	= Util.FoldInner(nStart);	// 안쪽 한 줄
+		            const	sInner	= Util.FoldInner(nStart);	// 안쪽 한 줄 (줄임 자리: SORT_FOLD_MARK)
 		            const	sClose	= Util.arrSortLine[nEnd].trim();	// 닫는 줄 (예: },)
+		            const	sText	= sInner === "" || sInner === Util.SORT_FOLD_MARK ? sInner + sClose : ` ${sInner} ${sClose}`;
 
 		            kTail.className = "jtail";
 
-		            kTail.append(sInner === "" ? sClose : ` ${sInner} ${sClose}`);
+		            kTail.append(sText);
+		            Util.BoxFoldMark(kTail);	// 줄임 자리: … 상자
 		            kRow.querySelector(".jt").append(kTail);
 
 		            Util.setSortFold.add(nStart);
@@ -3093,7 +3188,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 
 		        const	kFile	= Util.kSortRightFile ?? { kHandle: null, sName: "대상.json" };
-		        const	sText	= Util.arrSortLine.join("\r\n");
+		        const	arrLine	= Util.arrSortLine.some((sLine) => sLine.includes(Util.SORT_FOLD_MARK)) ? Util.FormatJson(Util.sSortText, Util.nSortDepth, Infinity).arrLine : Util.arrSortLine;	// 뎁스 한 줄 줄임 있음: 줄임 없이 다시 펼침 (보이는 형식·글 다 그대로)
+		        const	sText	= arrLine.join("\r\n");
 		        let		sName	= kFile.sName;	// 저장한 이름
 
 		        try
