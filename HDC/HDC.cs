@@ -17,6 +17,8 @@ internal static class HDC
     private static readonly byte[] BinaryArchiveMagic = Encoding.ASCII.GetBytes("HDA6");
     private static readonly byte[] HuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC6");
     private static readonly byte[] BrotliContainerMagic = Encoding.ASCII.GetBytes("HDB7");
+    private static readonly byte[] DirectBrotliContainerMagic = Encoding.ASCII.GetBytes("HDB8");
+    private static readonly byte[] DeflateContainerMagic = Encoding.ASCII.GetBytes("HDF8");
     private static readonly byte[] LegacyHuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC5");
     private static readonly FileAttributes StoredAttributes =
         FileAttributes.Hidden | FileAttributes.Archive | FileAttributes.NotContentIndexed;
@@ -183,7 +185,25 @@ internal static class HDC
             (byte[] transformedArchive, int plainPrefixLength, int encryptedPrefixLength) = EncryptArchivePrefix(archive.ToArray());
             byte[] huffmanContainer = CompressEncryptedArchive(transformedArchive, plainPrefixLength, encryptedPrefixLength);
             byte[] brotliContainer = CompressBrotliLayer(huffmanContainer);
-            byte[] finalContainer = brotliContainer.Length < huffmanContainer.Length ? brotliContainer : huffmanContainer;
+            byte[] directBrotliContainer = CompressDirectLayer(transformedArchive, plainPrefixLength, encryptedPrefixLength, DirectBrotliContainerMagic, true);
+            byte[] deflateContainer = CompressDirectLayer(transformedArchive, plainPrefixLength, encryptedPrefixLength, DeflateContainerMagic, false);
+            byte[] finalContainer = huffmanContainer;
+
+            if (brotliContainer.Length < finalContainer.Length)
+            {
+                finalContainer = brotliContainer;
+            }
+
+            if (directBrotliContainer.Length < finalContainer.Length)
+            {
+                finalContainer = directBrotliContainer;
+            }
+
+            if (deflateContainer.Length < finalContainer.Length)
+            {
+                finalContainer = deflateContainer;
+            }
+
             string textContainer = EncodeAscii85(finalContainer);
 
             using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
@@ -585,8 +605,12 @@ internal static class HDC
                                   decoded.AsSpan(0, HuffmanContainerMagic.Length).SequenceEqual(HuffmanContainerMagic);
         bool isBrotliContainer = decoded.Length >= BrotliContainerMagic.Length &&
                                  decoded.AsSpan(0, BrotliContainerMagic.Length).SequenceEqual(BrotliContainerMagic);
+        bool isDirectBrotliContainer = decoded.Length >= DirectBrotliContainerMagic.Length &&
+                                       decoded.AsSpan(0, DirectBrotliContainerMagic.Length).SequenceEqual(DirectBrotliContainerMagic);
+        bool isDeflateContainer = decoded.Length >= DeflateContainerMagic.Length &&
+                                  decoded.AsSpan(0, DeflateContainerMagic.Length).SequenceEqual(DeflateContainerMagic);
 
-        if (!isHuffmanContainer && !isBrotliContainer)
+        if (!isHuffmanContainer && !isBrotliContainer && !isDirectBrotliContainer && !isDeflateContainer)
         {
             return false;
         }
@@ -626,6 +650,14 @@ internal static class HDC
         {
             using var huffmanContainer = new MemoryStream(DecompressBrotliLayer(archiveFile), false);
             archiveBytes = DecompressBinaryContainer(huffmanContainer);
+        }
+        else if (StreamStartsWith(archiveFile, DirectBrotliContainerMagic))
+        {
+            archiveBytes = DecompressDirectLayer(archiveFile, DirectBrotliContainerMagic, true);
+        }
+        else if (StreamStartsWith(archiveFile, DeflateContainerMagic))
+        {
+            archiveBytes = DecompressDirectLayer(archiveFile, DeflateContainerMagic, false);
         }
         else
         {
@@ -713,7 +745,7 @@ internal static class HDC
         uint expectedCrc = reader.ReadUInt32();
         byte[] codeLengths = reader.ReadBytes(256);
 
-        if (plainPrefixLength < 0 || plainPrefixLength > 100 ||
+        if (plainPrefixLength < 0 || plainPrefixLength > 333 ||
             encryptedPrefixLength != AesEncryptedByteLength(plainPrefixLength) ||
             rawLength < 0 || rawLength > int.MaxValue || encryptedPrefixLength > rawLength ||
             compressedLength < 0 || compressedLength > int.MaxValue || codeLengths.Length != 256 ||
@@ -745,19 +777,7 @@ internal static class HDC
             throw new InvalidDataException("데이터 크기가 올바르지 않습니다.");
         }
 
-        byte[] encryptedPrefix = transformedBytes.AsSpan(0, encryptedPrefixLength).ToArray();
-        byte[] plainPrefix = Decrypt(encryptedPrefix)
-            ?? throw new InvalidDataException("문자열을 읽지 못했습니다.");
-
-        if (plainPrefix.Length != plainPrefixLength)
-        {
-            throw new InvalidDataException("문자열을 읽지 못했습니다.");
-        }
-
-        byte[] archive = new byte[plainPrefix.Length + transformedBytes.Length - encryptedPrefixLength];
-        Buffer.BlockCopy(plainPrefix, 0, archive, 0, plainPrefix.Length);
-        Buffer.BlockCopy(transformedBytes, encryptedPrefixLength, archive, plainPrefix.Length, transformedBytes.Length - encryptedPrefixLength);
-        return archive;
+        return RestoreEncryptedArchive(transformedBytes, plainPrefixLength, encryptedPrefixLength);
     }
 
     private static byte[] DecompressBrotliLayer(Stream input)
@@ -926,7 +946,10 @@ internal static class HDC
         string archiveDirectory = Path.GetDirectoryName(archivePath)!;
         using var archiveFile = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        if (StreamStartsWith(archiveFile, HuffmanContainerMagic) || StreamStartsWith(archiveFile, BrotliContainerMagic))
+        if (StreamStartsWith(archiveFile, HuffmanContainerMagic) ||
+            StreamStartsWith(archiveFile, BrotliContainerMagic) ||
+            StreamStartsWith(archiveFile, DirectBrotliContainerMagic) ||
+            StreamStartsWith(archiveFile, DeflateContainerMagic))
         {
             HDCEBinaryArchive(archiveFile, archiveDirectory);
             return;
@@ -1544,7 +1567,7 @@ internal static class HDC
 
     private static (byte[] Data, int PlainPrefixLength, int EncryptedPrefixLength) EncryptArchivePrefix(byte[] archive)
     {
-        int plainPrefixLength = Math.Min(100, archive.Length);
+        int plainPrefixLength = Math.Min(333, archive.Length);
         byte[] encryptedPrefix = Encrypt(archive.AsSpan(0, plainPrefixLength).ToArray());
         byte[] transformedArchive = new byte[encryptedPrefix.Length + archive.Length - plainPrefixLength];
         Buffer.BlockCopy(encryptedPrefix, 0, transformedArchive, 0, encryptedPrefix.Length);
@@ -1624,6 +1647,125 @@ internal static class HDC
         }
 
         return container.ToArray();
+    }
+
+    private static byte[] CompressDirectLayer(byte[] source, int plainPrefixLength, int encryptedPrefixLength, byte[] magic, bool useBrotli)
+    {
+        using var compressed = new MemoryStream();
+
+        using (Stream compressor = useBrotli
+                   ? new BrotliStream(compressed, CompressionLevel.SmallestSize, true)
+                   : new DeflateStream(compressed, CompressionLevel.SmallestSize, true))
+        {
+            compressor.Write(source, 0, source.Length);
+        }
+
+        byte[] compressedBytes = compressed.ToArray();
+        var crc = new Crc32();
+        crc.Update(source, 0, source.Length);
+        using var container = new MemoryStream();
+
+        using (var output = new BinaryWriter(container, Encoding.ASCII, true))
+        {
+            output.Write(magic);
+            output.Write(plainPrefixLength);
+            output.Write(encryptedPrefixLength);
+            output.Write((long)source.Length);
+            output.Write((long)compressedBytes.Length);
+            output.Write(crc.Value);
+            output.Write(compressedBytes);
+        }
+
+        return container.ToArray();
+    }
+
+    private static byte[] DecompressDirectLayer(Stream input, byte[] expectedMagic, bool useBrotli)
+    {
+        input.Position = 0;
+        using var reader = new BinaryReader(input, Encoding.ASCII, true);
+        byte[] magic = reader.ReadBytes(expectedMagic.Length);
+
+        if (!magic.AsSpan().SequenceEqual(expectedMagic))
+        {
+            throw new InvalidDataException("파일 형식이 올바르지 않습니다.");
+        }
+
+        int plainPrefixLength = reader.ReadInt32();
+        int encryptedPrefixLength = reader.ReadInt32();
+        long rawLength = reader.ReadInt64();
+        long compressedLength = reader.ReadInt64();
+        uint expectedCrc = reader.ReadUInt32();
+
+        if (plainPrefixLength < 0 || plainPrefixLength > 333 ||
+            encryptedPrefixLength != AesEncryptedByteLength(plainPrefixLength) ||
+            rawLength < encryptedPrefixLength || rawLength > int.MaxValue ||
+            compressedLength < 0 || compressedLength > int.MaxValue ||
+            input.Length - input.Position != compressedLength)
+        {
+            throw new InvalidDataException("HDC 데이터가 올바르지 않습니다.");
+        }
+
+        byte[] compressedBytes = reader.ReadBytes((int)compressedLength);
+
+        if (compressedBytes.LongLength != compressedLength)
+        {
+            throw new InvalidDataException("데이터가 중간에 끝났습니다.");
+        }
+
+        using var compressed = new MemoryStream(compressedBytes, false);
+        using var transformed = new MemoryStream();
+        using (Stream decompressor = useBrotli
+                   ? new BrotliStream(compressed, CompressionMode.Decompress, true)
+                   : new DeflateStream(compressed, CompressionMode.Decompress, true))
+        {
+            byte[] buffer = new byte[BufferSize];
+            int read;
+
+            while ((read = decompressor.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                if (transformed.Length + read > rawLength)
+                {
+                    throw new InvalidDataException("데이터 크기가 올바르지 않습니다.");
+                }
+
+                transformed.Write(buffer, 0, read);
+            }
+        }
+
+        byte[] transformedBytes = transformed.ToArray();
+        var crc = new Crc32();
+        crc.Update(transformedBytes, 0, transformedBytes.Length);
+
+        if (transformedBytes.LongLength != rawLength || crc.Value != expectedCrc)
+        {
+            throw new InvalidDataException("파일 무결성 검증에 실패했습니다.");
+        }
+
+        return RestoreEncryptedArchive(transformedBytes, plainPrefixLength, encryptedPrefixLength);
+    }
+
+    private static byte[] RestoreEncryptedArchive(byte[] transformedBytes, int plainPrefixLength, int encryptedPrefixLength)
+    {
+        if (plainPrefixLength < 0 || plainPrefixLength > 333 ||
+            encryptedPrefixLength != AesEncryptedByteLength(plainPrefixLength) ||
+            encryptedPrefixLength > transformedBytes.Length)
+        {
+            throw new InvalidDataException("HDC 데이터가 올바르지 않습니다.");
+        }
+
+        byte[] encryptedPrefix = transformedBytes.AsSpan(0, encryptedPrefixLength).ToArray();
+        byte[] plainPrefix = Decrypt(encryptedPrefix)
+            ?? throw new InvalidDataException("문자열을 읽지 못했습니다.");
+
+        if (plainPrefix.Length != plainPrefixLength)
+        {
+            throw new InvalidDataException("문자열을 읽지 못했습니다.");
+        }
+
+        byte[] archive = new byte[plainPrefix.Length + transformedBytes.Length - encryptedPrefixLength];
+        Buffer.BlockCopy(plainPrefix, 0, archive, 0, plainPrefix.Length);
+        Buffer.BlockCopy(transformedBytes, encryptedPrefixLength, archive, plainPrefix.Length, transformedBytes.Length - encryptedPrefixLength);
+        return archive;
     }
 
     private static bool TryDecompressEncryptedArchive(string encodedContainer, out string? archiveText)
