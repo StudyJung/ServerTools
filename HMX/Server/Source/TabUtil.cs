@@ -834,7 +834,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        }
 
 		        const	kOpen	= Util.mapDiffFile[sSide];
-		        const	kFile	= kOpen != null && kOpen.sName === Util.mapDiffName[sSide] ? kOpen : { kHandle: null, sName: `${sSide === "Left" ? "기준" : "대상"}.txt`, bBom: false, sEol: "\r\n" };	// 연 파일 글: 그 파일, 그 외: 새 파일 (저장할 폴더·이름 고름)
+		        const	kFile	= kOpen != null && kOpen.sName === Util.mapDiffName[sSide] ? kOpen : { kHandle: null, sName: Util.IsDiffFile(sSide === "Left" ? "Right" : "Left") ? Util.mapDiffName[sSide === "Left" ? "Right" : "Left"] : `${sSide === "Left" ? "기준" : "대상"}.txt`, bBom: false, sEol: "\r\n" };	// 연 파일 글: 그 파일, 그 외: 새 파일 (기본 이름: 반대쪽 연 파일 이름, 없음: 기준·대상.txt) (저장할 폴더·이름 고름)
 		        const	sText	= (kFile.bBom ? "\uFEFF" : "") + sValue.replace(/\n/g, kFile.sEol);
 
 		        try
@@ -3125,7 +3125,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            return;
 		        }
 
-		        const	kFile	= Util.kSortFile ?? { kHandle: null, sName: Util.sSortName || "기준.json", bBom: false, sEol: "\r\n" };	// 연 파일: 그 파일, 그 외: 새 파일 (저장할 폴더·이름 고름)
+		        const	kFile	= Util.kSortFile ?? { kHandle: null, sName: Util.sSortName || Util.kSortRightFile?.sName || "기준.json", bBom: false, sEol: "\r\n" };	// 연 파일: 그 파일, 그 외: 새 파일 (기본 이름: 우 저장한 파일 이름, 없음: 기준.json) (저장할 폴더·이름 고름)
 		        const	sText	= (kFile.bBom ? "\uFEFF" : "") + sValue.replace(/\n/g, kFile.sEol);
 		        let		sName	= kFile.sName;	// 저장한 이름
 
@@ -3187,7 +3187,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            return;
 		        }
 
-		        const	kFile	= Util.kSortRightFile ?? { kHandle: null, sName: "대상.json" };
+		        const	kFile	= Util.kSortRightFile ?? { kHandle: null, sName: Util.sSortName || "대상.json" };	// 처음: 기본 이름 = 좌 파일 이름 (없음: 대상.json)
 		        const	arrLine	= Util.arrSortLine.some((sLine) => sLine.includes(Util.SORT_FOLD_MARK)) ? Util.FormatJson(Util.sSortText, Util.nSortDepth, Infinity).arrLine : Util.arrSortLine;	// 뎁스 한 줄 줄임 있음: 줄임 없이 다시 펼침 (보이는 형식·글 다 그대로)
 		        const	sText	= arrLine.join("\r\n");
 		        let		sName	= kFile.sName;	// 저장한 이름
