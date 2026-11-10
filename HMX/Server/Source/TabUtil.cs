@@ -2010,7 +2010,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        return setError;
 		    }
 
-		    static FormatJson(sText)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]) } (2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만)
+		    static FormatJson(sText)	// JSON → 비주얼 스튜디오 기본 형식 { arrLine, mapFold, sCount, setError (틀린 줄), mapMark (틀린 곳: 줄 → [[시작, 끝]]) } (2칸 들여쓰기, "키": 값, 객체·객체 든 배열: 줄마다, 값만 든 배열: 한 줄 [ a, b ], 빈 {}·[]: 한 줄, 빈 줄·키 순서·값 글자·주석: 입력 그대로, 틀린 JSON: 토큰 그대로 들여쓰기만, 쉼표 없이 붙은 값: 한 칸 띄움)
 		    {
 		        const	arrToken	= Util.JsonTokens(sText);
 		        const	arrClose	= new Array(arrToken.length).fill(-1);	// 여는 괄호 → 짝 닫는 괄호 토큰 위치
@@ -2055,6 +2055,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        const funcStart	= () => sLine.trim() === "";	// 줄 처음 (들여쓰기만)
 		        const funcAt	= (nFrom, nTo = nFrom) => arrAt.fill(arrLine.length, nFrom, nTo + 1);	// 그 토큰들: 지금 줄
 		        const funcCol	= (nIndex) => { arrCol[nIndex] = sLine.length; };	// 그 토큰: 지금 줄 끝 자리 (붙이기 전)
+		        const funcGap	= () => { sLine += !funcStart() && /[^\s\[{]$/.test(sLine) ? " " : ""; };	// 값·여는 괄호 앞 쉼표·: 없이 붙음 (틀린 JSON): 한 칸 띄움
 
 		        for (let nIndex = 0; nIndex < arrToken.length; ++nIndex)
 		        {
@@ -2087,6 +2088,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            if (kToken.sType !== "punct")	// 문자열·숫자 등: 그대로
 		            {
 		                funcAt(nIndex);
+		                funcGap();
 		                funcCol(nIndex);
 		                sLine += sToken;
 
@@ -2100,6 +2102,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                if (nClose === nIndex + 1)	// 빈 {}·[]
 		                {
 		                    funcAt(nIndex, nClose);
+		                    funcGap();
 		                    funcCol(nIndex);
 		                    arrCol[nClose] = sLine.length + 1;
 		                    sLine += sToken + arrToken[nClose].sText;
@@ -2113,12 +2116,20 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                    let	sItem	= "";	// 안쪽 (, 뒤 한 칸)
 
 		                    funcAt(nIndex, nClose);
+		                    funcGap();
 		                    funcCol(nIndex);
 
 		                    for (let nItem = nIndex + 1; nItem < nClose; ++nItem)
 		                    {
+		                        const	sText	= arrToken[nItem].sText;
+
+		                        if (sText !== "," && sItem !== "" && !sItem.endsWith(" "))	// 쉼표 없이 붙음 (틀린 JSON): 한 칸 띄움
+		                        {
+		                            sItem += " ";
+		                        }
+
 		                        arrCol[nItem] = sLine.length + 2 + sItem.length;	// "[ " 뒤
-		                        sItem += arrToken[nItem].sText === "," ? ", " : arrToken[nItem].sText;
+		                        sItem += sText === "," ? ", " : sText;
 		                    }
 
 		                    sLine += "[ " + sItem.trimEnd() + " ]";
@@ -2129,6 +2140,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		                }
 
 		                funcAt(nIndex);
+		                funcGap();
 		                funcCol(nIndex);
 		                sLine += sToken;
 		                nDepth++;
