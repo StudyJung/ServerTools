@@ -7,11 +7,13 @@ using System.Text;
 
 internal static class HDC
 {
-    private const string ArchiveMagic = "HDC-HUFFMAN-3";
+    private const string ArchiveMagic = "HDC-ARCHIVE-4";
     private const string LegacyEncryptedPayloadMagic = "HDC-HUFFMAN-2";
     private const string LegacyArchiveMagic = "HDC-HUFFMAN-1";
+    private const string LegacyFullEncryptionMagic = "HDC-HUFFMAN-3";
     private const int BufferSize = 128 * 1024;
     private const int MaximumEntries = 1_000_000;
+    private static readonly byte[] HuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC4");
     private static readonly FileAttributes StoredAttributes =
         FileAttributes.Hidden | FileAttributes.Archive | FileAttributes.NotContentIndexed;
 
@@ -150,23 +152,18 @@ internal static class HDC
                     continue;
                 }
 
-                FileAnalysis analysis = AnalyzeFile(entry);
-                string huffmanData = CompressFile(entry, analysis);
-                long encodedLength = huffmanData.Length;
-                string lengths = Convert.ToBase64String(analysis.CodeLengths);
+                (long rawLength, uint crc32, string base64Data) = ReadFileForArchive(entry);
 
                 WriteAsciiLine(archive, string.Join('|',
                     "F",
                     ((int)entry.Attributes).ToString("X8", CultureInfo.InvariantCulture),
                     entry.LastWriteUtcTicks.ToString(CultureInfo.InvariantCulture),
-                    analysis.RawLength.ToString(CultureInfo.InvariantCulture),
-                    analysis.CompressedLength.ToString(CultureInfo.InvariantCulture),
-                    analysis.Crc32.ToString("X8", CultureInfo.InvariantCulture),
-                    lengths,
-                    encodedLength.ToString(CultureInfo.InvariantCulture),
+                    rawLength.ToString(CultureInfo.InvariantCulture),
+                    crc32.ToString("X8", CultureInfo.InvariantCulture),
+                    base64Data.Length.ToString(CultureInfo.InvariantCulture),
                     EncodeText(entry.RelativePath)));
 
-                WriteAscii(archive, huffmanData);
+                WriteAscii(archive, base64Data);
                 WriteAscii(archive, "\r\n");
             }
 
@@ -177,11 +174,13 @@ internal static class HDC
                 throw new InvalidDataException("데이터가 너무 큽니다.");
             }
 
-            string encryptedArchive = Encrypt(Encoding.ASCII.GetString(archive.ToArray()));
+            string plainArchive = Encoding.ASCII.GetString(archive.ToArray());
+            string encryptedArchive = Encrypt(plainArchive);
+            string huffmanContainer = CompressEncryptedArchive(encryptedArchive);
 
             using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                WriteAscii(output, encryptedArchive);
+                WriteAscii(output, huffmanContainer);
                 output.Flush(true);
             }
 
@@ -209,6 +208,25 @@ internal static class HDC
         }
 
         return entries;
+    }
+
+    private static (long Length, uint Crc32, string Base64Data) ReadFileForArchive(Entry entry)
+    {
+        if (entry.Length > int.MaxValue)
+        {
+            throw new InvalidDataException("파일이 너무 큽니다.");
+        }
+
+        byte[] data = File.ReadAllBytes(entry.FullPath);
+
+        if (data.LongLength != entry.Length)
+        {
+            throw new IOException($"파일 크기가 변경되었습니다: {entry.FullPath}");
+        }
+
+        var crc = new Crc32();
+        crc.Update(data, 0, data.Length);
+        return (data.LongLength, crc.Value, Convert.ToBase64String(data));
     }
 
     private static void AddDirectory(string fullPath, string relativePath, List<Entry> entries)
@@ -469,7 +487,16 @@ internal static class HDC
         string archiveDirectory = Path.GetDirectoryName(archivePath)!;
         using var archiveFile = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         string storedArchive = ReadAsciiText(archiveFile, archiveFile.Length);
-        string archiveText = Decrypt(storedArchive) ?? storedArchive;
+        string archiveText;
+
+        if (!TryDecompressEncryptedArchive(storedArchive, out string? decodedArchive))
+        {
+            archiveText = Decrypt(storedArchive) ?? storedArchive;
+        }
+        else
+        {
+            archiveText = decodedArchive!;
+        }
 
         if (archiveText.Any(static character => character > 0x7F))
         {
@@ -477,7 +504,7 @@ internal static class HDC
         }
 
         using var input = new MemoryStream(Encoding.ASCII.GetBytes(archiveText), false);
-        (string rootName, int entryCount, bool encryptedPayload) = ReadArchiveHeader(input);
+        (string rootName, int entryCount, bool encryptedPayload, bool rawPayload) = ReadArchiveHeader(input);
         string destination = FindDestination(archiveDirectory, rootName);
 
         if (File.Exists(destination))
@@ -490,7 +517,7 @@ internal static class HDC
 
         try
         {
-            HDCEEntries(input, temporaryDirectory, entryCount, encryptedPayload);
+            HDCEEntries(input, temporaryDirectory, entryCount, encryptedPayload, rawPayload);
 
             if (ReadAsciiLine(input) != "END")
             {
@@ -526,12 +553,13 @@ internal static class HDC
         }
     }
 
-    private static (string RootName, int EntryCount, bool EncryptedPayload) ReadArchiveHeader(Stream payload)
+    private static (string RootName, int EntryCount, bool EncryptedPayload, bool RawPayload) ReadArchiveHeader(Stream payload)
     {
         string magic = ReadAsciiLine(payload, true);
         bool encryptedPayload = magic == LegacyEncryptedPayloadMagic;
+        bool rawPayload = magic == ArchiveMagic;
 
-        if (!encryptedPayload && magic != ArchiveMagic && magic != LegacyArchiveMagic)
+        if (!encryptedPayload && !rawPayload && magic != LegacyArchiveMagic && magic != LegacyFullEncryptionMagic)
         {
             throw new InvalidDataException("HDC 형식이 아닙니다.");
         }
@@ -560,10 +588,10 @@ internal static class HDC
             throw new InvalidDataException("항목 수가 올바르지 않습니다.");
         }
 
-        return (rootName, entryCount, encryptedPayload);
+        return (rootName, entryCount, encryptedPayload, rawPayload);
     }
 
-    private static void HDCEEntries(Stream payload, string temporaryDirectory, int entryCount, bool encryptedPayload)
+    private static void HDCEEntries(Stream payload, string temporaryDirectory, int entryCount, bool encryptedPayload, bool rawPayload)
     {
         var directories = new List<(string RelativePath, FileAttributes Attributes, long Ticks)>();
         string rootFullPath = Path.GetFullPath(temporaryDirectory);
@@ -580,6 +608,70 @@ internal static class HDC
                 string fullPath = GetSafePath(rootFullPath, relativePath);
                 Directory.CreateDirectory(fullPath);
                 directories.Add((relativePath, attributes, ticks));
+                continue;
+            }
+
+            if (rawPayload)
+            {
+                if (fields.Length != 7 || fields[0] != "F")
+                {
+                    throw new InvalidDataException("파일 항목이 올바르지 않습니다.");
+                }
+
+                FileAttributes rawFileAttributes = ParseAttributes(fields[1]);
+                long rawFileTicks = ParseTicks(fields[2]);
+                long rawFileLength = ParseNonNegativeLong(fields[3], "파일 크기");
+
+                if (!uint.TryParse(fields[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint expectedRawCrc))
+                {
+                    throw new InvalidDataException("파일 CRC 값이 올바르지 않습니다.");
+                }
+
+                long rawEncodedLength = ParseNonNegativeLong(fields[5], "Base64 데이터 크기");
+
+                if (rawEncodedLength != Base64Length(rawFileLength))
+                {
+                    throw new InvalidDataException("기록된 크기와 일치하지 않습니다.");
+                }
+
+                string rawRelativeFilePath = DecodeText(fields[6]);
+                string rawFullFilePath = GetSafePath(rootFullPath, rawRelativeFilePath);
+
+                if (rawRelativeFilePath.Length == 0)
+                {
+                    throw new InvalidDataException("파일 경로가 비어 있습니다.");
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(rawFullFilePath)!);
+                var rawBase64 = new Base64ReadStream(payload, rawEncodedLength);
+                uint actualRawCrc;
+
+                using (var output = new FileStream(rawFullFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, BufferSize, FileOptions.SequentialScan))
+                {
+                    actualRawCrc = CopyBase64File(rawBase64, rawFileLength, output);
+                    output.Flush(true);
+                }
+
+                rawBase64.AssertConsumed();
+
+                if (actualRawCrc != expectedRawCrc)
+                {
+                    throw new InvalidDataException($"파일 무결성 검증에 실패했습니다: {rawRelativeFilePath}");
+                }
+
+                int rawLineEnd = payload.ReadByte();
+
+                if (rawLineEnd == '\r')
+                {
+                    rawLineEnd = payload.ReadByte();
+                }
+
+                if (rawLineEnd != '\n')
+                {
+                    throw new InvalidDataException("파일 데이터의 끝 표시가 없습니다.");
+                }
+
+                ApplyFileMetadata(rawFullFilePath, rawFileAttributes, rawFileTicks);
                 continue;
             }
 
@@ -702,6 +794,34 @@ internal static class HDC
             string fullPath = GetSafePath(rootFullPath, directory.RelativePath);
             ApplyFileMetadata(fullPath, directory.Attributes, directory.Ticks);
         }
+    }
+
+    private static uint CopyBase64File(Base64ReadStream input, long expectedLength, Stream output)
+    {
+        var crc = new Crc32();
+        byte[] buffer = new byte[BufferSize];
+        long totalLength = 0;
+        int read;
+
+        while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            totalLength = checked(totalLength + read);
+
+            if (totalLength > expectedLength)
+            {
+                throw new InvalidDataException("파일 크기가 올바르지 않습니다.");
+            }
+
+            crc.Update(buffer, 0, read);
+            output.Write(buffer, 0, read);
+        }
+
+        if (totalLength != expectedLength)
+        {
+            throw new InvalidDataException("파일 크기가 올바르지 않습니다.");
+        }
+
+        return crc.Value;
     }
 
     private static FileAttributes ParseAttributes(string value)
@@ -960,6 +1080,115 @@ internal static class HDC
         return Base64Length(encryptedByteLength);
     }
 
+    private static string CompressEncryptedArchive(string encryptedArchive)
+    {
+        byte[] source = Encoding.ASCII.GetBytes(encryptedArchive);
+        var frequencies = new long[256];
+        var crc = new Crc32();
+
+        foreach (byte value in source)
+        {
+            frequencies[value]++;
+            crc.Update(value);
+        }
+
+        byte[] codeLengths = BuildCodeLengths(frequencies);
+        bool[][] codes = BuildCodes(codeLengths);
+        using var compressed = new MemoryStream();
+        var bitWriter = new HuffmanBitWriter(compressed, codes);
+
+        foreach (byte value in source)
+        {
+            bitWriter.WriteSymbol(value);
+        }
+
+        long compressedLength = bitWriter.Finish();
+
+        if (compressed.Length != compressedLength)
+        {
+            throw new InvalidOperationException("데이터 크기가 일치하지 않습니다.");
+        }
+
+        byte[] compressedBytes = compressed.ToArray();
+
+        using var container = new MemoryStream();
+
+        using (var output = new BinaryWriter(container, Encoding.ASCII, true))
+        {
+            output.Write(HuffmanContainerMagic);
+            output.Write((long)source.Length);
+            output.Write(compressedLength);
+            output.Write(crc.Value);
+            output.Write(codeLengths);
+            output.Write(compressedBytes);
+        }
+
+        return Convert.ToBase64String(container.ToArray());
+    }
+
+    private static bool TryDecompressEncryptedArchive(string encodedContainer, out string? archiveText)
+    {
+        archiveText = null;
+        byte[] container;
+
+        try
+        {
+            container = Convert.FromBase64String(encodedContainer);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        if (container.Length < HuffmanContainerMagic.Length ||
+            !container.AsSpan(0, HuffmanContainerMagic.Length).SequenceEqual(HuffmanContainerMagic))
+        {
+            return false;
+        }
+
+        using var input = new MemoryStream(container, false);
+        using var reader = new BinaryReader(input, Encoding.ASCII, true);
+        _ = reader.ReadBytes(HuffmanContainerMagic.Length);
+
+        long rawLength = reader.ReadInt64();
+        long compressedLength = reader.ReadInt64();
+        uint expectedCrc = reader.ReadUInt32();
+        byte[] codeLengths = reader.ReadBytes(256);
+
+        if (rawLength < 0 || rawLength > int.MaxValue || compressedLength < 0 || compressedLength > int.MaxValue ||
+            codeLengths.Length != 256 || input.Length - input.Position != compressedLength)
+        {
+            throw new InvalidDataException("HDC 데이터가 올바르지 않습니다.");
+        }
+
+        byte[] compressedBytes = reader.ReadBytes((int)compressedLength);
+
+        if (compressedBytes.LongLength != compressedLength)
+        {
+            throw new InvalidDataException("데이터가 중간에 끝났습니다.");
+        }
+
+        using var compressed = new MemoryStream(compressedBytes, false);
+        using var decrypted = new MemoryStream();
+        uint actualCrc = DecompressFile(compressed, codeLengths, compressedLength, rawLength, decrypted);
+
+        if (actualCrc != expectedCrc)
+        {
+            throw new InvalidDataException("파일 무결성 검증에 실패했습니다.");
+        }
+
+        string encryptedArchive = Encoding.ASCII.GetString(decrypted.ToArray());
+
+        if (encryptedArchive.Any(static character => character > 0x7F))
+        {
+            throw new InvalidDataException("문자열을 읽지 못했습니다.");
+        }
+
+        archiveText = Decrypt(encryptedArchive)
+            ?? throw new InvalidDataException("문자열을 읽지 못했습니다.");
+        return true;
+    }
+
     private static string EncodeText(string value)
     {
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(value));
@@ -1115,13 +1344,13 @@ internal static class HDC
 
     private sealed class HuffmanBitWriter
     {
-        private readonly Base64WriteStream _output;
+        private readonly Stream _output;
         private readonly bool[][] _codes;
         private byte _currentByte;
         private int _bitCount;
         private long _compressedLength;
 
-        public HuffmanBitWriter(Base64WriteStream output, bool[][] codes)
+        public HuffmanBitWriter(Stream output, bool[][] codes)
         {
             _output = output;
             _codes = codes;
@@ -1171,7 +1400,7 @@ internal static class HDC
         public HuffmanNodeRead? One;
     }
 
-    private static uint DecompressFile(Base64ReadStream input, byte[] lengths, long compressedLength, long rawLength, Stream output)
+    private static uint DecompressFile(Stream input, byte[] lengths, long compressedLength, long rawLength, Stream output)
     {
         bool[][] codes = BuildCodes(lengths);
         var root = new HuffmanNodeRead();
@@ -1251,13 +1480,15 @@ internal static class HDC
         byte[] buffer = new byte[BufferSize];
         int buffered = 0;
         long bytesRead = 0;
+        byte currentByte = 0;
+        int bitsRemaining = 0;
         HuffmanNodeRead current = root;
 
         for (long produced = 0; produced < rawLength; produced++)
         {
             while (current.Symbol < 0)
             {
-                int bit = ReadBit(input, ref bytesRead, compressedLength);
+                int bit = ReadBit(input, ref bytesRead, compressedLength, ref currentByte, ref bitsRemaining);
                 current = bit == 0 ? current.Zero! : current.One!;
 
                 if (current is null)
@@ -1291,9 +1522,9 @@ internal static class HDC
         return crc.Value;
     }
 
-    private static int ReadBit(Base64ReadStream input, ref long bytesRead, long expectedBytes)
+    private static int ReadBit(Stream input, ref long bytesRead, long expectedBytes, ref byte currentByte, ref int bitsRemaining)
     {
-        if (input.CurrentBitsRemaining == 0)
+        if (bitsRemaining == 0)
         {
             int value = input.ReadByte();
 
@@ -1302,11 +1533,15 @@ internal static class HDC
                 throw new InvalidDataException("비트가 중간에 끝났습니다.");
             }
 
-            input.SetCurrentByte((byte)value);
+            currentByte = (byte)value;
+            bitsRemaining = 8;
             bytesRead++;
         }
 
-        return input.ReadBit();
+        int bit = (currentByte & 0x80) == 0 ? 0 : 1;
+        currentByte <<= 1;
+        bitsRemaining--;
+        return bit;
     }
 
     private sealed class Base64WriteStream : Stream
