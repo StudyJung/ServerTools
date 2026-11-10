@@ -4535,7 +4535,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 		        }
 		    }
 
-		    static PushBack(bQuery)	// 실행 버튼 직접 누름·Enter 만 (자동 실행·막대 누름: 안 넣음): 지금 M·D·S·E·입력칸 기억 (앞 기억과 같음: 안 넣음, 최근 X회 넘음: 오래된 것 지움)
+		    static PushBack(bQuery)	// 실행 버튼 직접 누름·Enter 만 (자동 실행·막대 누름: 안 넣음): 지금 M·D·S·E·입력칸 기억 (새 기억: 늘 맨 뒤 0 (과거 위치에서도 앞 기억 버리지 않고 하나씩 밀림, 공통 네비게이션 규칙), 지금 위치와 같음: 안 넣음, 최근 X회 넘음: 오래된 것 지움)
 		    {
 		        const	arrBack	= Query.GetBack(bQuery);
 		        const kState	= {
@@ -4556,8 +4556,7 @@ static class QueryPage	// 페이지 쿼리 탭 스크립트 (상태 없음 → �
 
 		        if (nPos < 0 || JSON.stringify(arrBack[nPos]) !== JSON.stringify(kState))	// 지금 위치와 같음: 안 넣음
 		        {
-		            arrBack.length = nPos + 1;	// 지금 위치 뒤 (→ 쪽) 기억 버림
-		            arrBack.push(kState);
+		            arrBack.push(kState);	// 늘 맨 뒤 (과거에서도: 앞 기억 그대로 하나씩 밀림)
 
 		            if (arrBack.length > Query.BACK_MAX)
 		            {
