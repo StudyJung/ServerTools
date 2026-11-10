@@ -786,7 +786,7 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<span id="ProcessVersion" title="설정 버전"></span>
 		<button type="button" id="ProcessSummaryButton" title="현황·필터">현황</button>
 		<button type="button" id="ProcessLogButton" title="작업 로그">로그</button>
-		<button type="button" id="ProcessErrButton" title="에러 로그">에러</button>
+		<button type="button" id="ProcessErrButton" title="에러 로그(Redis)">에러</button>
 		<button type="button" id="ProcessAddButton" class="needs-conn" title="서버 등록">등록</button>
 		<button type="button" id="ProcessExpandButton" title="모두 펴기">펴기</button>
 		<button type="button" id="ProcessCollapseButton" title="모두 접기">접기</button>
