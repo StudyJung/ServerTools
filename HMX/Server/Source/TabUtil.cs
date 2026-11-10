@@ -1524,6 +1524,23 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		        Util.mapUndo.delete(kText.id);
 		    }
 
+		    static OnSaveKey(kEvent, sButton)	// 디프·소트 창 Ctrl+S: 그 창 저장 버튼 누름과 같음 (꺼짐: 안 함, 브라우저 페이지 저장 막음)
+		    {
+		        if (kEvent.code !== "KeyS" || !(kEvent.ctrlKey || kEvent.metaKey) || kEvent.altKey || kEvent.shiftKey)
+		        {
+		            return;
+		        }
+
+		        const	kButton	= document.getElementById(sButton);
+
+		        kEvent.preventDefault();
+
+		        if (!kButton.disabled)
+		        {
+		            kButton.click();
+		        }
+		    }
+
 		    static OnUndoKey(kEvent)	// 편집 칸 Ctrl+Z: 되돌림, Ctrl+Y·Ctrl+Shift+Z: 다시 하기 (그 창 기억, 브라우저 기본 막음, 한글 조합 중: 기본)
 		    {
 		        if (kEvent.isComposing || kEvent.altKey || !(kEvent.ctrlKey || kEvent.metaKey))
@@ -3238,6 +3255,7 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            });
 		            kText.addEventListener("paste", () => Util.KeepDiffName(sSide, "붙여넣기", "복사"));	// 붙여넣기: 이름 복사 (연 파일: 그대로)
 		            kText.addEventListener("keydown", Util.OnUndoKey);	// Ctrl+Z·Y: 창마다 되돌리기 (브라우저 기본 대신)
+		            kText.addEventListener("keydown", (kEvent) => Util.OnSaveKey(kEvent, `UtilDiff${sSide}Save`));	// Ctrl+S: 그 창 저장
 		            kText.addEventListener("beforeinput", Util.OnUndoBefore);	// 고침 전 실제 글 기억 (메뉴 실행 취소: 막고 창마다)
 		            kText.addEventListener("beforeinput", (kEvent) => Util.OnDiffBeforeInput(sSide, kEvent));	// 모두 고름 → 지움·붙여넣기: 비교 풂
 		            kText.addEventListener("input", (kEvent) => Util.OnDiffInput(sSide, kEvent));	// 고침: 기본 편집 그대로 + 비교 중 색 맞춤
@@ -3289,6 +3307,8 @@ class TabUtil	// 유틸 탭: 1번 창 하위 탭 타임 (시간)·디프 (비교
 		            }
 		        });
 		        kSortText.addEventListener("keydown", Util.OnUndoKey);	// Ctrl+Z·Y: 창 되돌리기 (브라우저 기본 대신)
+		        kSortText.addEventListener("keydown", (kEvent) => Util.OnSaveKey(kEvent, "UtilSortLeftSave"));	// Ctrl+S: 좌 저장
+		        document.getElementById("UtilSortRightBody").addEventListener("keydown", (kEvent) => Util.OnSaveKey(kEvent, "UtilSortRightSave"));	// Ctrl+S: 우 저장 (우 창 누름: 포커스)
 		        kSortText.addEventListener("beforeinput", Util.OnUndoBefore);	// 고침 전 글 기억
 		        kSortText.addEventListener("input", Util.OnUndoInput);	// 고친 뒤 바뀐 부분 기억
 		        document.getElementById("UtilSortLeftOpen").addEventListener("click", Util.OpenSortFile);	// 좌 찾기: 파일 열기
