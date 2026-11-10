@@ -645,9 +645,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<span class="title" id="ViewTitle"></span>
 		<div class="toolright">
 		<div class="btngroup">
-		<button type="button" id="ViewPrev" title="포지션 위로" aria-label="포지션 위로" disabled>«</button>
+		<button type="button" id="ViewPrev" title="위로" aria-label="포지션 위로" disabled>«</button>
 		<button type="button" id="ViewShift" tabindex="-1" aria-label="포지션">0</button>
-		<button type="button" id="ViewNext" title="포지션 아래로" aria-label="포지션 아래로" disabled>»</button>
+		<button type="button" id="ViewNext" title="아래로" aria-label="포지션 아래로" disabled>»</button>
 		</div>
 		</div>
 		</div>
@@ -682,9 +682,9 @@ class Web : IHostedService	// 웹 서버 (Kestrel + Minimal API, Main.Service �
 		<div class="title" id="FileViewTitle">*.log·*.txt·*.json·*.ini·*.bat·*.xml·*.config·*.md·*.lua</div>
 		<div class="toolright">
 		<div class="btngroup">
-		<button type="button" id="FilePrev" title="포지션 위로" aria-label="포지션 위로" disabled>«</button>
+		<button type="button" id="FilePrev" title="위로" aria-label="포지션 위로" disabled>«</button>
 		<button type="button" id="FileShift" tabindex="-1" aria-label="포지션">0</button>
-		<button type="button" id="FileNext" title="포지션 아래로" aria-label="포지션 아래로" disabled>»</button>
+		<button type="button" id="FileNext" title="아래로" aria-label="포지션 아래로" disabled>»</button>
 		</div>
 		</div>
 		</div>
