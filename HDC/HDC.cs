@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Numerics;
 using System.Security;
 using System.Security.Cryptography;
@@ -13,7 +14,10 @@ internal static class HDC
     private const string LegacyFullEncryptionMagic = "HDC-HUFFMAN-3";
     private const int BufferSize = 128 * 1024;
     private const int MaximumEntries = 1_000_000;
-    private static readonly byte[] HuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC5");
+    private static readonly byte[] BinaryArchiveMagic = Encoding.ASCII.GetBytes("HDA6");
+    private static readonly byte[] HuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC6");
+    private static readonly byte[] BrotliContainerMagic = Encoding.ASCII.GetBytes("HDB7");
+    private static readonly byte[] LegacyHuffmanContainerMagic = Encoding.ASCII.GetBytes("HDC5");
     private static readonly FileAttributes StoredAttributes =
         FileAttributes.Hidden | FileAttributes.Archive | FileAttributes.NotContentIndexed;
 
@@ -135,52 +139,56 @@ internal static class HDC
         try
         {
             using var archive = new MemoryStream();
-
-            WriteAsciiLine(archive, ArchiveMagic);
-            WriteAsciiLine(archive, "ROOT|" + EncodeText(Path.GetFileName(sourceRoot)));
-            WriteAsciiLine(archive, "COUNT|" + entries.Count.ToString(CultureInfo.InvariantCulture));
-
-            foreach (Entry entry in entries)
+            using (var writer = new BinaryWriter(archive, Encoding.UTF8, true))
             {
-                if (entry.IsDirectory)
+                writer.Write(BinaryArchiveMagic);
+                writer.Write(Path.GetFileName(sourceRoot));
+                writer.Write(entries.Count);
+
+                foreach (Entry entry in entries)
                 {
-                    WriteAsciiLine(archive, string.Join('|',
-                        "D",
-                        ((int)entry.Attributes).ToString("X8", CultureInfo.InvariantCulture),
-                        entry.LastWriteUtcTicks.ToString(CultureInfo.InvariantCulture),
-                        EncodeText(entry.RelativePath)));
-                    continue;
+                    if (entry.IsDirectory)
+                    {
+                        writer.Write((byte)'D');
+                        writer.Write((int)entry.Attributes);
+                        writer.Write(entry.LastWriteUtcTicks);
+                        writer.Write(entry.RelativePath);
+                        continue;
+                    }
+
+                    (byte[] data, uint crc32) = ReadFileForArchive(entry);
+
+                    if (archive.Length > int.MaxValue - data.LongLength)
+                    {
+                        throw new InvalidDataException("파일이 너무 큽니다.");
+                    }
+
+                    writer.Write((byte)'F');
+                    writer.Write((int)entry.Attributes);
+                    writer.Write(entry.LastWriteUtcTicks);
+                    writer.Write(entry.RelativePath);
+                    writer.Write((long)data.Length);
+                    writer.Write(crc32);
+                    writer.Write(data);
                 }
 
-                (long rawLength, uint crc32, string base64Data) = ReadFileForArchive(entry);
-
-                WriteAsciiLine(archive, string.Join('|',
-                    "F",
-                    ((int)entry.Attributes).ToString("X8", CultureInfo.InvariantCulture),
-                    entry.LastWriteUtcTicks.ToString(CultureInfo.InvariantCulture),
-                    rawLength.ToString(CultureInfo.InvariantCulture),
-                    crc32.ToString("X8", CultureInfo.InvariantCulture),
-                    base64Data.Length.ToString(CultureInfo.InvariantCulture),
-                    EncodeText(entry.RelativePath)));
-
-                WriteAscii(archive, base64Data);
-                WriteAscii(archive, "\r\n");
+                writer.Write((byte)0xFF);
             }
-
-            WriteAsciiLine(archive, "END");
 
             if (archive.Length > int.MaxValue)
             {
                 throw new InvalidDataException("데이터가 너무 큽니다.");
             }
 
-            string plainArchive = Encoding.ASCII.GetString(archive.ToArray());
-            (string transformedArchive, int plainPrefixLength, int encryptedPrefixLength) = EncryptArchivePrefix(plainArchive);
-            string huffmanContainer = CompressEncryptedArchive(transformedArchive, plainPrefixLength, encryptedPrefixLength);
+            (byte[] transformedArchive, int plainPrefixLength, int encryptedPrefixLength) = EncryptArchivePrefix(archive.ToArray());
+            byte[] huffmanContainer = CompressEncryptedArchive(transformedArchive, plainPrefixLength, encryptedPrefixLength);
+            byte[] brotliContainer = CompressBrotliLayer(huffmanContainer);
+            byte[] finalContainer = brotliContainer.Length < huffmanContainer.Length ? brotliContainer : huffmanContainer;
+            string textContainer = EncodeAscii85(finalContainer);
 
             using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                WriteAscii(output, huffmanContainer);
+                WriteAscii(output, textContainer);
                 output.Flush(true);
             }
 
@@ -210,7 +218,7 @@ internal static class HDC
         return entries;
     }
 
-    private static (long Length, uint Crc32, string Base64Data) ReadFileForArchive(Entry entry)
+    private static (byte[] Data, uint Crc32) ReadFileForArchive(Entry entry)
     {
         if (entry.Length > int.MaxValue)
         {
@@ -226,7 +234,7 @@ internal static class HDC
 
         var crc = new Crc32();
         crc.Update(data, 0, data.Length);
-        return (data.LongLength, crc.Value, Convert.ToBase64String(data));
+        return (data, crc.Value);
     }
 
     private static void AddDirectory(string fullPath, string relativePath, List<Entry> entries)
@@ -463,6 +471,437 @@ internal static class HDC
         return codes;
     }
 
+    private static string EncodeAscii85(byte[] data)
+    {
+        var output = new StringBuilder(data.Length + data.Length / 4 + 16);
+        int lineLength = 0;
+
+        void Append(char value)
+        {
+            if (lineLength == 80)
+            {
+                output.Append("\r\n");
+                lineLength = 0;
+            }
+
+            output.Append(value);
+            lineLength++;
+        }
+
+        Span<char> encoded = stackalloc char[5];
+
+        for (int offset = 0; offset < data.Length; offset += 4)
+        {
+            int count = Math.Min(4, data.Length - offset);
+            uint value = 0;
+
+            for (int index = 0; index < 4; index++)
+            {
+                value = (value << 8) | (index < count ? data[offset + index] : 0u);
+            }
+
+            for (int index = encoded.Length - 1; index >= 0; index--)
+            {
+                encoded[index] = (char)('!' + value % 85);
+                value /= 85;
+            }
+
+            int encodedCount = count == 4 ? 5 : count + 1;
+
+            for (int index = 0; index < encodedCount; index++)
+            {
+                Append(encoded[index]);
+            }
+        }
+
+        return output.ToString();
+    }
+
+    private static bool TryDecodeAscii85Container(string encoded, out byte[]? container)
+    {
+        container = null;
+        byte[] decoded;
+
+        try
+        {
+            var symbols = new List<byte>(encoded.Length);
+
+            foreach (char character in encoded)
+            {
+                if (char.IsWhiteSpace(character))
+                {
+                    continue;
+                }
+
+                if (character is < '!' or > 'u')
+                {
+                    return false;
+                }
+
+                symbols.Add((byte)character);
+            }
+
+            if (symbols.Count % 5 == 1)
+            {
+                return false;
+            }
+
+            using var output = new MemoryStream();
+            Span<byte> bytes = stackalloc byte[4];
+
+            for (int offset = 0; offset < symbols.Count; offset += 5)
+            {
+                int count = Math.Min(5, symbols.Count - offset);
+                ulong value = 0;
+
+                for (int index = 0; index < 5; index++)
+                {
+                    uint digit = index < count ? (uint)(symbols[offset + index] - '!') : 84u;
+                    value = value * 85 + digit;
+                }
+
+                if (value > uint.MaxValue)
+                {
+                    return false;
+                }
+
+                uint block = (uint)value;
+                bytes[0] = (byte)(block >> 24);
+                bytes[1] = (byte)(block >> 16);
+                bytes[2] = (byte)(block >> 8);
+                bytes[3] = (byte)block;
+                int byteCount = count == 5 ? 4 : count - 1;
+                output.Write(bytes[..byteCount]);
+            }
+
+            decoded = output.ToArray();
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+
+        bool isHuffmanContainer = decoded.Length >= HuffmanContainerMagic.Length &&
+                                  decoded.AsSpan(0, HuffmanContainerMagic.Length).SequenceEqual(HuffmanContainerMagic);
+        bool isBrotliContainer = decoded.Length >= BrotliContainerMagic.Length &&
+                                 decoded.AsSpan(0, BrotliContainerMagic.Length).SequenceEqual(BrotliContainerMagic);
+
+        if (!isHuffmanContainer && !isBrotliContainer)
+        {
+            return false;
+        }
+
+        container = decoded;
+        return true;
+    }
+
+    private static bool StreamStartsWith(Stream input, byte[] prefix)
+    {
+        long originalPosition = input.Position;
+        input.Position = 0;
+        byte[] actual = new byte[prefix.Length];
+        int read = 0;
+
+        while (read < actual.Length)
+        {
+            int count = input.Read(actual, read, actual.Length - read);
+
+            if (count == 0)
+            {
+                break;
+            }
+
+            read += count;
+        }
+
+        input.Position = originalPosition;
+        return read == prefix.Length && actual.AsSpan().SequenceEqual(prefix);
+    }
+
+    private static void HDCEBinaryArchive(Stream archiveFile, string archiveDirectory)
+    {
+        byte[] archiveBytes;
+
+        if (StreamStartsWith(archiveFile, BrotliContainerMagic))
+        {
+            using var huffmanContainer = new MemoryStream(DecompressBrotliLayer(archiveFile), false);
+            archiveBytes = DecompressBinaryContainer(huffmanContainer);
+        }
+        else
+        {
+            archiveBytes = DecompressBinaryContainer(archiveFile);
+        }
+
+        using var input = new MemoryStream(archiveBytes, false);
+        using var reader = new BinaryReader(input, Encoding.UTF8, true);
+        byte[] magic = reader.ReadBytes(BinaryArchiveMagic.Length);
+
+        if (!magic.AsSpan().SequenceEqual(BinaryArchiveMagic))
+        {
+            throw new InvalidDataException("파일 형식이 올바르지 않습니다.");
+        }
+
+        string rootName = reader.ReadString();
+
+        if (string.IsNullOrWhiteSpace(rootName) || rootName is "." or ".." ||
+            rootName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || rootName.Contains('/') || rootName.Contains('\\'))
+        {
+            throw new InvalidDataException("폴더명이 올바르지 않습니다.");
+        }
+
+        int entryCount = reader.ReadInt32();
+
+        if (entryCount < 1 || entryCount > MaximumEntries)
+        {
+            throw new InvalidDataException("항목 수가 올바르지 않습니다.");
+        }
+
+        string destination = FindDestination(archiveDirectory, rootName);
+
+        if (File.Exists(destination))
+        {
+            throw new IOException($"같은 이름의 파일이 있습니다: {destination}");
+        }
+
+        string temporaryDirectory = FindTemporaryDirectory(destination);
+        Directory.CreateDirectory(temporaryDirectory);
+
+        try
+        {
+            HDCEBinaryEntries(reader, temporaryDirectory, entryCount);
+
+            if (reader.ReadByte() != 0xFF || input.Position != input.Length)
+            {
+                throw new InvalidDataException("데이터 끝 표시가 올바르지 않습니다.");
+            }
+
+            InstallHDCEedTree(temporaryDirectory, destination);
+
+            if (Directory.Exists(temporaryDirectory))
+            {
+                Directory.Delete(temporaryDirectory, true);
+            }
+
+            Console.WriteLine($"완료: {destination}");
+        }
+        catch
+        {
+            if (Directory.Exists(temporaryDirectory))
+            {
+                Directory.Delete(temporaryDirectory, true);
+            }
+
+            throw;
+        }
+    }
+
+    private static byte[] DecompressBinaryContainer(Stream input)
+    {
+        input.Position = 0;
+        using var reader = new BinaryReader(input, Encoding.ASCII, true);
+        byte[] magic = reader.ReadBytes(HuffmanContainerMagic.Length);
+
+        if (!magic.AsSpan().SequenceEqual(HuffmanContainerMagic))
+        {
+            throw new InvalidDataException("파일 형식이 올바르지 않습니다.");
+        }
+
+        int plainPrefixLength = reader.ReadInt32();
+        int encryptedPrefixLength = reader.ReadInt32();
+        long rawLength = reader.ReadInt64();
+        long compressedLength = reader.ReadInt64();
+        uint expectedCrc = reader.ReadUInt32();
+        byte[] codeLengths = reader.ReadBytes(256);
+
+        if (plainPrefixLength < 0 || plainPrefixLength > 100 ||
+            encryptedPrefixLength != AesEncryptedByteLength(plainPrefixLength) ||
+            rawLength < 0 || rawLength > int.MaxValue || encryptedPrefixLength > rawLength ||
+            compressedLength < 0 || compressedLength > int.MaxValue || codeLengths.Length != 256 ||
+            input.Length - input.Position != compressedLength)
+        {
+            throw new InvalidDataException("HDC 데이터가 올바르지 않습니다.");
+        }
+
+        byte[] compressedBytes = reader.ReadBytes((int)compressedLength);
+
+        if (compressedBytes.LongLength != compressedLength)
+        {
+            throw new InvalidDataException("데이터가 중간에 끝났습니다.");
+        }
+
+        using var compressed = new MemoryStream(compressedBytes, false);
+        using var transformed = new MemoryStream();
+        uint actualCrc = DecompressFile(compressed, codeLengths, compressedLength, rawLength, transformed);
+
+        if (actualCrc != expectedCrc)
+        {
+            throw new InvalidDataException("파일 무결성 검증에 실패했습니다.");
+        }
+
+        byte[] transformedBytes = transformed.ToArray();
+
+        if (transformedBytes.LongLength != rawLength)
+        {
+            throw new InvalidDataException("데이터 크기가 올바르지 않습니다.");
+        }
+
+        byte[] encryptedPrefix = transformedBytes.AsSpan(0, encryptedPrefixLength).ToArray();
+        byte[] plainPrefix = Decrypt(encryptedPrefix)
+            ?? throw new InvalidDataException("문자열을 읽지 못했습니다.");
+
+        if (plainPrefix.Length != plainPrefixLength)
+        {
+            throw new InvalidDataException("문자열을 읽지 못했습니다.");
+        }
+
+        byte[] archive = new byte[plainPrefix.Length + transformedBytes.Length - encryptedPrefixLength];
+        Buffer.BlockCopy(plainPrefix, 0, archive, 0, plainPrefix.Length);
+        Buffer.BlockCopy(transformedBytes, encryptedPrefixLength, archive, plainPrefix.Length, transformedBytes.Length - encryptedPrefixLength);
+        return archive;
+    }
+
+    private static byte[] DecompressBrotliLayer(Stream input)
+    {
+        input.Position = 0;
+        using var reader = new BinaryReader(input, Encoding.ASCII, true);
+        byte[] magic = reader.ReadBytes(BrotliContainerMagic.Length);
+
+        if (!magic.AsSpan().SequenceEqual(BrotliContainerMagic))
+        {
+            throw new InvalidDataException("파일 형식이 올바르지 않습니다.");
+        }
+
+        long rawLength = reader.ReadInt64();
+        long compressedLength = reader.ReadInt64();
+        uint expectedCrc = reader.ReadUInt32();
+
+        if (rawLength < 0 || rawLength > int.MaxValue || compressedLength < 0 || compressedLength > int.MaxValue ||
+            input.Length - input.Position != compressedLength)
+        {
+            throw new InvalidDataException("HDC 데이터가 올바르지 않습니다.");
+        }
+
+        byte[] compressedBytes = reader.ReadBytes((int)compressedLength);
+
+        if (compressedBytes.LongLength != compressedLength)
+        {
+            throw new InvalidDataException("데이터가 중간에 끝났습니다.");
+        }
+
+        using var compressed = new MemoryStream(compressedBytes, false);
+        using var decompressed = new MemoryStream();
+        using (var brotli = new BrotliStream(compressed, CompressionMode.Decompress, true))
+        {
+            byte[] buffer = new byte[BufferSize];
+            int read;
+
+            while ((read = brotli.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                if (decompressed.Length + read > rawLength)
+                {
+                    throw new InvalidDataException("데이터 크기가 올바르지 않습니다.");
+                }
+
+                decompressed.Write(buffer, 0, read);
+            }
+        }
+
+        if (decompressed.Length != rawLength)
+        {
+            throw new InvalidDataException("데이터 크기가 올바르지 않습니다.");
+        }
+
+        byte[] huffmanContainer = decompressed.ToArray();
+        var crc = new Crc32();
+        crc.Update(huffmanContainer, 0, huffmanContainer.Length);
+
+        if (crc.Value != expectedCrc || huffmanContainer.Length < HuffmanContainerMagic.Length ||
+            !huffmanContainer.AsSpan(0, HuffmanContainerMagic.Length).SequenceEqual(HuffmanContainerMagic))
+        {
+            throw new InvalidDataException("파일 무결성 검증에 실패했습니다.");
+        }
+
+        return huffmanContainer;
+    }
+
+    private static void HDCEBinaryEntries(BinaryReader reader, string temporaryDirectory, int entryCount)
+    {
+        var directories = new List<(string RelativePath, long Ticks)>();
+        string rootFullPath = Path.GetFullPath(temporaryDirectory);
+
+        for (int index = 0; index < entryCount; index++)
+        {
+            byte type = reader.ReadByte();
+            FileAttributes attributes = (FileAttributes)reader.ReadInt32() & StoredAttributes;
+            long ticks = reader.ReadInt64();
+            string relativePath = reader.ReadString();
+
+            if (ticks < 0 || ticks > DateTime.MaxValue.Ticks)
+            {
+                throw new InvalidDataException("파일 시간 값이 범위를 벗어났습니다.");
+            }
+
+            string fullPath = GetSafePath(rootFullPath, relativePath);
+
+            if (type == (byte)'D')
+            {
+                Directory.CreateDirectory(fullPath);
+                directories.Add((relativePath, ticks));
+                continue;
+            }
+
+            if (type != (byte)'F' || relativePath.Length == 0)
+            {
+                throw new InvalidDataException("파일 항목이 올바르지 않습니다.");
+            }
+
+            long fileLength = reader.ReadInt64();
+            uint expectedCrc = reader.ReadUInt32();
+
+            if (fileLength < 0 || fileLength > reader.BaseStream.Length - reader.BaseStream.Position)
+            {
+                throw new InvalidDataException("파일 크기가 올바르지 않습니다.");
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            var crc = new Crc32();
+            byte[] buffer = new byte[BufferSize];
+            long remaining = fileLength;
+
+            using (var output = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, BufferSize, FileOptions.SequentialScan))
+            {
+                while (remaining > 0)
+                {
+                    int read = reader.Read(buffer, 0, (int)Math.Min(buffer.Length, remaining));
+
+                    if (read == 0)
+                    {
+                        throw new InvalidDataException("파일 데이터가 중간에 끝났습니다.");
+                    }
+
+                    crc.Update(buffer, 0, read);
+                    output.Write(buffer, 0, read);
+                    remaining -= read;
+                }
+
+                output.Flush(true);
+            }
+
+            if (crc.Value != expectedCrc)
+            {
+                throw new InvalidDataException($"파일 무결성 검증에 실패했습니다: {relativePath}");
+            }
+
+            ApplyFileMetadata(fullPath, attributes, ticks);
+        }
+
+        foreach (var directory in directories.OrderByDescending(static item => item.RelativePath.Length))
+        {
+            string fullPath = GetSafePath(rootFullPath, directory.RelativePath);
+            Directory.SetLastWriteTimeUtc(fullPath, new DateTime(directory.Ticks, DateTimeKind.Utc));
+        }
+    }
+
     private static void HDCE(string requestedArchivePath)
     {
         if (string.IsNullOrWhiteSpace(requestedArchivePath))
@@ -486,7 +925,22 @@ internal static class HDC
 
         string archiveDirectory = Path.GetDirectoryName(archivePath)!;
         using var archiveFile = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        if (StreamStartsWith(archiveFile, HuffmanContainerMagic) || StreamStartsWith(archiveFile, BrotliContainerMagic))
+        {
+            HDCEBinaryArchive(archiveFile, archiveDirectory);
+            return;
+        }
+
         string storedArchive = ReadAsciiText(archiveFile, archiveFile.Length);
+
+        if (TryDecodeAscii85Container(storedArchive, out byte[]? decodedContainer))
+        {
+            using var decodedStream = new MemoryStream(decodedContainer!, false);
+            HDCEBinaryArchive(decodedStream, archiveDirectory);
+            return;
+        }
+
         string archiveText;
 
         if (!TryDecompressEncryptedArchive(storedArchive, out string? decodedArchive))
@@ -1080,21 +1534,27 @@ internal static class HDC
 
     private static long AesEncryptedTextLength(long plainTextLength)
     {
-        long encryptedByteLength = checked((plainTextLength / 16 + 1) * 16);
-        return Base64Length(encryptedByteLength);
+        return Base64Length(AesEncryptedByteLength(plainTextLength));
     }
 
-    private static (string Data, int PlainPrefixLength, int EncryptedPrefixLength) EncryptArchivePrefix(string archive)
+    private static long AesEncryptedByteLength(long plainTextLength)
+    {
+        return checked((plainTextLength / 16 + 1) * 16);
+    }
+
+    private static (byte[] Data, int PlainPrefixLength, int EncryptedPrefixLength) EncryptArchivePrefix(byte[] archive)
     {
         int plainPrefixLength = Math.Min(100, archive.Length);
-        string encryptedPrefix = Encrypt(archive[..plainPrefixLength]);
-        string transformedArchive = encryptedPrefix + archive[plainPrefixLength..];
+        byte[] encryptedPrefix = Encrypt(archive.AsSpan(0, plainPrefixLength).ToArray());
+        byte[] transformedArchive = new byte[encryptedPrefix.Length + archive.Length - plainPrefixLength];
+        Buffer.BlockCopy(encryptedPrefix, 0, transformedArchive, 0, encryptedPrefix.Length);
+        Buffer.BlockCopy(archive, plainPrefixLength, transformedArchive, encryptedPrefix.Length, archive.Length - plainPrefixLength);
         return (transformedArchive, plainPrefixLength, encryptedPrefix.Length);
     }
 
-    private static string CompressEncryptedArchive(string transformedArchive, int plainPrefixLength, int encryptedPrefixLength)
+    private static byte[] CompressEncryptedArchive(byte[] transformedArchive, int plainPrefixLength, int encryptedPrefixLength)
     {
-        byte[] source = Encoding.ASCII.GetBytes(transformedArchive);
+        byte[] source = transformedArchive;
         var frequencies = new long[256];
         var crc = new Crc32();
 
@@ -1137,7 +1597,33 @@ internal static class HDC
             output.Write(compressedBytes);
         }
 
-        return Convert.ToBase64String(container.ToArray());
+        return container.ToArray();
+    }
+
+    private static byte[] CompressBrotliLayer(byte[] source)
+    {
+        using var compressed = new MemoryStream();
+
+        using (var brotli = new BrotliStream(compressed, CompressionLevel.SmallestSize, true))
+        {
+            brotli.Write(source, 0, source.Length);
+        }
+
+        byte[] compressedBytes = compressed.ToArray();
+        var crc = new Crc32();
+        crc.Update(source, 0, source.Length);
+        using var container = new MemoryStream();
+
+        using (var output = new BinaryWriter(container, Encoding.ASCII, true))
+        {
+            output.Write(BrotliContainerMagic);
+            output.Write((long)source.Length);
+            output.Write((long)compressedBytes.Length);
+            output.Write(crc.Value);
+            output.Write(compressedBytes);
+        }
+
+        return container.ToArray();
     }
 
     private static bool TryDecompressEncryptedArchive(string encodedContainer, out string? archiveText)
@@ -1154,15 +1640,15 @@ internal static class HDC
             return false;
         }
 
-        if (container.Length < HuffmanContainerMagic.Length ||
-            !container.AsSpan(0, HuffmanContainerMagic.Length).SequenceEqual(HuffmanContainerMagic))
+        if (container.Length < LegacyHuffmanContainerMagic.Length ||
+            !container.AsSpan(0, LegacyHuffmanContainerMagic.Length).SequenceEqual(LegacyHuffmanContainerMagic))
         {
             return false;
         }
 
         using var input = new MemoryStream(container, false);
         using var reader = new BinaryReader(input, Encoding.ASCII, true);
-        _ = reader.ReadBytes(HuffmanContainerMagic.Length);
+        _ = reader.ReadBytes(LegacyHuffmanContainerMagic.Length);
 
         int plainPrefixLength = reader.ReadInt32();
         int encryptedPrefixLength = reader.ReadInt32();
@@ -1296,18 +1782,20 @@ internal static class HDC
                 throw new InvalidDataException("데이터가 중간에 끝났습니다.");
             }
 
-            for (int i = offset; i < offset + read; i++)
-            {
-                if (bytes[i] > 0x7F)
-                {
-                    throw new InvalidDataException("문자열을 읽지 못했습니다.");
-                }
-            }
-
             offset += read;
         }
 
-        return Encoding.ASCII.GetString(bytes);
+        int start = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+
+        for (int i = start; i < bytes.Length; i++)
+        {
+            if (bytes[i] > 0x7F)
+            {
+                throw new InvalidDataException("문자열을 읽지 못했습니다.");
+            }
+        }
+
+        return Encoding.ASCII.GetString(bytes, start, bytes.Length - start);
     }
 
     private sealed class Entry
@@ -1859,6 +2347,43 @@ internal static class HDC
 
 		return Convert.ToBase64String(kAes.EncryptEcb(Encoding.UTF8.GetBytes(sText), PaddingMode.PKCS7));
 	}
+
+    public static byte[] Encrypt(byte[] data, string? sKey = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        sKey ??= "HDCAESX";
+
+        if (sKey == "")
+        {
+            throw new InvalidOperationException("Error");
+        }
+
+        using Aes aes = Aes.Create();
+        aes.Key = GetMySQLKey(sKey);
+        return aes.EncryptEcb(data, PaddingMode.PKCS7);
+    }
+
+    public static byte[]? Decrypt(byte[] data, string? sKey = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        sKey ??= "HDCAESX";
+
+        if (data.Length == 0 || data.Length % 16 != 0 || sKey == "")
+        {
+            return null;
+        }
+
+        try
+        {
+            using Aes aes = Aes.Create();
+            aes.Key = GetMySQLKey(sKey);
+            return aes.DecryptEcb(data, PaddingMode.PKCS7);
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
+    }
 
 	private static byte[] GetMySQLKey(string sKey)	// MySQL 키 변환: 16바이트 버퍼에 순환 XOR
 	{
